@@ -1,0 +1,351 @@
+from flask import Blueprint, request, jsonify
+from flask_jwt_extended import jwt_required, get_jwt_identity
+from backend.app import db
+from backend.models import User, Doctor, Patient, Appointment, Treatment, DoctorAvailability
+from datetime import datetime, date, time
+
+doctor_bp = Blueprint('doctor', __name__)
+
+def doctor_required(f):
+    """Decorator to ensure user is doctor"""
+    def decorated_function(*args, **kwargs):
+        user_id = get_jwt_identity()
+        user = User.query.get(user_id)
+        if not user or user.role != 'doctor':
+            return jsonify({
+                'success': False,
+                'message': 'Doctor access required',
+                'errors': ['Unauthorized']
+            }), 403
+        return f(*args, **kwargs)
+    decorated_function.__name__ = f.__name__
+    return decorated_function
+
+@doctor_bp.route('/dashboard', methods=['GET'])
+@jwt_required()
+@doctor_required
+def get_dashboard():
+    try:
+        user_id = get_jwt_identity()
+        doctor = Doctor.query.filter_by(user_id=user_id).first()
+        
+        if not doctor:
+            return jsonify({
+                'success': False,
+                'message': 'Doctor profile not found',
+                'errors': ['Profile not found']
+            }), 404
+        
+        # Get today's appointments
+        today_appointments = Appointment.query.filter_by(
+            doctor_id=doctor.id,
+            appointment_date=date.today()
+        ).count()
+        
+        # Get upcoming appointments
+        upcoming_appointments = Appointment.query.filter(
+            Appointment.doctor_id == doctor.id,
+            Appointment.appointment_date >= date.today(),
+            Appointment.status == 'booked'
+        ).count()
+        
+        # Get total patients treated
+        total_patients = db.session.query(Appointment.patient_id).filter_by(
+            doctor_id=doctor.id
+        ).distinct().count()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Dashboard data retrieved',
+            'data': {
+                'doctor': doctor.to_dict(),
+                'today_appointments': today_appointments,
+                'upcoming_appointments': upcoming_appointments,
+                'total_patients': total_patients
+            }
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': 'Failed to get dashboard data',
+            'errors': [str(e)]
+        }), 500
+
+@doctor_bp.route('/appointments', methods=['GET'])
+@jwt_required()
+@doctor_required
+def get_appointments():
+    try:
+        user_id = get_jwt_identity()
+        doctor = Doctor.query.filter_by(user_id=user_id).first()
+        
+        if not doctor:
+            return jsonify({
+                'success': False,
+                'message': 'Doctor profile not found',
+                'errors': ['Profile not found']
+            }), 404
+        
+        # Get appointments with optional date filter
+        date_filter = request.args.get('date')
+        status_filter = request.args.get('status')
+        
+        query = Appointment.query.filter_by(doctor_id=doctor.id)
+        
+        if date_filter:
+            try:
+                filter_date = datetime.strptime(date_filter, '%Y-%m-%d').date()
+                query = query.filter_by(appointment_date=filter_date)
+            except ValueError:
+                pass
+        
+        if status_filter:
+            query = query.filter_by(status=status_filter)
+        
+        appointments = query.order_by(
+            Appointment.appointment_date.asc(),
+            Appointment.appointment_time.asc()
+        ).all()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Appointments retrieved successfully',
+            'data': {
+                'appointments': [appointment.to_dict() for appointment in appointments]
+            }
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': 'Failed to get appointments',
+            'errors': [str(e)]
+        }), 500
+
+@doctor_bp.route('/patients', methods=['GET'])
+@jwt_required()
+@doctor_required
+def get_patients():
+    try:
+        user_id = get_jwt_identity()
+        doctor = Doctor.query.filter_by(user_id=user_id).first()
+        
+        if not doctor:
+            return jsonify({
+                'success': False,
+                'message': 'Doctor profile not found',
+                'errors': ['Profile not found']
+            }), 404
+        
+        # Get unique patients who have appointments with this doctor
+        patients = db.session.query(Patient).join(Appointment).filter(
+            Appointment.doctor_id == doctor.id
+        ).distinct().all()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Patients retrieved successfully',
+            'data': {
+                'patients': [patient.to_dict() for patient in patients]
+            }
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': 'Failed to get patients',
+            'errors': [str(e)]
+        }), 500
+
+@doctor_bp.route('/patient-history', methods=['POST'])
+@jwt_required()
+@doctor_required
+def add_patient_history():
+    try:
+        user_id = get_jwt_identity()
+        doctor = Doctor.query.filter_by(user_id=user_id).first()
+        
+        if not doctor:
+            return jsonify({
+                'success': False,
+                'message': 'Doctor profile not found',
+                'errors': ['Profile not found']
+            }), 404
+        
+        data = request.get_json()
+        appointment_id = data.get('appointment_id')
+        
+        if not appointment_id:
+            return jsonify({
+                'success': False,
+                'message': 'Appointment ID is required',
+                'errors': ['Missing appointment_id']
+            }), 400
+        
+        appointment = Appointment.query.filter_by(
+            id=appointment_id,
+            doctor_id=doctor.id
+        ).first()
+        
+        if not appointment:
+            return jsonify({
+                'success': False,
+                'message': 'Appointment not found',
+                'errors': ['Appointment not found']
+            }), 404
+        
+        # Create treatment record
+        treatment = Treatment(
+            appointment_id=appointment_id,
+            diagnosis=data.get('diagnosis', ''),
+            prescription=data.get('prescription', ''),
+            visit_type=data.get('visit_type', 'consultation'),
+            symptoms=data.get('symptoms', ''),
+            treatment_notes=data.get('treatment_notes', '')
+        )
+        
+        db.session.add(treatment)
+        
+        # Update appointment status
+        appointment.status = 'completed'
+        appointment.notes = data.get('notes', '')
+        appointment.updated_at = datetime.utcnow()
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Patient history updated successfully',
+            'data': {
+                'treatment': treatment.to_dict(),
+                'appointment': appointment.to_dict()
+            }
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({
+            'success': False,
+            'message': 'Failed to update patient history',
+            'errors': [str(e)]
+        }), 500
+
+@doctor_bp.route('/patient-history/<int:patient_id>', methods=['GET'])
+@jwt_required()
+@doctor_required
+def get_patient_history(patient_id):
+    try:
+        user_id = get_jwt_identity()
+        doctor = Doctor.query.filter_by(user_id=user_id).first()
+        
+        if not doctor:
+            return jsonify({
+                'success': False,
+                'message': 'Doctor profile not found',
+                'errors': ['Profile not found']
+            }), 404
+        
+        # Get patient's treatment history with this doctor
+        treatments = db.session.query(Treatment).join(Appointment).filter(
+            Appointment.patient_id == patient_id,
+            Appointment.doctor_id == doctor.id
+        ).order_by(Treatment.created_at.desc()).all()
+        
+        patient = Patient.query.get(patient_id)
+        
+        return jsonify({
+            'success': True,
+            'message': 'Patient history retrieved successfully',
+            'data': {
+                'patient': patient.to_dict() if patient else None,
+                'treatments': [treatment.to_dict() for treatment in treatments]
+            }
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': 'Failed to get patient history',
+            'errors': [str(e)]
+        }), 500
+
+@doctor_bp.route('/availability', methods=['GET'])
+@jwt_required()
+@doctor_required
+def get_availability():
+    try:
+        user_id = get_jwt_identity()
+        doctor = Doctor.query.filter_by(user_id=user_id).first()
+        
+        if not doctor:
+            return jsonify({
+                'success': False,
+                'message': 'Doctor profile not found',
+                'errors': ['Profile not found']
+            }), 404
+        
+        availability = DoctorAvailability.query.filter_by(doctor_id=doctor.id).all()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Availability retrieved successfully',
+            'data': {
+                'availability': [avail.to_dict() for avail in availability]
+            }
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': 'Failed to get availability',
+            'errors': [str(e)]
+        }), 500
+
+@doctor_bp.route('/availability', methods=['PUT'])
+@jwt_required()
+@doctor_required
+def update_availability():
+    try:
+        user_id = get_jwt_identity()
+        doctor = Doctor.query.filter_by(user_id=user_id).first()
+        
+        if not doctor:
+            return jsonify({
+                'success': False,
+                'message': 'Doctor profile not found',
+                'errors': ['Profile not found']
+            }), 404
+        
+        data = request.get_json()
+        availability_data = data.get('availability', [])
+        
+        # Clear existing availability
+        DoctorAvailability.query.filter_by(doctor_id=doctor.id).delete()
+        
+        # Add new availability
+        for avail in availability_data:
+            availability = DoctorAvailability(
+                doctor_id=doctor.id,
+                day_of_week=avail['day_of_week'],
+                start_time=datetime.strptime(avail['start_time'], '%H:%M').time(),
+                end_time=datetime.strptime(avail['end_time'], '%H:%M').time(),
+                is_available=avail.get('is_available', True)
+            )
+            db.session.add(availability)
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Availability updated successfully',
+            'data': {}
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({
+            'success': False,
+            'message': 'Failed to update availability',
+            'errors': [str(e)]
+        }), 500

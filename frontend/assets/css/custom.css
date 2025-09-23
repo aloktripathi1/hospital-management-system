@@ -1,0 +1,187 @@
+/* Custom styles for Hospital Management System */
+
+:root {
+  --primary-color: #0d6efd;
+  --secondary-color: #6c757d;
+  --success-color: #198754;
+  --danger-color: #dc3545;
+  --warning-color: #ffc107;
+  --info-color: #0dcaf0;
+  --light-color: #f8f9fa;
+  --dark-color: #212529;
+}
+
+body {
+  background-color: #f8f9fa;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.navbar-brand {
+  font-weight: bold;
+  font-size: 1.5rem;
+}
+
+.card {
+  border: none;
+  border-radius: 10px;
+  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+  transition: box-shadow 0.15s ease-in-out;
+}
+
+.card:hover {
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+.btn {
+  border-radius: 6px;
+  font-weight: 500;
+}
+
+.form-control,
+.form-select {
+  border-radius: 6px;
+  border: 1px solid #dee2e6;
+}
+
+.form-control:focus,
+.form-select:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+
+.table {
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.table thead th {
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  font-weight: 600;
+}
+
+.badge {
+  font-size: 0.75em;
+  padding: 0.5em 0.75em;
+}
+
+.auth-container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.auth-card {
+  background: white;
+  border-radius: 15px;
+  padding: 2rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 400px;
+}
+
+.dashboard-card {
+  margin-bottom: 1.5rem;
+}
+
+.stat-card {
+  background: linear-gradient(135deg, var(--primary-color), #4c84ff);
+  color: white;
+  border-radius: 10px;
+  padding: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.stat-number {
+  font-size: 2rem;
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+}
+
+.availability-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.availability-grid .contents {
+  display: contents;
+}
+
+.time-slot {
+  padding: 0.75rem;
+  text-align: center;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.time-slot.available {
+  background-color: #d4edda;
+  border: 2px solid #c3e6cb;
+  color: #155724;
+}
+
+.time-slot.available:hover {
+  background-color: #c3e6cb;
+}
+
+.time-slot.booked {
+  background-color: #f8d7da;
+  border: 2px solid #f5c6cb;
+  color: #721c24;
+}
+
+.time-slot.booked:hover {
+  background-color: #f5c6cb;
+}
+
+.time-slot.selected {
+  background-color: var(--primary-color);
+  color: white;
+  border: 2px solid var(--primary-color);
+}
+
+.patient-card {
+  transition: transform 0.2s;
+}
+
+.patient-card:hover {
+  transform: translateY(-2px);
+}
+
+.patient-history-table {
+  font-size: 0.9rem;
+}
+
+.department-card {
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.department-card:hover {
+  transform: translateY(-2px);
+}
+
+@media (max-width: 768px) {
+  .auth-card {
+    margin: 1rem;
+    padding: 1.5rem;
+  }
+
+  .availability-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.25rem;
+  }
+
+  .time-slot {
+    padding: 0.5rem;
+    font-size: 0.75rem;
+  }
+}
