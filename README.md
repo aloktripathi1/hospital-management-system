@@ -36,7 +36,6 @@ A comprehensive Hospital Management System built with Flask (Backend) and Vue.js
 
 ## Project Structure
 
-\`\`\`
 hospital_management_system/
 ├── backend/
 │   ├── app.py                 # Main Flask application
@@ -74,7 +73,6 @@ hospital_management_system/
 │   │       └── services/
 │   │           └── api.js     # API service layer
 └── README.md
-\`\`\`
 
 ## Installation & Setup
 
@@ -86,10 +84,8 @@ hospital_management_system/
 ### Backend Setup
 
 1. **Clone the repository**
-\`\`\`bash
 git clone <repository-url>
 cd hospital_management_system
-\`\`\`
 
 2. **Create virtual environment**
 \`\`\`bash
