@@ -29,13 +29,6 @@
 
         <!-- Main Content -->
         <div class="container-fluid">
-            <!-- Loading -->
-            <div v-if="loading" class="text-center mt-5">
-                <div class="spinner-border text-primary" role="status">
-                    <span class="visually-hidden">Loading...</span>
-                </div>
-            </div>
-
             <!-- Messages -->
             <div v-if="error" class="alert alert-danger alert-dismissible fade show m-3">
                 {{ error }}
@@ -135,24 +128,66 @@
                                     <!-- Login Form -->
                                     <div v-if="currentView === 'login'" class="auth-form">
                                         <h3 class="text-center mb-4">Sign In</h3>
-                                        <login-component 
-                                            @login-success="handleLoginSuccess"
-                                            @switch-to-register="currentView = 'register'"
-                                            @set-loading="loading = $event"
-                                            @set-error="error = $event">
-                                        </login-component>
+                                        <form @submit.prevent="handleLogin">
+                                            <div class="mb-3">
+                                                <label for="username" class="form-label">Username</label>
+                                                <input type="text" class="form-control" id="username" v-model="loginForm.username" required>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="password" class="form-label">Password</label>
+                                                <input type="password" class="form-control" id="password" v-model="loginForm.password" required>
+                                            </div>
+                                            <button type="submit" class="btn btn-primary w-100 mb-3">
+                                                Sign In
+                                            </button>
+                                        </form>
+                                        <div class="text-center">
+                                            <p class="mb-0">Don't have an account? 
+                                                <a href="#" @click.prevent="currentView = 'register'" class="text-primary">Register as Patient</a>
+                                            </p>
+                                        </div>
+                                        <div class="mt-4 p-3 bg-light rounded">
+                                            <small class="text-muted">
+                                                <strong>Demo Accounts:</strong><br>
+                                                Admin: admin / admin123<br>
+                                                Doctor: dr_smith / doctor123
+                                            </small>
+                                        </div>
                                     </div>
                                     
                                     <!-- Registration Form -->
                                     <div v-if="currentView === 'register'" class="auth-form">
                                         <h3 class="text-center mb-4">Register as Patient</h3>
-                                        <register-component 
-                                            @register-success="handleRegisterSuccess"
-                                            @switch-to-login="currentView = 'login'"
-                                            @set-loading="loading = $event"
-                                            @set-error="error = $event"
-                                            @set-success="success = $event">
-                                        </register-component>
+                                        <form @submit.prevent="handleRegister">
+                                            <div class="mb-3">
+                                                <label for="reg_username" class="form-label">Username</label>
+                                                <input type="text" class="form-control" id="reg_username" v-model="registerForm.username" required>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="reg_email" class="form-label">Email</label>
+                                                <input type="email" class="form-control" id="reg_email" v-model="registerForm.email" required>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="reg_password" class="form-label">Password</label>
+                                                <input type="password" class="form-control" id="reg_password" v-model="registerForm.password" required>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="reg_name" class="form-label">Full Name</label>
+                                                <input type="text" class="form-control" id="reg_name" v-model="registerForm.name" required>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="reg_phone" class="form-label">Phone Number</label>
+                                                <input type="tel" class="form-control" id="reg_phone" v-model="registerForm.phone" required>
+                                            </div>
+                                            <button type="submit" class="btn btn-primary w-100 mb-3">
+                                                Register
+                                            </button>
+                                        </form>
+                                        <div class="text-center">
+                                            <p class="mb-0">Already have an account? 
+                                                <a href="#" @click.prevent="currentView = 'login'" class="text-primary">Sign In</a>
+                                            </p>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -163,29 +198,103 @@
 
             <!-- Dashboards -->
             <div v-if="currentUser" class="dashboard-container">
-                <admin-dashboard 
-                    v-if="currentUser.role === 'admin'"
-                    :user="currentUser"
-                    @set-loading="loading = $event"
-                    @set-error="error = $event"
-                    @set-success="success = $event">
-                </admin-dashboard>
+                <div v-if="currentUser.role === 'admin'" class="container">
+                    <h2 class="mb-4"><i class="fas fa-tachometer-alt"></i> Admin Dashboard</h2>
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="card bg-primary text-white">
+                                <div class="card-body text-center">
+                                    <h4>{{ stats.total_doctors || 0 }}</h4>
+                                    <p class="mb-0">Total Doctors</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-success text-white">
+                                <div class="card-body text-center">
+                                    <h4>{{ stats.total_patients || 0 }}</h4>
+                                    <p class="mb-0">Total Patients</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-info text-white">
+                                <div class="card-body text-center">
+                                    <h4>{{ stats.today_appointments || 0 }}</h4>
+                                    <p class="mb-0">Today's Appointments</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-warning text-white">
+                                <div class="card-body text-center">
+                                    <h4>{{ stats.active_doctors || 0 }}</h4>
+                                    <p class="mb-0">Active Doctors</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
-                <doctor-dashboard 
-                    v-if="currentUser.role === 'doctor'"
-                    :user="currentUser"
-                    @set-loading="loading = $event"
-                    @set-error="error = $event"
-                    @set-success="success = $event">
-                </doctor-dashboard>
+                <div v-if="currentUser.role === 'doctor'" class="container">
+                    <h2 class="mb-4"><i class="fas fa-user-md"></i> Doctor Dashboard</h2>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="card bg-primary text-white">
+                                <div class="card-body text-center">
+                                    <h4>{{ stats.today_appointments || 0 }}</h4>
+                                    <p class="mb-0">Today's Appointments</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card bg-success text-white">
+                                <div class="card-body text-center">
+                                    <h4>{{ stats.upcoming_appointments || 0 }}</h4>
+                                    <p class="mb-0">Upcoming Appointments</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card bg-info text-white">
+                                <div class="card-body text-center">
+                                    <h4>{{ stats.total_patients || 0 }}</h4>
+                                    <p class="mb-0">Total Patients</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
-                <patient-dashboard 
-                    v-if="currentUser.role === 'patient'"
-                    :user="currentUser"
-                    @set-loading="loading = $event"
-                    @set-error="error = $event"
-                    @set-success="success = $event">
-                </patient-dashboard>
+                <div v-if="currentUser.role === 'patient'" class="container">
+                    <h2 class="mb-4"><i class="fas fa-user"></i> Patient Dashboard</h2>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="card bg-primary text-white">
+                                <div class="card-body text-center">
+                                    <h4>{{ stats.upcoming_appointments || 0 }}</h4>
+                                    <p class="mb-0">Upcoming Appointments</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card bg-success text-white">
+                                <div class="card-body text-center">
+                                    <h4>{{ stats.total_appointments || 0 }}</h4>
+                                    <p class="mb-0">Total Appointments</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card bg-info text-white">
+                                <div class="card-body text-center">
+                                    <h4>{{ stats.doctors_visited || 0 }}</h4>
+                                    <p class="mb-0">Doctors Visited</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

@@ -1,5 +1,3 @@
-import Vue from "vue"
-
 const { createApp } = Vue
 
 const App = {
@@ -10,6 +8,18 @@ const App = {
       loading: false,
       error: null,
       success: null,
+      stats: {},
+      loginForm: {
+        username: '',
+        password: ''
+      },
+      registerForm: {
+        username: '',
+        email: '',
+        password: '',
+        name: '',
+        phone: ''
+      }
     }
   },
 
@@ -20,7 +30,8 @@ const App = {
         try {
           const response = await window.ApiService.getCurrentUser()
           if (response.success) {
-            this.currentUser = response.data
+            this.currentUser = response.data.user
+            await this.loadDashboardData()
           } else {
             localStorage.removeItem("token")
           }
@@ -31,15 +42,51 @@ const App = {
       }
     },
 
-    handleLoginSuccess(user) {
-      this.currentUser = user
-      this.success = `Welcome back, ${user.username}!`
+    async handleLogin() {
+      this.loading = true
       this.error = null
+
+      try {
+        const response = await window.ApiService.login(this.loginForm)
+        if (response.success) {
+          localStorage.setItem('token', response.data.token)
+          this.currentUser = response.data.user
+          this.success = `Welcome back, ${this.currentUser.username}!`
+          await this.loadDashboardData()
+        } else {
+          this.error = response.message || 'Login failed'
+        }
+      } catch (error) {
+        this.error = error.message || 'Login failed. Please try again.'
+      } finally {
+        this.loading = false
+      }
     },
 
-    handleRegisterSuccess() {
-      this.currentView = "login"
-      this.success = "Registration successful! Please login to continue."
+    async handleRegister() {
+      this.loading = true
+      this.error = null
+
+      try {
+        const response = await window.ApiService.register(this.registerForm)
+        if (response.success) {
+          this.success = 'Registration successful! Please login to continue.'
+          this.currentView = 'login'
+          this.registerForm = {
+            username: '',
+            email: '',
+            password: '',
+            name: '',
+            phone: ''
+          }
+        } else {
+          this.error = response.message || 'Registration failed'
+        }
+      } catch (error) {
+        this.error = error.message || 'Registration failed. Please try again.'
+      } finally {
+        this.loading = false
+      }
     },
 
     async logout() {
@@ -49,71 +96,47 @@ const App = {
         this.currentView = "home"
         this.success = "Logged out successfully"
         this.error = null
+        this.stats = {}
       } catch (error) {
         console.error("Logout failed:", error)
         localStorage.removeItem("token")
         this.currentUser = null
         this.currentView = "home"
+        this.stats = {}
       }
     },
+
+    async loadDashboardData() {
+      if (!this.currentUser) return
+
+      try {
+        if (this.currentUser.role === 'admin') {
+          const response = await window.ApiService.getAdminStats()
+          if (response.success) {
+            this.stats = response.data
+          }
+        } else if (this.currentUser.role === 'doctor') {
+          const response = await window.ApiService.getDoctorDashboard()
+          if (response.success) {
+            this.stats = response.data
+          }
+        } else if (this.currentUser.role === 'patient') {
+          const response = await window.ApiService.getPatientDashboard()
+          if (response.success) {
+            this.stats = response.data
+          }
+        }
+      } catch (error) {
+        console.error("Failed to load dashboard data:", error)
+      }
+    }
   },
 
   async created() {
     await this.checkAuth()
-  },
-}
-
-// Create Vue app
-const app = createApp(App)
-
-const loadComponent = async (name, path) => {
-  try {
-    const response = await fetch(path)
-    const componentText = await response.text()
-
-    // Parse the .vue file content
-    const templateMatch = componentText.match(/<template>([\s\S]*?)<\/template>/)
-    const scriptMatch = componentText.match(/<script>([\s\S]*?)<\/script>/)
-
-    if (templateMatch && scriptMatch) {
-      // Extract template and script content
-      const template = templateMatch[1].trim()
-      const scriptContent = scriptMatch[1].trim()
-
-      // Create component definition
-      const componentDef = {}
-
-      // Execute script content to get component definition
-      const func = new Function("exports", scriptContent.replace("export default", "exports.default ="))
-      func(componentDef)
-
-      // Add template to component definition
-      if (componentDef.default) {
-        componentDef.default.template = template
-        app.component(name, componentDef.default)
-      }
-    }
-  } catch (error) {
-    console.error(`Failed to load component ${name}:`, error)
   }
 }
 
-// Load all components
-Promise.all([
-  loadComponent("login-component", "/static/js/components/Login.vue"),
-  loadComponent("register-component", "/static/js/components/Register.vue"),
-  loadComponent("admin-dashboard", "/static/js/components/AdminDashboard.vue"),
-  loadComponent("doctor-dashboard", "/static/js/components/DoctorDashboard.vue"),
-  loadComponent("patient-dashboard", "/static/js/components/PatientDashboard.vue"),
-  loadComponent("patient-history", "/static/js/components/PatientHistory.vue"),
-  loadComponent("doctor-availability", "/static/js/components/DoctorAvailability.vue"),
-])
-  .then(() => {
-    // Mount the app after all components are loaded
-    app.mount("#app")
-  })
-  .catch((error) => {
-    console.error("Failed to load components:", error)
-    // Mount app anyway with basic functionality
-    app.mount("#app")
-  })
+// Create and mount Vue app
+const app = createApp(App)
+app.mount("#app")

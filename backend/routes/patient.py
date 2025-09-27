@@ -74,20 +74,22 @@ def get_dashboard():
 @patient_required
 def get_departments():
     try:
-        # Get unique specializations from doctors
-        specializations = db.session.query(Doctor.specialization).filter_by(
-            is_active=True
-        ).distinct().all()
+        from models import Department
         
-        departments = []
-        for spec in specializations:
+        # Get all active departments
+        departments = Department.query.filter_by(is_active=True).all()
+        
+        department_list = []
+        for dept in departments:
             doctor_count = Doctor.query.filter_by(
-                specialization=spec[0],
+                department_id=dept.id,
                 is_active=True
             ).count()
             
-            departments.append({
-                'name': spec[0],
+            department_list.append({
+                'id': dept.id,
+                'name': dept.name,
+                'description': dept.description,
                 'doctor_count': doctor_count
             })
         
@@ -95,7 +97,7 @@ def get_departments():
             'success': True,
             'message': 'Departments retrieved successfully',
             'data': {
-                'departments': departments
+                'departments': department_list
             }
         })
         

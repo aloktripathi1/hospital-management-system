@@ -8,7 +8,7 @@ from celery import Celery
 from database import db
 
 # Initialize Flask app
-app = Flask(__name__, template_folder='../frontend', static_folder='../frontend/assets')
+app = Flask(__name__, template_folder='../frontend', static_folder='../frontend/assets', static_url_path='/static')
 
 # Configuration
 app.config['SECRET_KEY'] = 'hospital-management-secret-key-2024'
@@ -80,9 +80,35 @@ def create_default_admin():
         print("Default admin created: admin/admin123")
 
 def create_sample_data():
-    """Create sample doctors and patients for testing"""
+    """Create sample departments, doctors and patients for testing"""
+    from models import Department
+    
+    # Create sample departments
+    if not Department.query.first():
+        departments = [
+            {'name': 'Cardiology', 'description': 'Heart and cardiovascular diseases'},
+            {'name': 'Oncology', 'description': 'Cancer treatment and care'},
+            {'name': 'Neurology', 'description': 'Brain and nervous system disorders'},
+            {'name': 'Orthopedics', 'description': 'Bone and joint problems'},
+            {'name': 'Pediatrics', 'description': 'Children\'s health and medicine'}
+        ]
+        
+        for dept_data in departments:
+            department = Department(
+                name=dept_data['name'],
+                description=dept_data['description']
+            )
+            db.session.add(department)
+        
+        db.session.commit()
+        print("Sample departments created")
+    
     # Sample doctors
     if not Doctor.query.first():
+        # Get departments
+        cardiology = Department.query.filter_by(name='Cardiology').first()
+        oncology = Department.query.filter_by(name='Oncology').first()
+        
         sample_doctors = [
             {
                 'username': 'dr_smith',
@@ -90,6 +116,7 @@ def create_sample_data():
                 'password': 'doctor123',
                 'name': 'Dr. John Smith',
                 'specialization': 'Cardiology',
+                'department_id': cardiology.id if cardiology else None,
                 'experience': 10
             },
             {
@@ -98,6 +125,7 @@ def create_sample_data():
                 'password': 'doctor123',
                 'name': 'Dr. Sarah Johnson',
                 'specialization': 'Oncology',
+                'department_id': oncology.id if oncology else None,
                 'experience': 8
             }
         ]
@@ -116,6 +144,7 @@ def create_sample_data():
                 user_id=user.id,
                 name=doc_data['name'],
                 specialization=doc_data['specialization'],
+                department_id=doc_data['department_id'],
                 experience=doc_data['experience']
             )
             db.session.add(doctor)
