@@ -171,6 +171,10 @@ class ApiService {
   static async getDoctorAvailability(doctorId) {
     return this.get(`/doctor/availability/${doctorId}`)
   }
+
+  static async exportPatientHistory() {
+    return this.post("/patient/export-history")
+  }
 }
 
 window.ApiService = ApiService

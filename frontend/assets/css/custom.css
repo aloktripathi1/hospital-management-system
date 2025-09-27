@@ -71,18 +71,6 @@ body {
     font-size: 0.8rem;
 }
 
-/* Simple responsive design */
-@media (max-width: 768px) {
-    .hero-section h1 {
-        font-size: 2rem;
-    }
-    
-    .auth-form {
-        margin: 1rem;
-        padding: 1.5rem;
-    }
-}
-
 /* Status badges */
 .status-booked {
     background-color: #17a2b8;
@@ -96,12 +84,14 @@ body {
     background-color: #dc3545;
 }
 
-/* Simple animations */
-.fade-in {
-    animation: fadeIn 0.5s ease-in;
-}
-
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
+/* Simple responsive design */
+@media (max-width: 768px) {
+    .hero-section h1 {
+        font-size: 2rem;
+    }
+    
+    .auth-form {
+        margin: 1rem;
+        padding: 1.5rem;
+    }
 }

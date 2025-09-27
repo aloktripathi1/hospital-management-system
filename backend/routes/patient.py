@@ -386,3 +386,37 @@ def get_doctor_availability(doctor_id):
             'message': 'Failed to get doctor availability',
             'errors': [str(e)]
         }), 500
+
+@patient_bp.route('/export-history', methods=['POST'])
+@jwt_required()
+@patient_required
+def export_patient_history():
+    try:
+        user_id = get_jwt_identity()
+        patient = Patient.query.filter_by(user_id=user_id).first()
+        
+        if not patient:
+            return jsonify({
+                'success': False,
+                'message': 'Patient profile not found',
+                'errors': ['Profile not found']
+            }), 404
+        
+        # Import and trigger the Celery task
+        from tasks.celery_tasks import export_patient_history_csv
+        task = export_patient_history_csv.delay(patient.id)
+        
+        return jsonify({
+            'success': True,
+            'message': 'CSV export started. You will be notified when ready.',
+            'data': {
+                'task_id': task.id
+            }
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': 'Failed to start CSV export',
+            'errors': [str(e)]
+        }), 500

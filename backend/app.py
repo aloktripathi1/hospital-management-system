@@ -57,7 +57,7 @@ app.register_blueprint(patient_bp, url_prefix='/api/patient')
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    return render_template('index.html', currentUser=None)
 
 def create_tables():
     """Create all database tables and default admin user"""

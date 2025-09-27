@@ -264,7 +264,6 @@ export default {
     },
 
     editDoctor(doctor) {
-      // Simple edit functionality - could be expanded
       this.$emit('set-success', `Edit doctor: ${doctor.name}`)
     },
 

@@ -10,7 +10,7 @@
 </head>
 <body>
     <div id="app">
-        <!-- Navigation Bar -->
+        <!-- Navigation -->
         <nav class="navbar navbar-expand-lg navbar-dark bg-primary" v-if="currentUser">
             <div class="container">
                 <a class="navbar-brand" href="#">
@@ -29,26 +29,24 @@
 
         <!-- Main Content -->
         <div class="container-fluid">
-            <!-- Loading State -->
+            <!-- Loading -->
             <div v-if="loading" class="text-center mt-5">
                 <div class="spinner-border text-primary" role="status">
                     <span class="visually-hidden">Loading...</span>
                 </div>
             </div>
 
-            <!-- Error Messages -->
-            <div v-if="error" class="alert alert-danger alert-dismissible fade show m-3" role="alert">
+            <!-- Messages -->
+            <div v-if="error" class="alert alert-danger alert-dismissible fade show m-3">
                 {{ error }}
                 <button type="button" class="btn-close" @click="error = null"></button>
             </div>
-
-            <!-- Success Messages -->
-            <div v-if="success" class="alert alert-success alert-dismissible fade show m-3" role="alert">
+            <div v-if="success" class="alert alert-success alert-dismissible fade show m-3">
                 {{ success }}
                 <button type="button" class="btn-close" @click="success = null"></button>
             </div>
 
-            <!-- Homepage for non-authenticated users -->
+            <!-- Homepage -->
             <div v-if="!currentUser && currentView === 'home'" class="homepage">
                 <div class="hero-section bg-primary text-white py-5">
                     <div class="container text-center">
@@ -101,7 +99,7 @@
                 </div>
             </div>
 
-            <!-- Authentication Views -->
+            <!-- Auth Forms -->
             <div v-if="!currentUser && (currentView === 'login' || currentView === 'register')" class="auth-container">
                 <div class="row min-vh-100">
                     <!-- Left Side - Branding -->
@@ -163,7 +161,7 @@
                 </div>
             </div>
 
-            <!-- Dashboard Views -->
+            <!-- Dashboards -->
             <div v-if="currentUser" class="dashboard-container">
                 <admin-dashboard 
                     v-if="currentUser.role === 'admin'"
