@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from backend.app import db
-from backend.models import User, Patient, Doctor, Appointment, Treatment, DoctorAvailability
+from database import db
+from models import User, Patient, Doctor, Appointment, Treatment, DoctorAvailability
 from datetime import datetime, date, time
 
 patient_bp = Blueprint('patient', __name__)

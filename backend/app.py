@@ -1,14 +1,14 @@
 from flask import Flask, request, jsonify, render_template
-from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timedelta
 import os
 from celery import Celery
+from database import db
 
 # Initialize Flask app
-app = Flask(__name__, template_folder='../frontend', static_folder='../frontend/static')
+app = Flask(__name__, template_folder='../frontend', static_folder='../frontend/assets')
 
 # Configuration
 app.config['SECRET_KEY'] = 'hospital-management-secret-key-2024'
@@ -20,7 +20,7 @@ app.config['CELERY_BROKER_URL'] = 'redis://localhost:6379/0'
 app.config['CELERY_RESULT_BACKEND'] = 'redis://localhost:6379/0'
 
 # Initialize extensions
-db = SQLAlchemy(app)
+db.init_app(app)
 jwt = JWTManager(app)
 CORS(app)
 
