@@ -242,6 +242,86 @@
                         </div>
                     </div>
 
+                    <!-- Search Section -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="fas fa-search"></i> Search</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" v-model="searchQuery" placeholder="Search doctors or patients...">
+                                        <button class="btn btn-outline-primary" @click="searchDoctors">
+                                            <i class="fas fa-search"></i> Search Doctors
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" v-model="searchQuery" placeholder="Search patients...">
+                                        <button class="btn btn-outline-success" @click="searchPatients">
+                                            <i class="fas fa-search"></i> Search Patients
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Search Results -->
+                            <div v-if="searchResults.doctors.length > 0" class="mt-3">
+                                <h6>Doctor Search Results:</h6>
+                                <div class="table-responsive">
+                                    <table class="table table-sm">
+                                        <thead>
+                                            <tr>
+                                                <th>Name</th>
+                                                <th>Specialization</th>
+                                                <th>Experience</th>
+                                                <th>Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr v-for="doctor in searchResults.doctors" :key="doctor.id">
+                                                <td>{{ doctor.name }}</td>
+                                                <td>{{ doctor.specialization }}</td>
+                                                <td>{{ doctor.experience }} years</td>
+                                                <td>
+                                                    <span class="badge" :class="doctor.is_active ? 'bg-success' : 'bg-danger'">
+                                                        {{ doctor.is_active ? 'Active' : 'Inactive' }}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            
+                            <div v-if="searchResults.patients.length > 0" class="mt-3">
+                                <h6>Patient Search Results:</h6>
+                                <div class="table-responsive">
+                                    <table class="table table-sm">
+                                        <thead>
+                                            <tr>
+                                                <th>Name</th>
+                                                <th>Email</th>
+                                                <th>Phone</th>
+                                                <th>Age</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr v-for="patient in searchResults.patients" :key="patient.id">
+                                                <td>{{ patient.name }}</td>
+                                                <td>{{ patient.user ? patient.user.email : 'N/A' }}</td>
+                                                <td>{{ patient.phone }}</td>
+                                                <td>{{ patient.age }}</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Tabs -->
                     <ul class="nav nav-tabs" id="adminTabs" role="tablist">
                         <li class="nav-item" role="presentation">
@@ -425,6 +505,11 @@
                             </button>
                         </li>
                         <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="availability-tab" data-bs-toggle="tab" data-bs-target="#availability" type="button" role="tab">
+                                <i class="fas fa-calendar-plus"></i> Set Availability
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
                             <button class="nav-link" id="treatment-tab" data-bs-toggle="tab" data-bs-target="#treatment" type="button" role="tab">
                                 <i class="fas fa-file-medical"></i> Add Treatment
                             </button>
@@ -507,6 +592,59 @@
                                             </tbody>
                                         </table>
                                     </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Availability Tab -->
+                        <div class="tab-pane fade" id="availability" role="tabpanel">
+                            <div class="card mt-3">
+                                <div class="card-header">
+                                    <h5 class="mb-0">Set Availability & Create Slots</h5>
+                                </div>
+                                <div class="card-body">
+                                    <form @submit.prevent="setAvailabilitySlots">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label for="start_date" class="form-label">Start Date</label>
+                                                    <input type="date" class="form-control" id="start_date" v-model="slotForm.start_date" required>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label for="end_date" class="form-label">End Date</label>
+                                                    <input type="date" class="form-control" id="end_date" v-model="slotForm.end_date" required>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label for="start_time" class="form-label">Start Time</label>
+                                                    <input type="time" class="form-control" id="start_time" v-model="slotForm.start_time" required>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label for="end_time" class="form-label">End Time</label>
+                                                    <input type="time" class="form-control" id="end_time" v-model="slotForm.end_time" required>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="alert alert-info">
+                                            <i class="fas fa-info-circle"></i>
+                                            <strong>Note:</strong> This will create 30-minute appointment slots for the specified date range. 
+                                            Patients will be able to book these available slots.
+                                        </div>
+                                        
+                                        <button type="submit" class="btn btn-primary" :disabled="loading">
+                                            <span v-if="loading" class="spinner-border spinner-border-sm me-2"></span>
+                                            Create Appointment Slots
+                                        </button>
+                                    </form>
                                 </div>
                             </div>
                         </div>
@@ -666,13 +804,36 @@
                                             <div class="col-md-6">
                                                 <div class="mb-3">
                                                     <label for="appointment_date" class="form-label">Date</label>
-                                                    <input type="date" class="form-control" id="appointment_date" v-model="bookingForm.appointment_date" required>
+                                                    <input type="date" class="form-control" id="appointment_date" v-model="bookingForm.appointment_date" @change="loadAvailableSlots" required>
                                                 </div>
                                             </div>
                                             <div class="col-md-6">
                                                 <div class="mb-3">
-                                                    <label for="appointment_time" class="form-label">Time</label>
-                                                    <input type="time" class="form-control" id="appointment_time" v-model="bookingForm.appointment_time" required>
+                                                    <label for="appointment_time" class="form-label">Available Time Slots</label>
+                                                    <select class="form-control" id="appointment_time" v-model="bookingForm.appointment_time" required>
+                                                        <option value="">Select Available Time</option>
+                                                        <option v-for="slot in availableSlots" :key="slot.id" :value="slot.time" :disabled="slot.status === 'booked'">
+                                                            {{ slot.time }} - {{ slot.status === 'available' ? 'Available' : 'Booked' }}
+                                                        </option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Available Slots Display -->
+                                        <div v-if="availableSlots.length > 0" class="mb-3">
+                                            <h6>Available Time Slots:</h6>
+                                            <div class="row">
+                                                <div v-for="slot in availableSlots" :key="slot.id" class="col-md-3 mb-2">
+                                                    <button type="button" 
+                                                            class="btn btn-sm w-100" 
+                                                            :class="slot.status === 'available' ? 'btn-success' : 'btn-secondary'"
+                                                            :disabled="slot.status === 'booked'"
+                                                            @click="bookingForm.appointment_time = slot.time">
+                                                        {{ slot.time }}
+                                                        <br>
+                                                        <small>{{ slot.status === 'available' ? 'Available' : 'Booked' }}</small>
+                                                    </button>
                                                 </div>
                                             </div>
                                         </div>

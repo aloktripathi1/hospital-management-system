@@ -54,12 +54,27 @@ const App = {
       availableDoctors: [],
       patientAppointments: [],
       treatments: [],
+      availableSlots: [],
       bookingForm: {
         specialization: '',
         doctor_id: '',
         appointment_date: '',
         appointment_time: '',
         notes: ''
+      },
+      // Doctor availability data
+      doctorAvailability: [],
+      slotForm: {
+        start_date: '',
+        end_date: '',
+        start_time: '09:00',
+        end_time: '17:00'
+      },
+      // Search data
+      searchQuery: '',
+      searchResults: {
+        doctors: [],
+        patients: []
       }
     }
   },
@@ -440,7 +455,76 @@ const App = {
         case 'booked': return 'status-booked'
         case 'completed': return 'status-completed'
         case 'cancelled': return 'status-cancelled'
+        case 'available': return 'status-available'
         default: return 'status-pending'
+      }
+    },
+
+    // Doctor availability methods
+    async setAvailabilitySlots() {
+      this.loading = true
+      this.error = null
+
+      try {
+        const response = await window.ApiService.setAvailabilitySlots(this.slotForm)
+        if (response.success) {
+          this.success = response.message
+          this.slotForm = {
+            start_date: '',
+            end_date: '',
+            start_time: '09:00',
+            end_time: '17:00'
+          }
+        } else {
+          this.error = response.message || 'Failed to create slots'
+        }
+      } catch (error) {
+        this.error = error.message || 'Failed to create slots'
+      } finally {
+        this.loading = false
+      }
+    },
+
+    async loadAvailableSlots() {
+      if (this.bookingForm.doctor_id && this.bookingForm.appointment_date) {
+        try {
+          const response = await window.ApiService.getAvailableSlots(
+            this.bookingForm.doctor_id, 
+            this.bookingForm.appointment_date
+          )
+          if (response.success) {
+            this.availableSlots = response.data.slots
+          }
+        } catch (error) {
+          this.error = 'Failed to load available slots'
+        }
+      }
+    },
+
+    // Search methods
+    async searchDoctors() {
+      if (!this.searchQuery.trim()) return
+
+      try {
+        const response = await window.ApiService.searchDoctors(this.searchQuery)
+        if (response.success) {
+          this.searchResults.doctors = response.data.doctors
+        }
+      } catch (error) {
+        this.error = 'Search failed'
+      }
+    },
+
+    async searchPatients() {
+      if (!this.searchQuery.trim()) return
+
+      try {
+        const response = await window.ApiService.searchPatients(this.searchQuery)
+        if (response.success) {
+          this.searchResults.patients = response.data.patients
+        }
+      } catch (error) {
+        this.error = 'Search failed'
       }
     }
   },

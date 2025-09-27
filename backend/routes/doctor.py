@@ -2,7 +2,7 @@ from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from database import db
 from models import User, Doctor, Patient, Appointment, Treatment, DoctorAvailability
-from datetime import datetime, date, time
+from datetime import datetime, date, time, timedelta
 
 doctor_bp = Blueprint('doctor', __name__)
 
@@ -347,5 +347,93 @@ def update_availability():
         return jsonify({
             'success': False,
             'message': 'Failed to update availability',
+            'errors': [str(e)]
+        }), 500
+
+@doctor_bp.route('/set-slots', methods=['POST'])
+@jwt_required()
+@doctor_required
+def set_availability_slots():
+    """Create 30-minute appointment slots for a specific date range"""
+    try:
+        user_id = get_jwt_identity()
+        doctor = Doctor.query.filter_by(user_id=user_id).first()
+        
+        if not doctor:
+            return jsonify({
+                'success': False,
+                'message': 'Doctor profile not found',
+                'errors': ['Profile not found']
+            }), 404
+        
+        data = request.get_json()
+        start_date = datetime.strptime(data.get('start_date'), '%Y-%m-%d').date()
+        end_date = datetime.strptime(data.get('end_date'), '%Y-%m-%d').date()
+        start_time = datetime.strptime(data.get('start_time', '09:00'), '%H:%M').time()
+        end_time = datetime.strptime(data.get('end_time', '17:00'), '%H:%M').time()
+        
+        slots_created = 0
+        
+        # Generate slots for each day in the range
+        current_date = start_date
+        while current_date <= end_date:
+            # Check if doctor is available on this day of week
+            day_of_week = current_date.weekday()  # 0=Monday, 6=Sunday
+            availability = DoctorAvailability.query.filter_by(
+                doctor_id=doctor.id,
+                day_of_week=day_of_week,
+                is_available=True
+            ).first()
+            
+            if availability:
+                # Use doctor's availability times or provided times
+                slot_start = max(start_time, availability.start_time)
+                slot_end = min(end_time, availability.end_time)
+                
+                # Create 30-minute slots
+                current_time = slot_start
+                while current_time < slot_end:
+                    # Check if slot already exists
+                    existing_slot = Appointment.query.filter_by(
+                        doctor_id=doctor.id,
+                        appointment_date=current_date,
+                        appointment_time=current_time
+                    ).first()
+                    
+                    if not existing_slot:
+                        # Create available slot
+                        slot = Appointment(
+                            doctor_id=doctor.id,
+                            patient_id=None,  # No patient assigned yet
+                            appointment_date=current_date,
+                            appointment_time=current_time,
+                            status='available',
+                            notes=''
+                        )
+                        db.session.add(slot)
+                        slots_created += 1
+                    
+                    # Move to next 30-minute slot
+                    current_time = datetime.combine(date.today(), current_time) + timedelta(minutes=30)
+                    current_time = current_time.time()
+            
+            current_date += timedelta(days=1)
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Created {slots_created} appointment slots',
+            'data': {
+                'slots_created': slots_created,
+                'date_range': f'{start_date} to {end_date}'
+            }
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({
+            'success': False,
+            'message': 'Failed to create appointment slots',
             'errors': [str(e)]
         }), 500

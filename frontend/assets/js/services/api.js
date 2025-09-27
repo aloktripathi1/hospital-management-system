@@ -135,6 +135,10 @@ class ApiService {
     return this.put("/doctor/availability", availabilityData)
   }
 
+  static async setAvailabilitySlots(slotData) {
+    return this.post("/doctor/set-slots", slotData)
+  }
+
   static async getPatientHistory(patientId) {
     return this.get(`/doctor/patient-history/${patientId}`)
   }
@@ -174,6 +178,22 @@ class ApiService {
 
   static async exportPatientHistory() {
     return this.post("/patient/export-history")
+  }
+
+  static async getAvailableSlots(doctorId, date) {
+    return this.get(`/patient/available-slots?doctor_id=${doctorId}&date=${date}`)
+  }
+
+  // Search endpoints
+  static async searchDoctors(query, specialization = '') {
+    const params = new URLSearchParams()
+    if (query) params.append('q', query)
+    if (specialization) params.append('specialization', specialization)
+    return this.get(`/admin/search/doctors?${params.toString()}`)
+  }
+
+  static async searchPatients(query) {
+    return this.get(`/admin/search/patients?q=${encodeURIComponent(query)}`)
   }
 }
 

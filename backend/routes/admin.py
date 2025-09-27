@@ -4,6 +4,7 @@ from database import db
 from models import User, Patient, Doctor, Appointment, Treatment
 from werkzeug.security import generate_password_hash
 from datetime import datetime, date
+from sqlalchemy import or_
 
 admin_bp = Blueprint('admin', __name__)
 
@@ -396,6 +397,93 @@ def search():
             'data': {
                 'results': results,
                 'count': len(results)
+            }
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': 'Search failed',
+            'errors': [str(e)]
+        }), 500
+
+@admin_bp.route('/search/doctors', methods=['GET'])
+@jwt_required()
+@admin_required
+def search_doctors():
+    """Search doctors by specialization or name"""
+    try:
+        query = request.args.get('q', '')
+        specialization = request.args.get('specialization', '')
+        
+        if not query and not specialization:
+            return jsonify({
+                'success': False,
+                'message': 'Search query or specialization is required',
+                'errors': ['Missing search parameters']
+            }), 400
+        
+        # Build search query
+        search_query = Doctor.query
+        
+        if query:
+            search_query = search_query.filter(
+                or_(
+                    Doctor.name.ilike(f'%{query}%'),
+                    Doctor.specialization.ilike(f'%{query}%')
+                )
+            )
+        
+        if specialization:
+            search_query = search_query.filter(Doctor.specialization.ilike(f'%{specialization}%'))
+        
+        doctors = search_query.all()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Doctors found',
+            'data': {
+                'doctors': [doctor.to_dict() for doctor in doctors],
+                'count': len(doctors)
+            }
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': 'Search failed',
+            'errors': [str(e)]
+        }), 500
+
+@admin_bp.route('/search/patients', methods=['GET'])
+@jwt_required()
+@admin_required
+def search_patients():
+    """Search patients by name or email"""
+    try:
+        query = request.args.get('q', '')
+        
+        if not query:
+            return jsonify({
+                'success': False,
+                'message': 'Search query is required',
+                'errors': ['Missing search parameter']
+            }), 400
+        
+        # Search patients by name or email
+        patients = db.session.query(Patient).join(User).filter(
+            or_(
+                Patient.name.ilike(f'%{query}%'),
+                User.email.ilike(f'%{query}%')
+            )
+        ).all()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Patients found',
+            'data': {
+                'patients': [patient.to_dict() for patient in patients],
+                'count': len(patients)
             }
         })
         

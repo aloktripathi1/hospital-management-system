@@ -108,6 +108,82 @@ def get_departments():
             'errors': [str(e)]
         }), 500
 
+@patient_bp.route('/available-slots', methods=['GET'])
+@jwt_required()
+@patient_required
+def get_available_slots():
+    """Get available appointment slots for a doctor on a specific date"""
+    try:
+        doctor_id = request.args.get('doctor_id')
+        appointment_date = request.args.get('date')
+        
+        if not doctor_id or not appointment_date:
+            return jsonify({
+                'success': False,
+                'message': 'Doctor ID and date are required',
+                'errors': ['Missing required parameters']
+            }), 400
+        
+        try:
+            appointment_date = datetime.strptime(appointment_date, '%Y-%m-%d').date()
+        except ValueError:
+            return jsonify({
+                'success': False,
+                'message': 'Invalid date format',
+                'errors': ['Use YYYY-MM-DD format']
+            }), 400
+        
+        # Get available slots for the doctor on the specified date
+        available_slots = Appointment.query.filter_by(
+            doctor_id=doctor_id,
+            appointment_date=appointment_date,
+            status='available'
+        ).order_by(Appointment.appointment_time.asc()).all()
+        
+        # Get booked slots to show as unavailable
+        booked_slots = Appointment.query.filter_by(
+            doctor_id=doctor_id,
+            appointment_date=appointment_date,
+            status='booked'
+        ).order_by(Appointment.appointment_time.asc()).all()
+        
+        slots_data = []
+        
+        # Add available slots
+        for slot in available_slots:
+            slots_data.append({
+                'id': slot.id,
+                'time': slot.appointment_time.strftime('%H:%M'),
+                'status': 'available',
+                'patient_id': None
+            })
+        
+        # Add booked slots
+        for slot in booked_slots:
+            slots_data.append({
+                'id': slot.id,
+                'time': slot.appointment_time.strftime('%H:%M'),
+                'status': 'booked',
+                'patient_id': slot.patient_id
+            })
+        
+        return jsonify({
+            'success': True,
+            'message': 'Available slots retrieved successfully',
+            'data': {
+                'slots': slots_data,
+                'date': appointment_date.isoformat(),
+                'doctor_id': doctor_id
+            }
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': 'Failed to get available slots',
+            'errors': [str(e)]
+        }), 500
+
 @patient_bp.route('/doctors', methods=['GET'])
 @jwt_required()
 @patient_required
@@ -224,39 +300,48 @@ def book_appointment():
                 'errors': ['Invalid format']
             }), 400
         
-        # Check if appointment slot is already booked
-        existing_appointment = Appointment.query.filter_by(
+        # Find available slot
+        available_slot = Appointment.query.filter_by(
             doctor_id=data['doctor_id'],
             appointment_date=appointment_date,
             appointment_time=appointment_time,
-            status='booked'
+            status='available'
+        ).first()
+        
+        if not available_slot:
+            return jsonify({
+                'success': False,
+                'message': 'Time slot not available',
+                'errors': ['This time slot is not available for booking']
+            }), 400
+        
+        # Check for existing appointment at the same time for this patient
+        existing_appointment = Appointment.query.filter_by(
+            patient_id=patient.id,
+            appointment_date=appointment_date,
+            appointment_time=appointment_time
         ).first()
         
         if existing_appointment:
             return jsonify({
                 'success': False,
-                'message': 'This time slot is already booked',
-                'errors': ['Slot unavailable']
+                'message': 'You already have an appointment at this time',
+                'errors': ['Time slot already booked']
             }), 400
         
-        # Create new appointment
-        appointment = Appointment(
-            patient_id=patient.id,
-            doctor_id=data['doctor_id'],
-            appointment_date=appointment_date,
-            appointment_time=appointment_time,
-            notes=data.get('notes', ''),
-            status='booked'
-        )
+        # Book the slot
+        available_slot.patient_id = patient.id
+        available_slot.status = 'booked'
+        available_slot.notes = data.get('notes', '')
+        available_slot.updated_at = datetime.utcnow()
         
-        db.session.add(appointment)
         db.session.commit()
         
         return jsonify({
             'success': True,
             'message': 'Appointment booked successfully',
             'data': {
-                'appointment': appointment.to_dict()
+                'appointment': available_slot.to_dict()
             }
         })
         
