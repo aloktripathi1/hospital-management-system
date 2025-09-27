@@ -137,7 +137,8 @@
                                                 <label for="password" class="form-label">Password</label>
                                                 <input type="password" class="form-control" id="password" v-model="loginForm.password" required>
                                             </div>
-                                            <button type="submit" class="btn btn-primary w-100 mb-3">
+                                            <button type="submit" class="btn btn-primary w-100 mb-3" :disabled="loading">
+                                                <span v-if="loading" class="spinner-border spinner-border-sm me-2"></span>
                                                 Sign In
                                             </button>
                                         </form>
@@ -179,7 +180,8 @@
                                                 <label for="reg_phone" class="form-label">Phone Number</label>
                                                 <input type="tel" class="form-control" id="reg_phone" v-model="registerForm.phone" required>
                                             </div>
-                                            <button type="submit" class="btn btn-primary w-100 mb-3">
+                                            <button type="submit" class="btn btn-primary w-100 mb-3" :disabled="loading">
+                                                <span v-if="loading" class="spinner-border spinner-border-sm me-2"></span>
                                                 Register
                                             </button>
                                         </form>
@@ -198,9 +200,10 @@
 
             <!-- Dashboards -->
             <div v-if="currentUser" class="dashboard-container">
+                <!-- Admin Dashboard -->
                 <div v-if="currentUser.role === 'admin'" class="container">
                     <h2 class="mb-4"><i class="fas fa-tachometer-alt"></i> Admin Dashboard</h2>
-                    <div class="row">
+                    <div class="row mb-4">
                         <div class="col-md-3">
                             <div class="card bg-primary text-white">
                                 <div class="card-body text-center">
@@ -234,11 +237,27 @@
                             </div>
                         </div>
                     </div>
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">System Overview</h5>
+                        </div>
+                        <div class="card-body">
+                            <p>Welcome to the Admin Dashboard. Here you can manage doctors, patients, and appointments.</p>
+                            <p><strong>Demo Features:</strong></p>
+                            <ul>
+                                <li>View system statistics</li>
+                                <li>Manage doctor profiles</li>
+                                <li>Oversee patient records</li>
+                                <li>Monitor appointments</li>
+                            </ul>
+                        </div>
+                    </div>
                 </div>
 
+                <!-- Doctor Dashboard -->
                 <div v-if="currentUser.role === 'doctor'" class="container">
                     <h2 class="mb-4"><i class="fas fa-user-md"></i> Doctor Dashboard</h2>
-                    <div class="row">
+                    <div class="row mb-4">
                         <div class="col-md-4">
                             <div class="card bg-primary text-white">
                                 <div class="card-body text-center">
@@ -264,11 +283,27 @@
                             </div>
                         </div>
                     </div>
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">Doctor Overview</h5>
+                        </div>
+                        <div class="card-body">
+                            <p>Welcome to the Doctor Dashboard. Here you can manage your appointments and patient records.</p>
+                            <p><strong>Demo Features:</strong></p>
+                            <ul>
+                                <li>View today's appointments</li>
+                                <li>Manage patient records</li>
+                                <li>Add treatment notes</li>
+                                <li>Update appointment status</li>
+                            </ul>
+                        </div>
+                    </div>
                 </div>
 
+                <!-- Patient Dashboard -->
                 <div v-if="currentUser.role === 'patient'" class="container">
                     <h2 class="mb-4"><i class="fas fa-user"></i> Patient Dashboard</h2>
-                    <div class="row">
+                    <div class="row mb-4">
                         <div class="col-md-4">
                             <div class="card bg-primary text-white">
                                 <div class="card-body text-center">
@@ -292,6 +327,21 @@
                                     <p class="mb-0">Doctors Visited</p>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">Patient Overview</h5>
+                        </div>
+                        <div class="card-body">
+                            <p>Welcome to the Patient Dashboard. Here you can manage your appointments and view your medical history.</p>
+                            <p><strong>Demo Features:</strong></p>
+                            <ul>
+                                <li>Book new appointments</li>
+                                <li>View appointment history</li>
+                                <li>Access medical records</li>
+                                <li>Export treatment history</li>
+                            </ul>
                         </div>
                     </div>
                 </div>

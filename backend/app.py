@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -8,7 +8,7 @@ from celery import Celery
 from database import db
 
 # Initialize Flask app
-app = Flask(__name__, template_folder='../frontend', static_folder='../frontend/assets', static_url_path='/static')
+app = Flask(__name__, static_folder='../frontend/assets', static_url_path='/static')
 
 # Configuration
 app.config['SECRET_KEY'] = 'hospital-management-secret-key-2024'
@@ -57,7 +57,7 @@ app.register_blueprint(patient_bp, url_prefix='/api/patient')
 
 @app.route('/')
 def index():
-    return render_template('index.html', currentUser=None)
+    return send_from_directory('../frontend', 'index.html')
 
 def create_tables():
     """Create all database tables and default admin user"""
