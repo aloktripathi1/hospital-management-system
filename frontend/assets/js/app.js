@@ -6,7 +6,7 @@ const App = {
   data() {
     return {
       currentUser: null,
-      currentView: "login",
+      currentView: "home",
       loading: false,
       error: null,
       success: null,
@@ -39,20 +39,21 @@ const App = {
 
     handleRegisterSuccess() {
       this.currentView = "login"
+      this.success = "Registration successful! Please login to continue."
     },
 
     async logout() {
       try {
         await window.ApiService.logout()
         this.currentUser = null
-        this.currentView = "login"
+        this.currentView = "home"
         this.success = "Logged out successfully"
         this.error = null
       } catch (error) {
         console.error("Logout failed:", error)
         localStorage.removeItem("token")
         this.currentUser = null
-        this.currentView = "login"
+        this.currentView = "home"
       }
     },
   },

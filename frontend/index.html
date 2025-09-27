@@ -5,108 +5,197 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hospital Management System</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="/static/css/custom.css" rel="stylesheet">
 </head>
 <body>
     <div id="app">
-        <div class="container-fluid">
-             Navigation Bar 
-            <nav class="navbar navbar-expand-lg navbar-dark bg-primary mb-4" v-if="currentUser">
-                <div class="container">
-                    <a class="navbar-brand" href="#">
-                        <i class="fas fa-hospital"></i> HMS
-                    </a>
-                    <div class="navbar-nav ms-auto">
-                        <span class="navbar-text me-3">
-                            Welcome, {{ currentUser.username }} ({{ currentUser.role }})
-                        </span>
-                        <button class="btn btn-outline-light btn-sm" @click="logout">
-                            <i class="fas fa-sign-out-alt"></i> Logout
-                        </button>
-                    </div>
-                </div>
-            </nav>
-
-             Main Content 
+        <!-- Navigation Bar -->
+        <nav class="navbar navbar-expand-lg navbar-dark bg-primary" v-if="currentUser">
             <div class="container">
-                 Loading State 
-                <div v-if="loading" class="text-center">
-                    <div class="spinner-border text-primary" role="status">
-                        <span class="visually-hidden">Loading...</span>
+                <a class="navbar-brand" href="#">
+                    <i class="fas fa-hospital"></i> HMS
+                </a>
+                <div class="navbar-nav ms-auto">
+                    <span class="navbar-text me-3">
+                        Welcome, {{ currentUser.username }} ({{ currentUser.role }})
+                    </span>
+                    <button class="btn btn-outline-light btn-sm" @click="logout">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </button>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <div class="container-fluid">
+            <!-- Loading State -->
+            <div v-if="loading" class="text-center mt-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            </div>
+
+            <!-- Error Messages -->
+            <div v-if="error" class="alert alert-danger alert-dismissible fade show m-3" role="alert">
+                {{ error }}
+                <button type="button" class="btn-close" @click="error = null"></button>
+            </div>
+
+            <!-- Success Messages -->
+            <div v-if="success" class="alert alert-success alert-dismissible fade show m-3" role="alert">
+                {{ success }}
+                <button type="button" class="btn-close" @click="success = null"></button>
+            </div>
+
+            <!-- Homepage for non-authenticated users -->
+            <div v-if="!currentUser && currentView === 'home'" class="homepage">
+                <div class="hero-section bg-primary text-white py-5">
+                    <div class="container text-center">
+                        <h1 class="display-4 mb-4">
+                            <i class="fas fa-hospital"></i> Hospital Management System
+                        </h1>
+                        <p class="lead mb-4">Efficient healthcare management for patients, doctors, and administrators</p>
+                        <div class="row justify-content-center">
+                            <div class="col-md-8">
+                                <div class="row">
+                                    <div class="col-md-4 mb-3">
+                                        <div class="card bg-light text-dark">
+                                            <div class="card-body text-center">
+                                                <i class="fas fa-user-md fa-3x text-primary mb-3"></i>
+                                                <h5>For Doctors</h5>
+                                                <p class="small">Manage appointments and patient records</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <div class="card bg-light text-dark">
+                                            <div class="card-body text-center">
+                                                <i class="fas fa-user fa-3x text-success mb-3"></i>
+                                                <h5>For Patients</h5>
+                                                <p class="small">Book appointments and view medical history</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <div class="card bg-light text-dark">
+                                            <div class="card-body text-center">
+                                                <i class="fas fa-cog fa-3x text-warning mb-3"></i>
+                                                <h5>For Admins</h5>
+                                                <p class="small">Manage hospital operations and staff</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <button class="btn btn-light btn-lg me-3" @click="currentView = 'login'">
+                                <i class="fas fa-sign-in-alt"></i> Login
+                            </button>
+                            <button class="btn btn-outline-light btn-lg" @click="currentView = 'register'">
+                                <i class="fas fa-user-plus"></i> Register as Patient
+                            </button>
+                        </div>
                     </div>
                 </div>
+            </div>
 
-                 Error Messages 
-                <div v-if="error" class="alert alert-danger alert-dismissible fade show" role="alert">
-                    {{ error }}
-                    <button type="button" class="btn-close" @click="error = null"></button>
+            <!-- Authentication Views -->
+            <div v-if="!currentUser && (currentView === 'login' || currentView === 'register')" class="auth-container">
+                <div class="row min-vh-100">
+                    <!-- Left Side - Branding -->
+                    <div class="col-lg-6 bg-primary text-white d-flex align-items-center">
+                        <div class="container">
+                            <div class="text-center">
+                                <i class="fas fa-hospital fa-5x mb-4"></i>
+                                <h2 class="mb-4">Hospital Management System</h2>
+                                <p class="lead mb-4">Streamlining healthcare operations for better patient care</p>
+                                <div class="row text-center">
+                                    <div class="col-4">
+                                        <i class="fas fa-calendar-check fa-2x mb-2"></i>
+                                        <p class="small">Easy Appointments</p>
+                                    </div>
+                                    <div class="col-4">
+                                        <i class="fas fa-file-medical fa-2x mb-2"></i>
+                                        <p class="small">Digital Records</p>
+                                    </div>
+                                    <div class="col-4">
+                                        <i class="fas fa-users fa-2x mb-2"></i>
+                                        <p class="small">Team Management</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Right Side - Forms -->
+                    <div class="col-lg-6 d-flex align-items-center">
+                        <div class="container">
+                            <div class="row justify-content-center">
+                                <div class="col-md-8">
+                                    <!-- Login Form -->
+                                    <div v-if="currentView === 'login'" class="auth-form">
+                                        <h3 class="text-center mb-4">Sign In</h3>
+                                        <login-component 
+                                            @login-success="handleLoginSuccess"
+                                            @switch-to-register="currentView = 'register'"
+                                            @set-loading="loading = $event"
+                                            @set-error="error = $event">
+                                        </login-component>
+                                    </div>
+                                    
+                                    <!-- Registration Form -->
+                                    <div v-if="currentView === 'register'" class="auth-form">
+                                        <h3 class="text-center mb-4">Register as Patient</h3>
+                                        <register-component 
+                                            @register-success="handleRegisterSuccess"
+                                            @switch-to-login="currentView = 'login'"
+                                            @set-loading="loading = $event"
+                                            @set-error="error = $event"
+                                            @set-success="success = $event">
+                                        </register-component>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
+            </div>
 
-                 Success Messages 
-                <div v-if="success" class="alert alert-success alert-dismissible fade show" role="alert">
-                    {{ success }}
-                    <button type="button" class="btn-close" @click="success = null"></button>
-                </div>
+            <!-- Dashboard Views -->
+            <div v-if="currentUser" class="dashboard-container">
+                <admin-dashboard 
+                    v-if="currentUser.role === 'admin'"
+                    :user="currentUser"
+                    @set-loading="loading = $event"
+                    @set-error="error = $event"
+                    @set-success="success = $event">
+                </admin-dashboard>
 
-                 Authentication Views 
-                <div v-if="!currentUser">
-                    <login-component 
-                        v-if="currentView === 'login'"
-                        @login-success="handleLoginSuccess"
-                        @switch-to-register="currentView = 'register'"
-                        @set-loading="loading = $event"
-                        @set-error="error = $event">
-                    </login-component>
+                <doctor-dashboard 
+                    v-if="currentUser.role === 'doctor'"
+                    :user="currentUser"
+                    @set-loading="loading = $event"
+                    @set-error="error = $event"
+                    @set-success="success = $event">
+                </doctor-dashboard>
 
-                    <register-component 
-                        v-if="currentView === 'register'"
-                        @register-success="handleRegisterSuccess"
-                        @switch-to-login="currentView = 'login'"
-                        @set-loading="loading = $event"
-                        @set-error="error = $event"
-                        @set-success="success = $event">
-                    </register-component>
-                </div>
-
-                 Dashboard Views 
-                <div v-if="currentUser">
-                    <admin-dashboard 
-                        v-if="currentUser.role === 'admin'"
-                        :user="currentUser"
-                        @set-loading="loading = $event"
-                        @set-error="error = $event"
-                        @set-success="success = $event">
-                    </admin-dashboard>
-
-                    <doctor-dashboard 
-                        v-if="currentUser.role === 'doctor'"
-                        :user="currentUser"
-                        @set-loading="loading = $event"
-                        @set-error="error = $event"
-                        @set-success="success = $event">
-                    </doctor-dashboard>
-
-                    <patient-dashboard 
-                        v-if="currentUser.role === 'patient'"
-                        :user="currentUser"
-                        @set-loading="loading = $event"
-                        @set-error="error = $event"
-                        @set-success="success = $event">
-                    </patient-dashboard>
-                </div>
+                <patient-dashboard 
+                    v-if="currentUser.role === 'patient'"
+                    :user="currentUser"
+                    @set-loading="loading = $event"
+                    @set-error="error = $event"
+                    @set-success="success = $event">
+                </patient-dashboard>
             </div>
         </div>
     </div>
 
-     Scripts 
+    <!-- Scripts -->
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://kit.fontawesome.com/your-fontawesome-kit.js" crossorigin="anonymous"></script>
-    
-     Keep API service as separate JS file as requested 
     <script src="/static/js/services/api.js"></script>
-    
-     Load main app after Vue and API service 
     <script src="/static/js/app.js"></script>
 </body>
 </html>
