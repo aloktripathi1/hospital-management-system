@@ -5,6 +5,14 @@
         <i class="fas fa-user"></i> Patient Dashboard
       </h2>
       
+      <!-- Welcome Message -->
+      <div class="alert alert-info mb-4">
+        <h4 class="alert-heading">
+          <i class="fas fa-hand-wave"></i> Hello {{ getPatientPrefix() }}{{ patientInfo.name || user.username }}, Welcome to Patient Dashboard!
+        </h4>
+        <p class="mb-0">Book appointments, view your medical history, and manage your healthcare.</p>
+      </div>
+      
       <!-- Stats Cards -->
       <div class="row mb-4">
         <div class="col-md-3">
@@ -62,6 +70,11 @@
             <i class="fas fa-history"></i> Medical History
           </button>
         </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" id="profile-tab" data-bs-toggle="tab" data-bs-target="#profile" type="button" role="tab">
+            <i class="fas fa-user-edit"></i> Edit Profile
+          </button>
+        </li>
       </ul>
 
       <div class="tab-content" id="patientTabsContent">
@@ -76,24 +89,43 @@
                 <div class="row">
                   <div class="col-md-6">
                     <div class="mb-3">
-                      <label for="specialization" class="form-label">Specialization</label>
+                      <label for="specialization" class="form-label">Department/Specialization</label>
                       <select class="form-control" id="specialization" v-model="bookingForm.specialization" @change="loadDoctorsBySpecialization" required>
-                        <option value="">Select Specialization</option>
+                        <option value="">Select Department</option>
                         <option v-for="dept in departments" :key="dept.name" :value="dept.name">
                           {{ dept.name }} ({{ dept.doctor_count }} doctors)
                         </option>
                       </select>
+                      <div v-if="selectedDepartment" class="mt-2">
+                        <small class="text-muted">
+                          <strong>About {{ selectedDepartment.name }}:</strong><br>
+                          {{ selectedDepartment.description || 'Specialized medical care in this field.' }}
+                        </small>
+                      </div>
                     </div>
                   </div>
                   <div class="col-md-6">
                     <div class="mb-3">
                       <label for="doctor_id" class="form-label">Doctor</label>
-                      <select class="form-control" id="doctor_id" v-model="bookingForm.doctor_id" required>
+                      <select class="form-control" id="doctor_id" v-model="bookingForm.doctor_id" @change="selectDoctor" required>
                         <option value="">Select Doctor</option>
                         <option v-for="doctor in availableDoctors" :key="doctor.id" :value="doctor.id">
-                          {{ doctor.name }} - {{ doctor.specialization }}
+                          Dr. {{ doctor.name }} - {{ doctor.specialization }}
                         </option>
                       </select>
+                      <div v-if="selectedDoctor" class="mt-2">
+                        <div class="card bg-light">
+                          <div class="card-body p-2">
+                            <h6 class="card-title mb-1">Dr. {{ selectedDoctor.name }}</h6>
+                            <small class="text-muted">
+                              <strong>Specialization:</strong> {{ selectedDoctor.specialization }}<br>
+                              <strong>Experience:</strong> {{ selectedDoctor.experience }} years<br>
+                              <strong>Qualification:</strong> {{ selectedDoctor.qualification || 'Not specified' }}<br>
+                              <strong>Consultation Fee:</strong> ${{ selectedDoctor.consultation_fee || 'Not specified' }}
+                            </small>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -102,13 +134,18 @@
                   <div class="col-md-6">
                     <div class="mb-3">
                       <label for="appointment_date" class="form-label">Date</label>
-                      <input type="date" class="form-control" id="appointment_date" v-model="bookingForm.appointment_date" required>
+                      <input type="date" class="form-control" id="appointment_date" v-model="bookingForm.appointment_date" @change="loadAvailableSlots" :min="getTodayDate()" required>
                     </div>
                   </div>
                   <div class="col-md-6">
                     <div class="mb-3">
-                      <label for="appointment_time" class="form-label">Time</label>
-                      <input type="time" class="form-control" id="appointment_time" v-model="bookingForm.appointment_time" required>
+                      <label for="appointment_time" class="form-label">Available Time Slots</label>
+                      <select class="form-control" id="appointment_time" v-model="bookingForm.appointment_time" required>
+                        <option value="">Select Time Slot</option>
+                        <option v-for="slot in availableSlots" :key="slot.id" :value="slot.time" :disabled="slot.status !== 'available'">
+                          {{ slot.time }} {{ slot.status === 'available' ? '(Available)' : '(Booked)' }}
+                        </option>
+                      </select>
                     </div>
                   </div>
                 </div>
@@ -148,7 +185,7 @@
                   </thead>
                   <tbody>
                     <tr v-for="appointment in appointments" :key="appointment.id">
-                      <td>{{ appointment.doctor ? appointment.doctor.name : 'N/A' }}</td>
+                      <td>{{ appointment.doctor ? 'Dr. ' + appointment.doctor.name : 'N/A' }}</td>
                       <td>{{ appointment.doctor ? appointment.doctor.specialization : 'N/A' }}</td>
                       <td>{{ appointment.appointment_date }}</td>
                       <td>{{ appointment.appointment_time }}</td>
@@ -225,6 +262,73 @@
             </div>
           </div>
         </div>
+
+        <!-- Profile Tab -->
+        <div class="tab-pane fade" id="profile" role="tabpanel">
+          <div class="card mt-3">
+            <div class="card-header">
+              <h5 class="mb-0">Update Profile</h5>
+            </div>
+            <div class="card-body">
+              <form @submit.prevent="updateProfile">
+                <div class="row">
+                  <div class="col-md-6">
+                    <div class="mb-3">
+                      <label for="name" class="form-label">Name</label>
+                      <input type="text" class="form-control" id="name" v-model="profileForm.name" required>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="mb-3">
+                      <label for="phone" class="form-label">Phone</label>
+                      <input type="tel" class="form-control" id="phone" v-model="profileForm.phone" required>
+                    </div>
+                  </div>
+                </div>
+                
+                <div class="row">
+                  <div class="col-md-6">
+                    <div class="mb-3">
+                      <label for="age" class="form-label">Age</label>
+                      <input type="number" class="form-control" id="age" v-model="profileForm.age" required>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="mb-3">
+                      <label for="gender" class="form-label">Gender</label>
+                      <select class="form-control" id="gender" v-model="profileForm.gender" required>
+                        <option value="">Select Gender</option>
+                        <option value="male">Male</option>
+                        <option value="female">Female</option>
+                        <option value="other">Other</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+                
+                <div class="mb-3">
+                  <label for="address" class="form-label">Address</label>
+                  <textarea class="form-control" id="address" v-model="profileForm.address" rows="3"></textarea>
+                </div>
+                
+                <div class="mb-3">
+                  <label for="medical_history" class="form-label">Medical History</label>
+                  <textarea class="form-control" id="medical_history" v-model="profileForm.medical_history" rows="3" placeholder="Any previous medical conditions, allergies, etc."></textarea>
+                </div>
+                
+                <div class="mb-3">
+                  <label for="emergency_contact" class="form-label">Emergency Contact</label>
+                  <input type="text" class="form-control" id="emergency_contact" v-model="profileForm.emergency_contact" placeholder="Name and phone number">
+                </div>
+                
+                <button type="submit" class="btn btn-primary" :disabled="loading">
+                  <span v-if="loading" class="spinner-border spinner-border-sm me-2"></span>
+                  Update Profile
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -242,6 +346,9 @@ export default {
       patientInfo: {},
       departments: [],
       availableDoctors: [],
+      selectedDepartment: null,
+      selectedDoctor: null,
+      availableSlots: [],
       appointments: [],
       treatments: [],
       bookingForm: {
@@ -250,6 +357,15 @@ export default {
         appointment_date: '',
         appointment_time: '',
         notes: ''
+      },
+      profileForm: {
+        name: '',
+        phone: '',
+        age: '',
+        gender: '',
+        address: '',
+        medical_history: '',
+        emergency_contact: ''
       },
       loading: false
     }
@@ -269,6 +385,17 @@ export default {
         if (dashboardResponse.success) {
           this.stats = dashboardResponse.data
           this.patientInfo = dashboardResponse.data.patient
+          
+          // Populate profile form
+          this.profileForm = {
+            name: this.patientInfo.name || '',
+            phone: this.patientInfo.phone || '',
+            age: this.patientInfo.age || '',
+            gender: this.patientInfo.gender || '',
+            address: this.patientInfo.address || '',
+            medical_history: this.patientInfo.medical_history || '',
+            emergency_contact: this.patientInfo.emergency_contact || ''
+          }
         }
         
         // Load departments
@@ -299,14 +426,59 @@ export default {
     async loadDoctorsBySpecialization() {
       if (this.bookingForm.specialization) {
         try {
+          // Find selected department
+          this.selectedDepartment = this.departments.find(dept => dept.name === this.bookingForm.specialization)
+          
           const response = await window.ApiService.getDoctorsBySpecialization(this.bookingForm.specialization)
           if (response.success) {
             this.availableDoctors = response.data.doctors
+            // Reset doctor selection
+            this.bookingForm.doctor_id = ''
+            this.selectedDoctor = null
           }
         } catch (error) {
           this.$emit('set-error', 'Failed to load doctors')
         }
+      } else {
+        this.selectedDepartment = null
+        this.availableDoctors = []
+        this.selectedDoctor = null
       }
+    },
+
+    selectDoctor() {
+      if (this.bookingForm.doctor_id) {
+        this.selectedDoctor = this.availableDoctors.find(doctor => doctor.id == this.bookingForm.doctor_id)
+        // Load available slots if date is already selected
+        if (this.bookingForm.appointment_date) {
+          this.loadAvailableSlots()
+        }
+      } else {
+        this.selectedDoctor = null
+        this.availableSlots = []
+      }
+    },
+
+    async loadAvailableSlots() {
+      if (this.bookingForm.doctor_id && this.bookingForm.appointment_date) {
+        try {
+          const response = await window.ApiService.getAvailableSlots(this.bookingForm.doctor_id, this.bookingForm.appointment_date)
+          if (response.success) {
+            this.availableSlots = response.data.slots
+            // Reset time selection
+            this.bookingForm.appointment_time = ''
+          }
+        } catch (error) {
+          this.$emit('set-error', 'Failed to load available slots')
+          this.availableSlots = []
+        }
+      } else {
+        this.availableSlots = []
+      }
+    },
+
+    getTodayDate() {
+      return new Date().toISOString().split('T')[0]
     },
 
     getStatusClass(status) {
@@ -372,6 +544,34 @@ export default {
       } catch (error) {
         this.$emit('set-error', 'Failed to start CSV export')
       } finally {
+        this.$emit('set-loading', false)
+      }
+    },
+
+    getPatientPrefix() {
+      if (this.patientInfo.gender) {
+        return this.patientInfo.gender.toLowerCase() === 'male' ? 'Mr. ' : 'Mrs. '
+      }
+      return ''
+    },
+
+    async updateProfile() {
+      this.loading = true
+      this.$emit('set-loading', true)
+      this.$emit('set-error', null)
+
+      try {
+        const response = await window.ApiService.updatePatient(this.patientInfo.id, this.profileForm)
+        if (response.success) {
+          this.$emit('set-success', 'Profile updated successfully')
+          await this.loadDashboardData()
+        } else {
+          this.$emit('set-error', response.message || 'Failed to update profile')
+        }
+      } catch (error) {
+        this.$emit('set-error', error.message || 'Failed to update profile')
+      } finally {
+        this.loading = false
         this.$emit('set-loading', false)
       }
     }

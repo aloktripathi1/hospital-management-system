@@ -362,37 +362,40 @@ def set_availability_slots():
                 is_available=True
             ).first()
             
+            # Use doctor's availability times if available, otherwise use provided times
             if availability:
-                # Use doctor's availability times or provided times
                 slot_start = max(start_time, availability.start_time)
                 slot_end = min(end_time, availability.end_time)
+            else:
+                slot_start = start_time
+                slot_end = end_time
+            
+            # Create 30-minute slots
+            current_time = slot_start
+            while current_time < slot_end:
+                # Check if slot already exists
+                existing_slot = Appointment.query.filter_by(
+                    doctor_id=doctor.id,
+                    appointment_date=current_date,
+                    appointment_time=current_time
+                ).first()
                 
-                # Create 30-minute slots
-                current_time = slot_start
-                while current_time < slot_end:
-                    # Check if slot already exists
-                    existing_slot = Appointment.query.filter_by(
+                if not existing_slot:
+                    # Create available slot
+                    slot = Appointment(
                         doctor_id=doctor.id,
+                        patient_id=None,  # No patient assigned yet
                         appointment_date=current_date,
-                        appointment_time=current_time
-                    ).first()
-                    
-                    if not existing_slot:
-                        # Create available slot
-                        slot = Appointment(
-                            doctor_id=doctor.id,
-                            patient_id=None,  # No patient assigned yet
-                            appointment_date=current_date,
-                            appointment_time=current_time,
-                            status='available',
-                            notes=''
-                        )
-                        db.session.add(slot)
-                        slots_created += 1
-                    
-                    # Move to next 30-minute slot
-                    current_time = datetime.combine(date.today(), current_time) + timedelta(minutes=30)
-                    current_time = current_time.time()
+                        appointment_time=current_time,
+                        status='available',
+                        notes=''
+                    )
+                    db.session.add(slot)
+                    slots_created += 1
+                
+                # Move to next 30-minute slot
+                current_time = datetime.combine(date.today(), current_time) + timedelta(minutes=30)
+                current_time = current_time.time()
             
             current_date += timedelta(days=1)
         
