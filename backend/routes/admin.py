@@ -1,30 +1,14 @@
 from flask import Blueprint, request, jsonify
-from flask_jwt_extended import jwt_required, get_jwt_identity
 from database import db
 from models import User, Patient, Doctor, Appointment, Treatment
 from werkzeug.security import generate_password_hash
 from datetime import datetime, date
 from sqlalchemy import or_
+from decorators import admin_required
 
 admin_bp = Blueprint('admin', __name__)
 
-def admin_required(f):
-    """Decorator to ensure user is admin"""
-    def decorated_function(*args, **kwargs):
-        user_id = get_jwt_identity()
-        user = User.query.get(user_id)
-        if not user or user.role != 'admin':
-            return jsonify({
-                'success': False,
-                'message': 'Admin access required',
-                'errors': ['Unauthorized']
-            }), 403
-        return f(*args, **kwargs)
-    decorated_function.__name__ = f.__name__
-    return decorated_function
-
 @admin_bp.route('/dashboard-stats', methods=['GET'])
-@jwt_required()
 @admin_required
 def get_dashboard_stats():
     try:
@@ -51,7 +35,6 @@ def get_dashboard_stats():
         }), 500
 
 @admin_bp.route('/doctors', methods=['GET'])
-@jwt_required()
 @admin_required
 def get_doctors():
     try:
@@ -70,79 +53,8 @@ def get_doctors():
             'errors': [str(e)]
         }), 500
 
-@admin_bp.route('/doctors', methods=['POST'])
-@jwt_required()
-@admin_required
-def add_doctor():
-    try:
-        data = request.get_json()
-        
-        # Validate required fields
-        required_fields = ['username', 'email', 'password', 'name', 'specialization']
-        for field in required_fields:
-            if not data.get(field):
-                return jsonify({
-                    'success': False,
-                    'message': f'{field.title()} is required',
-                    'errors': [f'Missing {field}']
-                }), 400
-        
-        # Check if user already exists
-        if User.query.filter_by(username=data['username']).first():
-            return jsonify({
-                'success': False,
-                'message': 'Username already exists',
-                'errors': ['Username taken']
-            }), 400
-        
-        if User.query.filter_by(email=data['email']).first():
-            return jsonify({
-                'success': False,
-                'message': 'Email already exists',
-                'errors': ['Email taken']
-            }), 400
-        
-        # Create new doctor user
-        user = User(
-            username=data['username'],
-            email=data['email'],
-            password_hash=generate_password_hash(data['password']),
-            role='doctor'
-        )
-        db.session.add(user)
-        db.session.flush()
-        
-        # Create doctor profile
-        doctor = Doctor(
-            user_id=user.id,
-            name=data['name'],
-            specialization=data['specialization'],
-            experience=data.get('experience', 0),
-            qualification=data.get('qualification', ''),
-            phone=data.get('phone', ''),
-            consultation_fee=data.get('consultation_fee', 0.0)
-        )
-        db.session.add(doctor)
-        db.session.commit()
-        
-        return jsonify({
-            'success': True,
-            'message': 'Doctor added successfully',
-            'data': {
-                'doctor': doctor.to_dict()
-            }
-        })
-        
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({
-            'success': False,
-            'message': 'Failed to add doctor',
-            'errors': [str(e)]
-        }), 500
 
 @admin_bp.route('/doctors/<int:doctor_id>', methods=['PUT'])
-@jwt_required()
 @admin_required
 def update_doctor(doctor_id):
     try:
@@ -192,7 +104,6 @@ def update_doctor(doctor_id):
         }), 500
 
 @admin_bp.route('/doctors/<int:doctor_id>', methods=['DELETE'])
-@jwt_required()
 @admin_required
 def delete_doctor(doctor_id):
     try:
@@ -224,7 +135,6 @@ def delete_doctor(doctor_id):
         }), 500
 
 @admin_bp.route('/patients', methods=['GET'])
-@jwt_required()
 @admin_required
 def get_patients():
     try:
@@ -244,7 +154,6 @@ def get_patients():
         }), 500
 
 @admin_bp.route('/patients/<int:patient_id>', methods=['PUT'])
-@jwt_required()
 @admin_required
 def update_patient(patient_id):
     try:
@@ -295,7 +204,6 @@ def update_patient(patient_id):
         }), 500
 
 @admin_bp.route('/appointments', methods=['GET'])
-@jwt_required()
 @admin_required
 def get_appointments():
     try:
@@ -315,7 +223,6 @@ def get_appointments():
         }), 500
 
 @admin_bp.route('/appointments/<int:appointment_id>', methods=['PUT'])
-@jwt_required()
 @admin_required
 def update_appointment(appointment_id):
     try:
@@ -354,7 +261,6 @@ def update_appointment(appointment_id):
         }), 500
 
 @admin_bp.route('/search', methods=['GET'])
-@jwt_required()
 @admin_required
 def search():
     try:
@@ -408,7 +314,6 @@ def search():
         }), 500
 
 @admin_bp.route('/search/doctors', methods=['GET'])
-@jwt_required()
 @admin_required
 def search_doctors():
     """Search doctors by specialization or name"""
@@ -456,7 +361,6 @@ def search_doctors():
         }), 500
 
 @admin_bp.route('/search/patients', methods=['GET'])
-@jwt_required()
 @admin_required
 def search_patients():
     """Search patients by name or email"""
@@ -491,5 +395,85 @@ def search_patients():
         return jsonify({
             'success': False,
             'message': 'Search failed',
+            'errors': [str(e)]
+        }), 500
+
+
+@admin_bp.route('/doctors', methods=['POST'])
+@admin_required
+def add_doctor():
+    """Add a new doctor"""
+    try:
+        data = request.get_json()
+        
+        required_fields = ['name', 'email', 'specialization', 'phone', 'experience', 'qualification']
+        for field in required_fields:
+            if not data.get(field):
+                return jsonify({
+                    'success': False,
+                    'message': f'{field.replace("_", " ").title()} is required',
+                    'errors': [f'Missing {field}']
+                }), 400
+        
+        # Check if email already exists
+        if User.query.filter_by(email=data['email']).first():
+            return jsonify({
+                'success': False,
+                'message': 'Email already exists',
+                'errors': ['Email taken']
+            }), 400
+        
+        # Generate username from email
+        username = data['email'].split('@')[0]
+        # Ensure username is unique
+        original_username = username
+        counter = 1
+        while User.query.filter_by(username=username).first():
+            username = f"{original_username}{counter}"
+            counter += 1
+        
+        # Generate temporary password
+        temp_password = f"doctor{datetime.now().strftime('%Y%m%d')}"
+        
+        # Create user account
+        user = User(
+            username=username,
+            email=data['email'],
+            password_hash=generate_password_hash(temp_password),
+            role='doctor'
+        )
+        db.session.add(user)
+        db.session.flush()
+        
+        # Create doctor profile
+        doctor = Doctor(
+            user_id=user.id,
+            name=data['name'],
+            specialization=data['specialization'],
+            phone=data['phone'],
+            experience=data['experience'],
+            qualification=data['qualification'],
+            is_active=True
+        )
+        db.session.add(doctor)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Doctor account created successfully',
+            'data': {
+                'doctor': doctor.to_dict(),
+                'credentials': {
+                    'username': username,
+                    'password': temp_password
+                }
+            }
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({
+            'success': False,
+            'message': 'Failed to create doctor account',
             'errors': [str(e)]
         }), 500

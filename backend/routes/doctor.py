@@ -1,32 +1,16 @@
-from flask import Blueprint, request, jsonify
-from flask_jwt_extended import jwt_required, get_jwt_identity
+from flask import Blueprint, request, jsonify, session
 from database import db
 from models import User, Doctor, Patient, Appointment, Treatment, DoctorAvailability
 from datetime import datetime, date, time, timedelta
+from decorators import doctor_required
 
 doctor_bp = Blueprint('doctor', __name__)
 
-def doctor_required(f):
-    """Decorator to ensure user is doctor"""
-    def decorated_function(*args, **kwargs):
-        user_id = get_jwt_identity()
-        user = User.query.get(user_id)
-        if not user or user.role != 'doctor':
-            return jsonify({
-                'success': False,
-                'message': 'Doctor access required',
-                'errors': ['Unauthorized']
-            }), 403
-        return f(*args, **kwargs)
-    decorated_function.__name__ = f.__name__
-    return decorated_function
-
 @doctor_bp.route('/dashboard', methods=['GET'])
-@jwt_required()
 @doctor_required
 def get_dashboard():
     try:
-        user_id = get_jwt_identity()
+        user_id = session.get('user_id')
         doctor = Doctor.query.filter_by(user_id=user_id).first()
         
         if not doctor:
@@ -73,11 +57,10 @@ def get_dashboard():
         }), 500
 
 @doctor_bp.route('/appointments', methods=['GET'])
-@jwt_required()
 @doctor_required
 def get_appointments():
     try:
-        user_id = get_jwt_identity()
+        user_id = session.get('user_id')
         doctor = Doctor.query.filter_by(user_id=user_id).first()
         
         if not doctor:
@@ -124,11 +107,10 @@ def get_appointments():
         }), 500
 
 @doctor_bp.route('/patients', methods=['GET'])
-@jwt_required()
 @doctor_required
 def get_patients():
     try:
-        user_id = get_jwt_identity()
+        user_id = session.get('user_id')
         doctor = Doctor.query.filter_by(user_id=user_id).first()
         
         if not doctor:
@@ -159,11 +141,10 @@ def get_patients():
         }), 500
 
 @doctor_bp.route('/patient-history', methods=['POST'])
-@jwt_required()
 @doctor_required
 def add_patient_history():
     try:
-        user_id = get_jwt_identity()
+        user_id = session.get('user_id')
         doctor = Doctor.query.filter_by(user_id=user_id).first()
         
         if not doctor:
@@ -232,11 +213,10 @@ def add_patient_history():
         }), 500
 
 @doctor_bp.route('/patient-history/<int:patient_id>', methods=['GET'])
-@jwt_required()
 @doctor_required
 def get_patient_history(patient_id):
     try:
-        user_id = get_jwt_identity()
+        user_id = session.get('user_id')
         doctor = Doctor.query.filter_by(user_id=user_id).first()
         
         if not doctor:
@@ -271,11 +251,10 @@ def get_patient_history(patient_id):
         }), 500
 
 @doctor_bp.route('/availability', methods=['GET'])
-@jwt_required()
 @doctor_required
 def get_availability():
     try:
-        user_id = get_jwt_identity()
+        user_id = session.get('user_id')
         doctor = Doctor.query.filter_by(user_id=user_id).first()
         
         if not doctor:
@@ -303,11 +282,10 @@ def get_availability():
         }), 500
 
 @doctor_bp.route('/availability', methods=['PUT'])
-@jwt_required()
 @doctor_required
 def update_availability():
     try:
-        user_id = get_jwt_identity()
+        user_id = session.get('user_id')
         doctor = Doctor.query.filter_by(user_id=user_id).first()
         
         if not doctor:
@@ -351,12 +329,11 @@ def update_availability():
         }), 500
 
 @doctor_bp.route('/set-slots', methods=['POST'])
-@jwt_required()
 @doctor_required
 def set_availability_slots():
     """Create 30-minute appointment slots for a specific date range"""
     try:
-        user_id = get_jwt_identity()
+        user_id = session.get('user_id')
         doctor = Doctor.query.filter_by(user_id=user_id).first()
         
         if not doctor:

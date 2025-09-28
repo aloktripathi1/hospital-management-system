@@ -1,5 +1,4 @@
-from flask import Blueprint, request, jsonify
-from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
+from flask import Blueprint, request, jsonify, session
 from werkzeug.security import generate_password_hash, check_password_hash
 from database import db
 from models import User, Patient
@@ -30,13 +29,16 @@ def login():
                     'errors': ['Account deactivated']
                 }), 401
             
-            access_token = create_access_token(identity=user.id)
+            # Set session data
+            session['user_id'] = user.id
+            session['username'] = user.username
+            session['role'] = user.role
+            session['is_authenticated'] = True
             
             return jsonify({
                 'success': True,
                 'message': 'Login successful',
                 'data': {
-                    'token': access_token,
                     'user': user.to_dict()
                 }
             })
@@ -124,17 +126,24 @@ def register():
         }), 500
 
 @auth_bp.route('/me', methods=['GET'])
-@jwt_required()
 def get_current_user():
     try:
-        user_id = get_jwt_identity()
+        if not session.get('is_authenticated'):
+            return jsonify({
+                'success': False,
+                'message': 'Not authenticated',
+                'errors': ['Not logged in']
+            }), 401
+        
+        user_id = session.get('user_id')
         user = User.query.get(user_id)
         
         if not user:
+            session.clear()
             return jsonify({
                 'success': False,
                 'message': 'User not found',
-                'errors': ['Invalid token']
+                'errors': ['User not found']
             }), 404
         
         return jsonify({
@@ -153,11 +162,17 @@ def get_current_user():
         }), 500
 
 @auth_bp.route('/logout', methods=['POST'])
-@jwt_required()
 def logout():
-    # In a real application, you might want to blacklist the token
-    return jsonify({
-        'success': True,
-        'message': 'Logout successful',
-        'data': {}
-    })
+    try:
+        session.clear()
+        return jsonify({
+            'success': True,
+            'message': 'Logout successful',
+            'data': {}
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': 'Logout failed',
+            'errors': [str(e)]
+        }), 500

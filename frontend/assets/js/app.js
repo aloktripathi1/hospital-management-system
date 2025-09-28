@@ -29,15 +29,14 @@ const App = {
       patients: [],
       appointments: [],
       newDoctor: {
-        username: '',
-        email: '',
-        password: '',
         name: '',
+        email: '',
         specialization: '',
         experience: '',
         phone: '',
         qualification: ''
       },
+      doctorCredentials: null,
       // Doctor data
       doctorAppointments: [],
       doctorPatients: [],
@@ -81,20 +80,15 @@ const App = {
 
   methods: {
     async checkAuth() {
-      const token = localStorage.getItem("token")
-      if (token) {
-        try {
-          const response = await window.ApiService.getCurrentUser()
-          if (response.success) {
-            this.currentUser = response.data.user
-            await this.loadDashboardData()
-          } else {
-            localStorage.removeItem("token")
-          }
-        } catch (error) {
-          console.error("Auth check failed:", error)
-          localStorage.removeItem("token")
+      try {
+        const response = await window.ApiService.getCurrentUser()
+        if (response.success) {
+          this.currentUser = response.data.user
+          await this.loadDashboardData()
         }
+      } catch (error) {
+        console.error("Auth check failed:", error)
+        // User is not authenticated, which is fine
       }
     },
 
@@ -105,7 +99,6 @@ const App = {
       try {
         const response = await window.ApiService.login(this.loginForm)
         if (response.success) {
-          localStorage.setItem('token', response.data.token)
           this.currentUser = response.data.user
           this.success = `Welcome back, ${this.currentUser.username}!`
           await this.loadDashboardData()
@@ -159,7 +152,6 @@ const App = {
         this.clearAllData()
       } catch (error) {
         console.error("Logout failed:", error)
-        localStorage.removeItem("token")
         this.currentUser = null
         this.currentView = "home"
         this.stats = {}
@@ -525,6 +517,57 @@ const App = {
         }
       } catch (error) {
         this.error = 'Search failed'
+      }
+    },
+
+    // Admin methods
+    async addDoctor() {
+      this.loading = true
+      this.error = null
+
+      try {
+        const response = await window.ApiService.addDoctor(this.newDoctor)
+        if (response.success) {
+          this.doctorCredentials = response.data.credentials
+          this.success = 'Doctor account created successfully!'
+          this.newDoctor = {
+            name: '',
+            email: '',
+            specialization: '',
+            experience: '',
+            phone: '',
+            qualification: ''
+          }
+          await this.loadDashboardData()
+        } else {
+          this.error = response.message || 'Failed to create doctor account'
+        }
+      } catch (error) {
+        this.error = error.message || 'Failed to create doctor account'
+      } finally {
+        this.loading = false
+      }
+    },
+
+    async generateMonthlyReport() {
+      try {
+        const response = await window.ApiService.generateMonthlyReport()
+        if (response.success) {
+          this.success = 'Monthly report generated successfully!'
+        }
+      } catch (error) {
+        this.error = 'Failed to generate monthly report'
+      }
+    },
+
+    async generateUserReport() {
+      try {
+        const response = await window.ApiService.generateUserReport()
+        if (response.success) {
+          this.success = 'User report generated successfully!'
+        }
+      } catch (error) {
+        this.error = 'Failed to generate user report'
       }
     }
   },

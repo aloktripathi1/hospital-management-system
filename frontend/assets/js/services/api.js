@@ -3,10 +3,8 @@ class ApiService {
   static baseURL = "/api"
 
   static getAuthHeaders() {
-    const token = localStorage.getItem("token")
     return {
       "Content-Type": "application/json",
-      ...(token && { Authorization: `Bearer ${token}` }),
     }
   }
 
@@ -14,6 +12,7 @@ class ApiService {
     const url = `${this.baseURL}${endpoint}`
     const config = {
       headers: this.getAuthHeaders(),
+      credentials: 'include', // Include cookies for session handling
       ...options,
     }
 
@@ -194,6 +193,41 @@ class ApiService {
 
   static async searchPatients(query) {
     return this.get(`/admin/search/patients?q=${encodeURIComponent(query)}`)
+  }
+
+  // Admin methods
+  static async addDoctor(doctorData) {
+    return this.post("/admin/doctors", doctorData)
+  }
+
+  static async updateDoctor(doctorId, doctorData) {
+    return this.put(`/admin/doctors/${doctorId}`, doctorData)
+  }
+
+  static async deactivateDoctor(doctorId) {
+    return this.delete(`/admin/doctors/${doctorId}`)
+  }
+
+  static async generateMonthlyReport() {
+    return this.post("/admin/reports/monthly")
+  }
+
+  static async generateUserReport() {
+    return this.post("/admin/reports/users")
+  }
+
+  // Doctor methods
+  static async updatePatientHistory(historyData) {
+    return this.post("/doctor/patient-history", historyData)
+  }
+
+  static async downloadMonthlyReport() {
+    return this.post("/doctor/reports/monthly")
+  }
+
+  // Patient methods
+  static async getDoctorsByDepartment(departmentId) {
+    return this.get(`/patient/doctors?department_id=${departmentId}`)
   }
 }
 
