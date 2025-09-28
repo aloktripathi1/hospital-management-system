@@ -28,6 +28,12 @@ const App = {
       doctors: [],
       patients: [],
       appointments: [],
+      doctorSearchQuery: '',
+      patientSearchQuery: '',
+      doctorSpecializationFilter: '',
+      doctorSpecializations: [],
+      filteredDoctors: [],
+      filteredPatients: [],
       newDoctor: {
         name: '',
         email: '',
@@ -200,12 +206,16 @@ const App = {
         const doctorsResponse = await window.ApiService.getDoctors()
         if (doctorsResponse.success) {
           this.doctors = doctorsResponse.data.doctors
+          this.filteredDoctors = [...this.doctors]
+          // Extract unique specializations
+          this.doctorSpecializations = [...new Set(this.doctors.map(d => d.specialization))]
         }
         
         // Load patients
         const patientsResponse = await window.ApiService.getPatients()
         if (patientsResponse.success) {
           this.patients = patientsResponse.data.patients
+          this.filteredPatients = [...this.patients]
         }
         
         // Load appointments
@@ -558,6 +568,55 @@ const App = {
       } catch (error) {
         this.error = 'Failed to generate monthly report'
       }
+    },
+
+    searchDoctors() {
+      if (!this.doctorSearchQuery.trim()) {
+        this.filteredDoctors = [...this.doctors]
+      } else {
+        const query = this.doctorSearchQuery.toLowerCase()
+        this.filteredDoctors = this.doctors.filter(doctor => 
+          doctor.name.toLowerCase().includes(query) || 
+          doctor.specialization.toLowerCase().includes(query)
+        )
+      }
+    },
+
+    clearDoctorSearch() {
+      this.doctorSearchQuery = ''
+      this.filteredDoctors = [...this.doctors]
+    },
+
+    filterDoctorsBySpecialization() {
+      if (!this.doctorSpecializationFilter) {
+        this.filteredDoctors = [...this.doctors]
+      } else {
+        this.filteredDoctors = this.doctors.filter(doctor => 
+          doctor.specialization === this.doctorSpecializationFilter
+        )
+      }
+    },
+
+    async toggleDoctorStatus(doctor) {
+      const action = doctor.is_active ? 'blacklist' : 'activate'
+      const actionText = doctor.is_active ? 'blacklist' : 'activate'
+      
+      if (confirm(`Are you sure you want to ${actionText} Dr. ${doctor.name}?`)) {
+        try {
+          const response = await window.ApiService.updateDoctor(doctor.id, { is_active: !doctor.is_active })
+          if (response.success) {
+            this.success = `Doctor ${actionText}ed successfully`
+            await this.loadAdminData()
+          }
+        } catch (error) {
+          this.error = `Failed to ${actionText} doctor`
+        }
+      }
+    },
+
+    getPatientPrefix() {
+      // This is a simple implementation - in a real app, you'd get gender from user profile
+      return 'Mr. ' // Default to Mr. for now
     },
 
     async generateUserReport() {

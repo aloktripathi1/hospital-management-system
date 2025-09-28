@@ -206,6 +206,14 @@
                 <div class="container">
                     <h2 class="mb-4"><i class="fas fa-tachometer-alt"></i> Admin Dashboard</h2>
                     
+                    <!-- Welcome Message -->
+                    <div class="alert alert-info mb-4">
+                        <h4 class="alert-heading">
+                            <i class="fas fa-hand-wave"></i> Hello {{ currentUser.username }}, Welcome to Admin Dashboard!
+                        </h4>
+                        <p class="mb-0">Manage doctors, patients, and appointments efficiently.</p>
+                    </div>
+                    
                     <!-- Stats Cards -->
                     <div class="row mb-4">
                         <div class="col-md-3">
@@ -352,6 +360,23 @@
                                     </button>
                                 </div>
                                 <div class="card-body">
+                                    <!-- Search Form -->
+                                    <div class="row mb-3">
+                                        <div class="col-md-6">
+                                            <div class="input-group">
+                                                <input type="text" class="form-control" placeholder="Search doctors by name or specialization..." v-model="doctorSearchQuery" @input="searchDoctors">
+                                                <button class="btn btn-outline-secondary" type="button" @click="clearDoctorSearch">
+                                                    <i class="fas fa-times"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <select class="form-control" v-model="doctorSpecializationFilter" @change="filterDoctorsBySpecialization">
+                                                <option value="">All Specializations</option>
+                                                <option v-for="spec in doctorSpecializations" :key="spec" :value="spec">{{ spec }}</option>
+                                            </select>
+                                        </div>
+                                    </div>
                                     <div class="table-responsive">
                                         <table class="table table-striped">
                                             <thead>
@@ -364,8 +389,8 @@
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                <tr v-for="doctor in doctors" :key="doctor.id">
-                                                    <td>{{ doctor.name }}</td>
+                                                <tr v-for="doctor in filteredDoctors" :key="doctor.id">
+                                                    <td>Dr. {{ doctor.name }}</td>
                                                     <td>{{ doctor.specialization }}</td>
                                                     <td>{{ doctor.experience }} years</td>
                                                     <td>
@@ -374,7 +399,13 @@
                                                         </span>
                                                     </td>
                                                     <td>
-                                                        <button class="btn btn-sm btn-outline-danger" @click="deleteDoctor(doctor.id)">
+                                                        <button class="btn btn-sm btn-outline-primary me-1" @click="editDoctor(doctor)" title="Edit Doctor">
+                                                            <i class="fas fa-edit"></i>
+                                                        </button>
+                                                        <button class="btn btn-sm btn-outline-warning me-1" @click="toggleDoctorStatus(doctor)" :title="doctor.is_active ? 'Blacklist Doctor' : 'Activate Doctor'">
+                                                            <i class="fas" :class="doctor.is_active ? 'fa-ban' : 'fa-check'"></i>
+                                                        </button>
+                                                        <button class="btn btn-sm btn-outline-danger" @click="deleteDoctor(doctor.id)" title="Delete Doctor">
                                                             <i class="fas fa-trash"></i>
                                                         </button>
                                                     </td>
@@ -463,6 +494,14 @@
             <div v-if="currentUser && currentUser.role === 'doctor'" class="dashboard-container">
                 <div class="container">
                     <h2 class="mb-4"><i class="fas fa-user-md"></i> Doctor Dashboard</h2>
+                    
+                    <!-- Welcome Message -->
+                    <div class="alert alert-info mb-4">
+                        <h4 class="alert-heading">
+                            <i class="fas fa-hand-wave"></i> Hello Dr. {{ currentUser.username }}, Welcome to Doctor Dashboard!
+                        </h4>
+                        <p class="mb-0">Manage your appointments, patients, and treatment records.</p>
+                    </div>
                     
                     <!-- Stats Cards -->
                     <div class="row mb-4">
@@ -718,6 +757,14 @@
             <div v-if="currentUser && currentUser.role === 'patient'" class="dashboard-container">
                 <div class="container">
                     <h2 class="mb-4"><i class="fas fa-user"></i> Patient Dashboard</h2>
+                    
+                    <!-- Welcome Message -->
+                    <div class="alert alert-info mb-4">
+                        <h4 class="alert-heading">
+                            <i class="fas fa-hand-wave"></i> Hello {{ getPatientPrefix() }}{{ currentUser.username }}, Welcome to Patient Dashboard!
+                        </h4>
+                        <p class="mb-0">Book appointments, view your medical history, and manage your healthcare.</p>
+                    </div>
                     
                     <!-- Stats Cards -->
                     <div class="row mb-4">
