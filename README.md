@@ -2,6 +2,9 @@
 
 A comprehensive Hospital Management System built with Flask (Backend) and Vue.js (Frontend) supporting three user roles: Admin, Doctor, and Patient.
 
+run this: 
+cd backend && python3 -m venv .venv && source .venv/bin/activate && pip install uv && uv pip install -U pip setuptools wheel && uv pip install -r requirements.txt && python app.py 
+
 ## Features
 
 ### Admin Dashboard
@@ -35,7 +38,7 @@ A comprehensive Hospital Management System built with Flask (Backend) and Vue.js
 - **Authentication**: JWT tokens
 
 ## Project Structure
-
+```
 hospital_management_system/
 ├── backend/
 │   ├── app.py                 # Main Flask application
@@ -73,6 +76,7 @@ hospital_management_system/
 │   │       └── services/
 │   │           └── api.js     # API service layer
 └── README.md
+```
 
 ## Installation & Setup
 
