@@ -24,16 +24,17 @@ const App = {
         gender: '',
         address: ''
       },
-      // Admin data
-      doctors: [],
-      patients: [],
-      appointments: [],
-      doctorSearchQuery: '',
-      patientSearchQuery: '',
-      doctorSpecializationFilter: '',
-      doctorSpecializations: [],
-      filteredDoctors: [],
-      filteredPatients: [],
+            // Admin data
+            doctors: [],
+            patients: [],
+            appointments: [],
+            doctorSearchQuery: '',
+            patientSearchQuery: '',
+            doctorSpecializationFilter: '',
+            doctorSpecializations: [],
+            filteredDoctors: [],
+            filteredPatients: [],
+            adminView: 'dashboard', // 'dashboard', 'add-doctor', 'edit-doctor'
       newDoctor: {
         name: '',
         email: '',
@@ -53,6 +54,21 @@ const App = {
         diagnosis: '',
         prescription: '',
         treatment_notes: ''
+      },
+      availabilityForm: {
+        start_date: '',
+        end_date: '',
+        start_time: '',
+        end_time: '',
+        break_periods: []
+      },
+      profileForm: {
+        name: '',
+        specialization: '',
+        experience: '',
+        phone: '',
+        qualification: '',
+        consultation_fee: ''
       },
       // Patient data
       departments: [],
@@ -234,6 +250,19 @@ const App = {
         const dashboardResponse = await window.ApiService.getDoctorDashboard()
         if (dashboardResponse.success) {
           this.stats = dashboardResponse.data
+          this.doctorInfo = dashboardResponse.data.doctor
+          
+          // Populate profile form with doctor info
+          if (this.doctorInfo) {
+            this.profileForm = {
+              name: this.doctorInfo.name || '',
+              specialization: this.doctorInfo.specialization || '',
+              experience: this.doctorInfo.experience || '',
+              phone: this.doctorInfo.phone || '',
+              qualification: this.doctorInfo.qualification || '',
+              consultation_fee: this.doctorInfo.consultation_fee || ''
+            };
+          }
         }
         
         // Load appointments
@@ -617,6 +646,143 @@ const App = {
     getPatientPrefix() {
       // This is a simple implementation - in a real app, you'd get gender from user profile
       return 'Mr. ' // Default to Mr. for now
+    },
+
+    // Admin methods
+    editDoctor(doctor) {
+      this.editingDoctor = { ...doctor };
+      this.adminView = 'edit-doctor';
+    },
+
+    async updateDoctor() {
+      try {
+        this.loading = true;
+        const response = await window.ApiService.updateDoctor(this.editingDoctor.id, this.editingDoctor);
+        if (response.success) {
+          this.success = 'Doctor updated successfully!';
+          this.adminView = 'dashboard';
+          await this.loadAdminData();
+        } else {
+          this.error = response.message || 'Failed to update doctor';
+        }
+      } catch (error) {
+        this.error = 'Error updating doctor: ' + error.message;
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    async addDoctor() {
+      try {
+        this.loading = true;
+        const response = await window.ApiService.addDoctor(this.newDoctor);
+        if (response.success) {
+          this.success = 'Doctor added successfully!';
+          this.adminView = 'dashboard';
+          this.newDoctor = {
+            name: '',
+            email: '',
+            specialization: '',
+            experience: '',
+            phone: '',
+            qualification: '',
+            consultation_fee: ''
+          };
+          await this.loadAdminData();
+        } else {
+          this.error = response.message || 'Failed to add doctor';
+        }
+      } catch (error) {
+        this.error = 'Error adding doctor: ' + error.message;
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    showAddDoctorForm() {
+      this.adminView = 'add-doctor';
+    },
+
+    async searchPatients() {
+      if (!this.patientSearchQuery.trim()) {
+        this.filteredPatients = this.patients;
+        return;
+      }
+      this.filteredPatients = this.patients.filter(patient =>
+        patient.name.toLowerCase().includes(this.patientSearchQuery.toLowerCase())
+      );
+    },
+
+    clearPatientSearch() {
+      this.patientSearchQuery = '';
+      this.filteredPatients = this.patients;
+    },
+
+    editPatient(patient) {
+      // TODO: Implement patient edit functionality
+      alert('Patient edit functionality coming soon!');
+    },
+
+    viewPatientHistory(patient) {
+      // TODO: Implement patient history view
+      alert('Patient history view coming soon!');
+    },
+
+    viewAppointmentPatientHistory(appointment) {
+      // TODO: Implement appointment patient history view
+      alert('Appointment patient history view coming soon!');
+    },
+
+    // Doctor methods
+    addBreakPeriod() {
+      this.availabilityForm.break_periods.push({
+        start_time: '',
+        end_time: ''
+      });
+    },
+
+    removeBreakPeriod(index) {
+      this.availabilityForm.break_periods.splice(index, 1);
+    },
+
+    async setAvailability() {
+      try {
+        this.loading = true;
+        const response = await window.ApiService.setAvailabilitySlots(this.availabilityForm);
+        if (response.success) {
+          this.success = 'Availability set successfully!';
+          this.availabilityForm = {
+            start_date: '',
+            end_date: '',
+            start_time: '',
+            end_time: '',
+            break_periods: []
+          };
+        } else {
+          this.error = response.message || 'Failed to set availability';
+        }
+      } catch (error) {
+        this.error = 'Error setting availability: ' + error.message;
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    async updateProfile() {
+      try {
+        this.loading = true;
+        const response = await window.ApiService.updateDoctor(this.doctorInfo.id, this.profileForm);
+        if (response.success) {
+          this.success = 'Profile updated successfully!';
+          this.doctorInfo = { ...this.doctorInfo, ...this.profileForm };
+        } else {
+          this.error = response.message || 'Failed to update profile';
+        }
+      } catch (error) {
+        this.error = 'Error updating profile: ' + error.message;
+      } finally {
+        this.loading = false;
+      }
     },
 
     async generateUserReport() {

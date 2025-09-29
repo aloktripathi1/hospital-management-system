@@ -213,6 +213,18 @@
                         </h4>
                         <p class="mb-0">Manage doctors, patients, and appointments efficiently.</p>
                     </div>
+
+                    <!-- Navigation -->
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <button v-if="adminView !== 'dashboard'" class="btn btn-outline-secondary mb-2" @click="adminView = 'dashboard'">
+                                <i class="fas fa-arrow-left"></i> Back to Dashboard
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Dashboard View -->
+                    <div v-if="adminView === 'dashboard'">
                     
                     <!-- Stats Cards -->
                     <div class="row mb-4">
@@ -355,7 +367,7 @@
                             <div class="card mt-3">
                                 <div class="card-header d-flex justify-content-between align-items-center">
                                     <h5 class="mb-0">Manage Doctors</h5>
-                                    <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addDoctorModal">
+                                    <button class="btn btn-primary btn-sm" @click="showAddDoctorForm()">
                                         <i class="fas fa-plus"></i> Add Doctor
                                     </button>
                                 </div>
@@ -424,24 +436,47 @@
                                     <h5 class="mb-0">Manage Patients</h5>
                                 </div>
                                 <div class="card-body">
+                                    <!-- Search Form -->
+                                    <div class="row mb-3">
+                                        <div class="col-md-6">
+                                            <div class="input-group">
+                                                <input type="text" class="form-control" placeholder="Search patients by name..." v-model="patientSearchQuery" @input="searchPatients">
+                                                <button class="btn btn-outline-secondary" type="button" @click="clearPatientSearch">
+                                                    <i class="fas fa-times"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
                                     <div class="table-responsive">
                                         <table class="table table-striped">
                                             <thead>
                                                 <tr>
+                                                    <th>Sr. No</th>
                                                     <th>Name</th>
                                                     <th>Email</th>
                                                     <th>Phone</th>
                                                     <th>Age</th>
                                                     <th>Gender</th>
+                                                    <th>Actions</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                <tr v-for="patient in patients" :key="patient.id">
-                                                    <td>{{ patient.name }}</td>
+                                                <tr v-for="(patient, index) in filteredPatients" :key="patient.id">
+                                                    <td>{{ index + 1 }}</td>
+                                                    <td>{{ getPatientPrefix() }}{{ patient.name }}</td>
                                                     <td>{{ patient.user ? patient.user.email : 'N/A' }}</td>
                                                     <td>{{ patient.phone }}</td>
                                                     <td>{{ patient.age }}</td>
                                                     <td>{{ patient.gender }}</td>
+                                                    <td>
+                                                        <button class="btn btn-sm btn-outline-primary me-1" @click="editPatient(patient)" title="Edit Patient">
+                                                            <i class="fas fa-edit"></i> Edit
+                                                        </button>
+                                                        <button class="btn btn-sm btn-outline-info" @click="viewPatientHistory(patient)" title="View Patient History">
+                                                            <i class="fas fa-history"></i> View History
+                                                        </button>
+                                                    </td>
                                                 </tr>
                                             </tbody>
                                         </table>
@@ -461,23 +496,31 @@
                                         <table class="table table-striped">
                                             <thead>
                                                 <tr>
+                                                    <th>Sr. No</th>
                                                     <th>Patient</th>
                                                     <th>Doctor</th>
-                                                    <th>Date</th>
-                                                    <th>Time</th>
+                                                    <th>Department</th>
+                                                    <th>Date & Time</th>
                                                     <th>Status</th>
+                                                    <th>Patient History</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                <tr v-for="appointment in appointments" :key="appointment.id">
-                                                    <td>{{ appointment.patient ? appointment.patient.name : 'N/A' }}</td>
-                                                    <td>{{ appointment.doctor ? appointment.doctor.name : 'N/A' }}</td>
-                                                    <td>{{ appointment.appointment_date }}</td>
-                                                    <td>{{ appointment.appointment_time }}</td>
+                                                <tr v-for="(appointment, index) in appointments" :key="appointment.id">
+                                                    <td>{{ index + 1 }}</td>
+                                                    <td>{{ getPatientPrefix() }}{{ appointment.patient ? appointment.patient.name : 'N/A' }}</td>
+                                                    <td>Dr. {{ appointment.doctor ? appointment.doctor.name : 'N/A' }}</td>
+                                                    <td>{{ appointment.doctor ? appointment.doctor.specialization : 'N/A' }}</td>
+                                                    <td>{{ appointment.appointment_date }} {{ appointment.appointment_time }}</td>
                                                     <td>
                                                         <span class="badge" :class="getStatusClass(appointment.status)">
                                                             {{ appointment.status }}
                                                         </span>
+                                                    </td>
+                                                    <td>
+                                                        <button class="btn btn-sm btn-outline-info" @click="viewAppointmentPatientHistory(appointment)" title="View Patient History">
+                                                            <i class="fas fa-history"></i> View
+                                                        </button>
                                                     </td>
                                                 </tr>
                                             </tbody>
@@ -485,6 +528,133 @@
                                     </div>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                    </div>
+
+                    <!-- Add Doctor Page -->
+                    <div v-if="adminView === 'add-doctor'" class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">Add New Doctor</h5>
+                        </div>
+                        <div class="card-body">
+                            <form @submit.prevent="addDoctor">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="new_name" class="form-label">Full Name</label>
+                                            <input type="text" class="form-control" id="new_name" v-model="newDoctor.name" required>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="new_email" class="form-label">Email</label>
+                                            <input type="email" class="form-control" id="new_email" v-model="newDoctor.email" required>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="new_specialization" class="form-label">Specialization</label>
+                                            <input type="text" class="form-control" id="new_specialization" v-model="newDoctor.specialization" required>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="new_experience" class="form-label">Experience (years)</label>
+                                            <input type="number" class="form-control" id="new_experience" v-model="newDoctor.experience" min="0" required>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="new_phone" class="form-label">Phone</label>
+                                            <input type="tel" class="form-control" id="new_phone" v-model="newDoctor.phone" required>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="new_qualification" class="form-label">Qualification</label>
+                                            <input type="text" class="form-control" id="new_qualification" v-model="newDoctor.qualification" required>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="new_consultation_fee" class="form-label">Consultation Fee</label>
+                                    <input type="number" step="0.01" class="form-control" id="new_consultation_fee" v-model="newDoctor.consultation_fee" required>
+                                </div>
+                                <button type="submit" class="btn btn-primary" :disabled="loading">
+                                    <span v-if="loading" class="spinner-border spinner-border-sm me-2"></span>
+                                    Add Doctor
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Edit Doctor Page -->
+                    <div v-if="adminView === 'edit-doctor'" class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">Edit Doctor: {{ editingDoctor.name }}</h5>
+                        </div>
+                        <div class="card-body">
+                            <form @submit.prevent="updateDoctor">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="edit_name" class="form-label">Full Name</label>
+                                            <input type="text" class="form-control" id="edit_name" v-model="editingDoctor.name" required>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="edit_specialization" class="form-label">Specialization</label>
+                                            <input type="text" class="form-control" id="edit_specialization" v-model="editingDoctor.specialization" required>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="edit_experience" class="form-label">Experience (years)</label>
+                                            <input type="number" class="form-control" id="edit_experience" v-model="editingDoctor.experience" min="0" required>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="edit_phone" class="form-label">Phone</label>
+                                            <input type="tel" class="form-control" id="edit_phone" v-model="editingDoctor.phone" required>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="edit_qualification" class="form-label">Qualification</label>
+                                            <input type="text" class="form-control" id="edit_qualification" v-model="editingDoctor.qualification" required>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="edit_consultation_fee" class="form-label">Consultation Fee</label>
+                                            <input type="number" step="0.01" class="form-control" id="edit_consultation_fee" v-model="editingDoctor.consultation_fee" required>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="edit_is_active" v-model="editingDoctor.is_active">
+                                        <label class="form-check-label" for="edit_is_active">
+                                            Active Doctor
+                                        </label>
+                                    </div>
+                                </div>
+                                <button type="submit" class="btn btn-primary" :disabled="loading">
+                                    <span v-if="loading" class="spinner-border spinner-border-sm me-2"></span>
+                                    Update Doctor
+                                </button>
+                            </form>
                         </div>
                     </div>
                 </div>
@@ -545,7 +715,12 @@
                         </li>
                         <li class="nav-item" role="presentation">
                             <button class="nav-link" id="availability-tab" data-bs-toggle="tab" data-bs-target="#availability" type="button" role="tab">
-                                <i class="fas fa-calendar-plus"></i> Set Availability
+                                <i class="fas fa-calendar-alt"></i> Set Availability
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="profile-tab" data-bs-toggle="tab" data-bs-target="#profile" type="button" role="tab">
+                                <i class="fas fa-user"></i> Profile
                             </button>
                         </li>
                         <li class="nav-item" role="presentation">
@@ -567,33 +742,34 @@
                                         <table class="table table-striped">
                                             <thead>
                                                 <tr>
+                                                    <th>Sr. No</th>
                                                     <th>Patient</th>
-                                                    <th>Date</th>
-                                                    <th>Time</th>
+                                                    <th>Date & Time</th>
+                                                    <th>Age & Gender</th>
                                                     <th>Status</th>
-                                                    <th>Actions</th>
+                                                    <th>View History</th>
+                                                    <th>Update History</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                <tr v-for="appointment in doctorAppointments" :key="appointment.id">
-                                                    <td>{{ appointment.patient ? appointment.patient.name : 'N/A' }}</td>
-                                                    <td>{{ appointment.appointment_date }}</td>
-                                                    <td>{{ appointment.appointment_time }}</td>
+                                                <tr v-for="(appointment, index) in doctorAppointments" :key="appointment.id">
+                                                    <td>{{ index + 1 }}</td>
+                                                    <td>{{ getPatientPrefix() }}{{ appointment.patient ? appointment.patient.name : 'N/A' }}</td>
+                                                    <td>{{ appointment.appointment_date }} {{ appointment.appointment_time }}</td>
+                                                    <td>{{ appointment.patient ? appointment.patient.age : 'N/A' }} / {{ appointment.patient ? appointment.patient.gender : 'N/A' }}</td>
                                                     <td>
                                                         <span class="badge" :class="getStatusClass(appointment.status)">
                                                             {{ appointment.status }}
                                                         </span>
                                                     </td>
                                                     <td>
-                                                        <button v-if="appointment.status === 'booked'" 
-                                                                class="btn btn-sm btn-success me-2" 
-                                                                @click="completeAppointment(appointment)">
-                                                            <i class="fas fa-check"></i> Complete
+                                                        <button class="btn btn-sm btn-outline-info" @click="viewPatientHistory(appointment.patient)" title="View Patient History">
+                                                            <i class="fas fa-history"></i> View
                                                         </button>
-                                                        <button v-if="appointment.status === 'booked'" 
-                                                                class="btn btn-sm btn-danger" 
-                                                                @click="cancelAppointment(appointment.id)">
-                                                            <i class="fas fa-times"></i> Cancel
+                                                    </td>
+                                                    <td>
+                                                        <button class="btn btn-sm btn-outline-primary" @click="addTreatment(appointment)" title="Add Treatment">
+                                                            <i class="fas fa-plus"></i> Add
                                                         </button>
                                                     </td>
                                                 </tr>
@@ -749,6 +925,135 @@
                                 </div>
                             </div>
                         </div>
+
+                        <!-- Availability Tab -->
+                        <div class="tab-pane fade" id="availability" role="tabpanel">
+                            <div class="card mt-3">
+                                <div class="card-header">
+                                    <h5 class="mb-0">Set Availability</h5>
+                                </div>
+                                <div class="card-body">
+                                    <form @submit.prevent="setAvailability">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label for="start_date" class="form-label">Start Date</label>
+                                                    <input type="date" class="form-control" id="start_date" v-model="availabilityForm.start_date" required>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label for="end_date" class="form-label">End Date (Max 7 days)</label>
+                                                    <input type="date" class="form-control" id="end_date" v-model="availabilityForm.end_date" required>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label for="start_time" class="form-label">Start Time</label>
+                                                    <input type="time" class="form-control" id="start_time" v-model="availabilityForm.start_time" required>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label for="end_time" class="form-label">End Time</label>
+                                                    <input type="time" class="form-control" id="end_time" v-model="availabilityForm.end_time" required>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label class="form-label">Break Periods (Optional)</label>
+                                            <div v-for="(breakPeriod, index) in availabilityForm.break_periods" :key="index" class="row mb-2">
+                                                <div class="col-md-4">
+                                                    <input type="time" class="form-control" v-model="breakPeriod.start_time" placeholder="Start Time">
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <input type="time" class="form-control" v-model="breakPeriod.end_time" placeholder="End Time">
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <button type="button" class="btn btn-outline-danger btn-sm" @click="removeBreakPeriod(index)">
+                                                        <i class="fas fa-trash"></i> Remove
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <button type="button" class="btn btn-outline-primary btn-sm" @click="addBreakPeriod">
+                                                <i class="fas fa-plus"></i> Add Break Period
+                                            </button>
+                                        </div>
+                                        
+                                        <button type="submit" class="btn btn-primary" :disabled="loading">
+                                            <span v-if="loading" class="spinner-border spinner-border-sm me-2"></span>
+                                            Set Availability
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Profile Tab -->
+                        <div class="tab-pane fade" id="profile" role="tabpanel">
+                            <div class="card mt-3">
+                                <div class="card-header">
+                                    <h5 class="mb-0">Doctor Profile</h5>
+                                </div>
+                                <div class="card-body">
+                                    <form @submit.prevent="updateProfile">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label for="profile_name" class="form-label">Full Name</label>
+                                                    <input type="text" class="form-control" id="profile_name" v-model="profileForm.name" required>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label for="profile_specialization" class="form-label">Specialization</label>
+                                                    <input type="text" class="form-control" id="profile_specialization" v-model="profileForm.specialization" required>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label for="profile_experience" class="form-label">Experience (years)</label>
+                                                    <input type="number" class="form-control" id="profile_experience" v-model="profileForm.experience" min="0" required>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label for="profile_phone" class="form-label">Phone</label>
+                                                    <input type="tel" class="form-control" id="profile_phone" v-model="profileForm.phone" required>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label for="profile_qualification" class="form-label">Qualification</label>
+                                                    <input type="text" class="form-control" id="profile_qualification" v-model="profileForm.qualification" required>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label for="profile_consultation_fee" class="form-label">Consultation Fee</label>
+                                                    <input type="number" step="0.01" class="form-control" id="profile_consultation_fee" v-model="profileForm.consultation_fee" required>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <button type="submit" class="btn btn-primary" :disabled="loading">
+                                            <span v-if="loading" class="spinner-border spinner-border-sm me-2"></span>
+                                            Update Profile
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -811,6 +1116,11 @@
                                 <i class="fas fa-history"></i> Medical History
                             </button>
                         </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="edit-profile-tab" data-bs-toggle="tab" data-bs-target="#edit-profile" type="button" role="tab">
+                                <i class="fas fa-user-edit"></i> Edit Profile
+                            </button>
+                        </li>
                     </ul>
 
                     <div class="tab-content" id="patientTabsContent">
@@ -825,24 +1135,36 @@
                                         <div class="row">
                                             <div class="col-md-6">
                                                 <div class="mb-3">
-                                                    <label for="specialization" class="form-label">Specialization</label>
-                                                    <select class="form-control" id="specialization" v-model="bookingForm.specialization" @change="loadDoctorsBySpecialization" required>
-                                                        <option value="">Select Specialization</option>
-                                                        <option v-for="dept in departments" :key="dept.id" :value="dept.name">
+                                                    <label for="specialization" class="form-label">Department</label>
+                                                    <select class="form-control" id="specialization" v-model="selectedDepartment" @change="selectDepartment" required>
+                                                        <option value="">Select Department</option>
+                                                        <option v-for="dept in departments" :key="dept.id" :value="dept">
                                                             {{ dept.name }} ({{ dept.doctor_count }} doctors)
                                                         </option>
                                                     </select>
+                                                    <div v-if="selectedDepartment" class="mt-2">
+                                                        <small class="text-muted">
+                                                            <strong>Description:</strong> {{ selectedDepartment.description || 'No description available' }}
+                                                        </small>
+                                                    </div>
                                                 </div>
                                             </div>
                                             <div class="col-md-6">
                                                 <div class="mb-3">
                                                     <label for="doctor_id" class="form-label">Doctor</label>
-                                                    <select class="form-control" id="doctor_id" v-model="bookingForm.doctor_id" required>
+                                                    <select class="form-control" id="doctor_id" v-model="selectedDoctor" @change="selectDoctor" required>
                                                         <option value="">Select Doctor</option>
-                                                        <option v-for="doctor in availableDoctors" :key="doctor.id" :value="doctor.id">
-                                                            {{ doctor.name }} - {{ doctor.specialization }}
+                                                        <option v-for="doctor in availableDoctors" :key="doctor.id" :value="doctor">
+                                                            Dr. {{ doctor.name }} - {{ doctor.specialization }}
                                                         </option>
                                                     </select>
+                                                    <div v-if="selectedDoctor" class="mt-2">
+                                                        <small class="text-muted">
+                                                            <strong>Experience:</strong> {{ selectedDoctor.experience }} years | 
+                                                            <strong>Fee:</strong> ${{ selectedDoctor.consultation_fee }} | 
+                                                            <strong>Qualification:</strong> {{ selectedDoctor.qualification }}
+                                                        </small>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
