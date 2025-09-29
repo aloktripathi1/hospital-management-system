@@ -927,72 +927,7 @@
                             </div>
                         </div>
 
-                        <!-- Availability Tab -->
-                        <div class="tab-pane fade" id="availability" role="tabpanel">
-                            <div class="card mt-3">
-                                <div class="card-header">
-                                    <h5 class="mb-0">Set Availability</h5>
-                                </div>
-                                <div class="card-body">
-                                    <form @submit.prevent="setAvailability">
-                                        <div class="row">
-                                            <div class="col-md-6">
-                                                <div class="mb-3">
-                                                    <label for="start_date" class="form-label">Start Date</label>
-                                                    <input type="date" class="form-control" id="start_date" v-model="availabilityForm.start_date" required>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <div class="mb-3">
-                                                    <label for="end_date" class="form-label">End Date (Max 7 days)</label>
-                                                    <input type="date" class="form-control" id="end_date" v-model="availabilityForm.end_date" required>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        
-                                        <div class="row">
-                                            <div class="col-md-6">
-                                                <div class="mb-3">
-                                                    <label for="start_time" class="form-label">Start Time</label>
-                                                    <input type="time" class="form-control" id="start_time" v-model="availabilityForm.start_time" required>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <div class="mb-3">
-                                                    <label for="end_time" class="form-label">End Time</label>
-                                                    <input type="time" class="form-control" id="end_time" v-model="availabilityForm.end_time" required>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div class="mb-3">
-                                            <label class="form-label">Break Periods (Optional)</label>
-                                            <div v-for="(breakPeriod, index) in availabilityForm.break_periods" :key="index" class="row mb-2">
-                                                <div class="col-md-4">
-                                                    <input type="time" class="form-control" v-model="breakPeriod.start_time" placeholder="Start Time">
-                                                </div>
-                                                <div class="col-md-4">
-                                                    <input type="time" class="form-control" v-model="breakPeriod.end_time" placeholder="End Time">
-                                                </div>
-                                                <div class="col-md-4">
-                                                    <button type="button" class="btn btn-outline-danger btn-sm" @click="removeBreakPeriod(index)">
-                                                        <i class="fas fa-trash"></i> Remove
-                                                    </button>
-                                                </div>
-                                            </div>
-                                            <button type="button" class="btn btn-outline-primary btn-sm" @click="addBreakPeriod">
-                                                <i class="fas fa-plus"></i> Add Break Period
-                                            </button>
-                                        </div>
-                                        
-                                        <button type="submit" class="btn btn-primary" :disabled="loading">
-                                            <span v-if="loading" class="spinner-border spinner-border-sm me-2"></span>
-                                            Set Availability
-                                        </button>
-                                    </form>
-                                </div>
-                            </div>
-                        </div>
+                        
 
                         <!-- Profile Tab -->
                         <div class="tab-pane fade" id="profile" role="tabpanel">
