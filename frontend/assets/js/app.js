@@ -75,7 +75,10 @@ const App = {
       availableDoctors: [],
       patientAppointments: [],
       treatments: [],
+      selectedDepartment: null,
+      selectedDoctor: null,
       availableSlots: [],
+      patientInfo: null,
       bookingForm: {
         specialization: '',
         doctor_id: '',
@@ -287,6 +290,19 @@ const App = {
         const dashboardResponse = await window.ApiService.getPatientDashboard()
         if (dashboardResponse.success) {
           this.stats = dashboardResponse.data
+          this.patientInfo = dashboardResponse.data.patient
+          
+          // Populate profile form with patient info
+          if (this.patientInfo) {
+            this.profileForm = {
+              name: this.patientInfo.name || '',
+              email: this.patientInfo.user ? this.patientInfo.user.email : '',
+              phone: this.patientInfo.phone || '',
+              age: this.patientInfo.age || '',
+              gender: this.patientInfo.gender || '',
+              address: this.patientInfo.address || ''
+            };
+          }
         }
         
         // Load departments
@@ -771,17 +787,74 @@ const App = {
     async updateProfile() {
       try {
         this.loading = true;
-        const response = await window.ApiService.updateDoctor(this.doctorInfo.id, this.profileForm);
-        if (response.success) {
-          this.success = 'Profile updated successfully!';
-          this.doctorInfo = { ...this.doctorInfo, ...this.profileForm };
-        } else {
-          this.error = response.message || 'Failed to update profile';
+        if (this.currentUser.role === 'doctor') {
+          const response = await window.ApiService.updateDoctor(this.doctorInfo.id, this.profileForm);
+          if (response.success) {
+            this.success = 'Profile updated successfully!';
+            this.doctorInfo = { ...this.doctorInfo, ...this.profileForm };
+          } else {
+            this.error = response.message || 'Failed to update profile';
+          }
+        } else if (this.currentUser.role === 'patient') {
+          const response = await window.ApiService.updatePatient(this.patientInfo.id, this.profileForm);
+          if (response.success) {
+            this.success = 'Profile updated successfully!';
+            this.patientInfo = { ...this.patientInfo, ...this.profileForm };
+          } else {
+            this.error = response.message || 'Failed to update profile';
+          }
         }
       } catch (error) {
         this.error = 'Error updating profile: ' + error.message;
       } finally {
         this.loading = false;
+      }
+    },
+
+    // Patient methods
+    selectDepartment(department) {
+      this.selectedDepartment = department;
+      this.bookingForm.specialization = department.name;
+      this.loadDoctorsBySpecialization();
+    },
+
+    selectDoctor(doctor) {
+      this.selectedDoctor = doctor;
+      this.bookingForm.doctor_id = doctor.id;
+      this.loadAvailableSlots();
+    },
+
+    async loadAvailableSlots() {
+      if (this.bookingForm.doctor_id && this.bookingForm.appointment_date) {
+        try {
+          const response = await window.ApiService.getAvailableSlots(this.bookingForm.doctor_id, this.bookingForm.appointment_date);
+          if (response.success) {
+            this.availableSlots = response.data.slots || [];
+          }
+        } catch (error) {
+          console.error('Error loading available slots:', error);
+        }
+      }
+    },
+
+    getTodayDate() {
+      const today = new Date();
+      return today.toISOString().split('T')[0];
+    },
+
+    showEditProfile() {
+      if (this.currentUser.role === 'doctor') {
+        // Switch to profile tab in doctor dashboard
+        const profileTab = document.getElementById('profile-tab');
+        if (profileTab) {
+          profileTab.click();
+        }
+      } else if (this.currentUser.role === 'patient') {
+        // Switch to edit profile tab in patient dashboard
+        const editProfileTab = document.getElementById('edit-profile-tab');
+        if (editProfileTab) {
+          editProfileTab.click();
+        }
       }
     },
 
