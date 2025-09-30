@@ -435,18 +435,7 @@ const App = {
     },
 
     // Patient methods
-    async loadDoctorsBySpecialization() {
-      if (this.bookingForm.specialization) {
-        try {
-          const response = await window.ApiService.getDoctorsBySpecialization(this.bookingForm.specialization)
-          if (response.success) {
-            this.availableDoctors = response.data.doctors
-          }
-        } catch (error) {
-          this.error = 'Failed to load doctors'
-        }
-      }
-    },
+    async loadDoctorsBySpecialization() { await window.PatientModule.loadDoctorsBySpecialization(this) },
 
     async bookAppointment() {
       this.loading = true
@@ -516,27 +505,29 @@ const App = {
 
     // Doctor availability methods
     async setAvailabilitySlots() {
+      // Enforce 7-day max on client
+      if (this.slotForm.start_date && this.slotForm.end_date) {
+        const start = new Date(this.slotForm.start_date)
+        const end = new Date(this.slotForm.end_date)
+        const diff = (end - start) / (1000*60*60*24)
+        if (diff > 6) { this.error = 'Please select a maximum of 7 days'; return }
+      }
+      const payload = {
+        start_date: this.slotForm.start_date,
+        end_date: this.slotForm.end_date,
+        start_time: this.slotForm.start_time,
+        end_time: this.slotForm.end_time,
+        break_periods: this.availabilityForm.break_periods || []
+      }
       this.loading = true
       this.error = null
-
       try {
-        const response = await window.ApiService.setAvailabilitySlots(this.slotForm)
+        const response = await window.ApiService.setAvailabilitySlots(payload)
         if (response.success) {
           this.success = response.message
-          this.slotForm = {
-            start_date: '',
-            end_date: '',
-            start_time: '09:00',
-            end_time: '17:00'
-          }
-        } else {
-          this.error = response.message || 'Failed to create slots'
-        }
-      } catch (error) {
-        this.error = error.message || 'Failed to create slots'
-      } finally {
-        this.loading = false
-      }
+          this.slotForm = { start_date:'', end_date:'', start_time:'09:00', end_time:'17:00' }
+        } else { this.error = response.message || 'Failed to create slots' }
+      } catch (error) { this.error = error.message || 'Failed to create slots' } finally { this.loading = false }
     },
 
     async loadAvailableSlots() {
@@ -819,17 +810,9 @@ const App = {
     },
 
     // Patient methods
-    selectDepartment(department) {
-      this.selectedDepartment = department;
-      this.bookingForm.specialization = department.name;
-      this.loadDoctorsBySpecialization();
-    },
+    selectDepartment(department) { window.PatientModule.selectDepartment(this, department) },
 
-    selectDoctor(doctor) {
-      this.selectedDoctor = doctor;
-      this.bookingForm.doctor_id = doctor.id;
-      this.loadAvailableSlots();
-    },
+    selectDoctor(doctor) { window.PatientModule.selectDoctor(this, doctor) },
 
     async loadAvailableSlots() {
       if (this.bookingForm.doctor_id && this.bookingForm.appointment_date) {

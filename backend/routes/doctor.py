@@ -351,6 +351,17 @@ def set_availability_slots():
         
         slots_created = 0
         
+        # Optional break periods
+        break_periods = data.get('break_periods', []) or []
+
+        # Clear existing available slots in this date range to avoid duplicates
+        Appointment.query.filter(
+            Appointment.doctor_id == doctor.id,
+            Appointment.appointment_date >= start_date,
+            Appointment.appointment_date <= end_date,
+            Appointment.status == 'available'
+        ).delete(synchronize_session=False)
+
         # Generate slots for each day in the range
         current_date = start_date
         while current_date <= end_date:
@@ -370,21 +381,31 @@ def set_availability_slots():
                 slot_start = start_time
                 slot_end = end_time
             
-            # Create 30-minute slots
+            # Build excluded break windows as time tuples for the day
+            day_breaks = []
+            for br in break_periods:
+                try:
+                    bt = datetime.strptime(br.get('start_time','00:00'), '%H:%M').time()
+                    et = datetime.strptime(br.get('end_time','00:00'), '%H:%M').time()
+                    if bt < et:
+                        day_breaks.append((bt, et))
+                except Exception:
+                    continue
+
+            # Helper to check if a time is inside any break
+            def in_break(t: time) -> bool:
+                for bt, et in day_breaks:
+                    if bt <= t < et:
+                        return True
+                return False
+
+            # Create 30-minute slots excluding breaks
             current_time = slot_start
             while current_time < slot_end:
-                # Check if slot already exists
-                existing_slot = Appointment.query.filter_by(
-                    doctor_id=doctor.id,
-                    appointment_date=current_date,
-                    appointment_time=current_time
-                ).first()
-                
-                if not existing_slot:
-                    # Create available slot
+                if not in_break(current_time):
                     slot = Appointment(
                         doctor_id=doctor.id,
-                        patient_id=None,  # No patient assigned yet
+                        patient_id=None,
                         appointment_date=current_date,
                         appointment_time=current_time,
                         status='available',
@@ -392,10 +413,9 @@ def set_availability_slots():
                     )
                     db.session.add(slot)
                     slots_created += 1
-                
+
                 # Move to next 30-minute slot
-                current_time = datetime.combine(date.today(), current_time) + timedelta(minutes=30)
-                current_time = current_time.time()
+                current_time = (datetime.combine(date.today(), current_time) + timedelta(minutes=30)).time()
             
             current_date += timedelta(days=1)
         
