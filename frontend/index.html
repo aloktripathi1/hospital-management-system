@@ -17,12 +17,9 @@
                     <i class="fas fa-hospital"></i> MediHub
                 </a>
                 <div class="navbar-nav ms-auto">
-                    <span class="navbar-text me-3">
-                        Welcome, {{ currentUser.username }} ({{ currentUser.role }})
-                    </span>
-                    <button v-if="currentUser && (currentUser.role === 'doctor' || currentUser.role === 'patient')" 
+                    <button v-if="currentUser" 
                             class="btn btn-outline-light btn-sm me-2" 
-                            @click="showEditProfile">
+                            @click="openProfilePage()">
                         <i class="fas fa-user-edit"></i> Edit Profile
                     </button>
                     <button class="btn btn-outline-light btn-sm" @click="logout">
@@ -82,6 +79,112 @@
                 </div>
             </div>
 
+            <!-- Profile Page (Global) -->
+            <div v-if="currentUser && appView === 'profile'" class="container my-4">
+                <button class="btn btn-outline-secondary mb-3" @click="openDashboard()">
+                    <i class="fas fa-arrow-left"></i> Back to Dashboard
+                </button>
+                <div class="card">
+                    <div class="card-header d-flex align-items-center">
+                        <i class="fas fa-user-edit me-2"></i>
+                        <h5 class="mb-0">Edit Profile</h5>
+                    </div>
+                    <div class="card-body">
+                        <form @submit.prevent="updateProfile">
+                            <div class="row">
+                                <div class="col-md-6" v-if="currentUser.role === 'doctor'">
+                                    <div class="mb-3">
+                                        <label for="profile_name" class="form-label">Full Name</label>
+                                        <input type="text" class="form-control" id="profile_name" v-model="profileForm.name" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-6" v-if="currentUser.role === 'patient'">
+                                    <div class="mb-3">
+                                        <label for="patient_name" class="form-label">Full Name</label>
+                                        <input type="text" class="form-control" id="patient_name" v-model="profileForm.name" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-6" v-if="currentUser.role === 'patient'">
+                                    <div class="mb-3">
+                                        <label for="patient_email" class="form-label">Email</label>
+                                        <input type="email" class="form-control" id="patient_email" v-model="profileForm.email" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-6" v-if="currentUser.role === 'doctor'">
+                                    <div class="mb-3">
+                                        <label for="profile_specialization" class="form-label">Specialization</label>
+                                        <input type="text" class="form-control" id="profile_specialization" v-model="profileForm.specialization" required>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="profile_phone" class="form-label">Phone</label>
+                                        <input type="tel" class="form-control" id="profile_phone" v-model="profileForm.phone" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-6" v-if="currentUser.role === 'doctor'">
+                                    <div class="mb-3">
+                                        <label for="profile_experience" class="form-label">Experience (years)</label>
+                                        <input type="number" class="form-control" id="profile_experience" v-model="profileForm.experience" min="0" required>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="row" v-if="currentUser.role === 'doctor'">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="profile_qualification" class="form-label">Qualification</label>
+                                        <input type="text" class="form-control" id="profile_qualification" v-model="profileForm.qualification" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="profile_consultation_fee" class="form-label">Consultation Fee</label>
+                                        <input type="number" step="0.01" class="form-control" id="profile_consultation_fee" v-model="profileForm.consultation_fee" required>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row" v-if="currentUser.role === 'patient'">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="patient_age" class="form-label">Age</label>
+                                        <input type="number" class="form-control" id="patient_age" v-model="profileForm.age" min="0" max="120" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="patient_gender" class="form-label">Gender</label>
+                                        <select class="form-control" id="patient_gender" v-model="profileForm.gender" required>
+                                            <option value="">Select Gender</option>
+                                            <option value="Male">Male</option>
+                                            <option value="Female">Female</option>
+                                            <option value="Other">Other</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row" v-if="currentUser.role === 'patient'">
+                                <div class="col-12">
+                                    <div class="mb-3">
+                                        <label for="patient_address" class="form-label">Address</label>
+                                        <textarea class="form-control" id="patient_address" v-model="profileForm.address" rows="2"></textarea>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary" :disabled="loading">
+                                <span v-if="loading" class="spinner-border spinner-border-sm me-2"></span>
+                                Save Changes
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
 <style>
 /* Custom styles for hero section */
 .hero-section {
@@ -216,7 +319,7 @@
             </div>
 
             <!-- Admin Dashboard -->
-            <div v-if="currentUser && currentUser.role === 'admin'" class="dashboard-container">
+            <div v-if="currentUser && currentUser.role === 'admin' && appView === 'dashboard'" class="dashboard-container">
                 <div class="container">
                     <!-- Welcome Message -->
                     <div class="mb-4">
@@ -675,7 +778,7 @@
             </div>
 
             <!-- Doctor Dashboard -->
-            <div v-if="currentUser && currentUser.role === 'doctor'" class="dashboard-container">
+            <div v-if="currentUser && currentUser.role === 'doctor' && appView === 'dashboard'" class="dashboard-container">
                 <div class="container">
                     <!-- Welcome Message -->
                     <div class="mb-4">
@@ -728,11 +831,7 @@
                                 <i class="fas fa-calendar-alt"></i> Set Availability
                             </button>
                         </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="profile-tab" data-bs-toggle="tab" data-bs-target="#profile" type="button" role="tab">
-                                <i class="fas fa-user"></i> Profile
-                            </button>
-                        </li>
+                        
                         <li class="nav-item" role="presentation">
                             <button class="nav-link" id="treatment-tab" data-bs-toggle="tab" data-bs-target="#treatment" type="button" role="tab">
                                 <i class="fas fa-file-medical"></i> Add Treatment
@@ -938,73 +1037,13 @@
 
                         
 
-                        <!-- Profile Tab -->
-                        <div class="tab-pane fade" id="profile" role="tabpanel">
-                            <div class="card mt-3">
-                                <div class="card-header">
-                                    <h5 class="mb-0">Doctor Profile</h5>
-                                </div>
-                                <div class="card-body">
-                                    <form @submit.prevent="updateProfile">
-                                        <div class="row">
-                                            <div class="col-md-6">
-                                                <div class="mb-3">
-                                                    <label for="profile_name" class="form-label">Full Name</label>
-                                                    <input type="text" class="form-control" id="profile_name" v-model="profileForm.name" required>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <div class="mb-3">
-                                                    <label for="profile_specialization" class="form-label">Specialization</label>
-                                                    <input type="text" class="form-control" id="profile_specialization" v-model="profileForm.specialization" required>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        
-                                        <div class="row">
-                                            <div class="col-md-6">
-                                                <div class="mb-3">
-                                                    <label for="profile_experience" class="form-label">Experience (years)</label>
-                                                    <input type="number" class="form-control" id="profile_experience" v-model="profileForm.experience" min="0" required>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <div class="mb-3">
-                                                    <label for="profile_phone" class="form-label">Phone</label>
-                                                    <input type="tel" class="form-control" id="profile_phone" v-model="profileForm.phone" required>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        
-                                        <div class="row">
-                                            <div class="col-md-6">
-                                                <div class="mb-3">
-                                                    <label for="profile_qualification" class="form-label">Qualification</label>
-                                                    <input type="text" class="form-control" id="profile_qualification" v-model="profileForm.qualification" required>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <div class="mb-3">
-                                                    <label for="profile_consultation_fee" class="form-label">Consultation Fee</label>
-                                                    <input type="number" step="0.01" class="form-control" id="profile_consultation_fee" v-model="profileForm.consultation_fee" required>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        
-                                        <button type="submit" class="btn btn-primary" :disabled="loading">
-                                            <span v-if="loading" class="spinner-border spinner-border-sm me-2"></span>
-                                            Update Profile
-                                        </button>
-                                    </form>
-                                </div>
-                            </div>
-                        </div>
+                        
                     </div>
                 </div>
             </div>
 
             <!-- Patient Dashboard -->
-             <div v-if="currentUser && currentUser.role === 'patient'" class="dashboard-container">
+            <div v-if="currentUser && currentUser.role === 'patient' && appView === 'dashboard'" class="dashboard-container">
                 <div class="container">
                     <!-- Welcome Message - Simplified -->
                     <div class="mb-4">
@@ -1057,11 +1096,7 @@
                                 <i class="fas fa-history"></i> Medical History
                             </button>
                         </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="edit-profile-tab" data-bs-toggle="tab" data-bs-target="#edit-profile" type="button" role="tab">
-                                <i class="fas fa-user-edit"></i> Edit Profile
-                            </button>
-                        </li>
+                        
                     </ul>
 
                     <div class="tab-content" id="patientTabsContent">
@@ -1261,72 +1296,7 @@
                             </div>
                         </div>
 
-                        <!-- Edit Profile Tab -->
-                        <div class="tab-pane fade" id="edit-profile" role="tabpanel">
-                            <div class="card mt-3">
-                                <div class="card-header">
-                                    <h5 class="mb-0">Edit Profile</h5>
-                                </div>
-                                <div class="card-body">
-                                    <form @submit.prevent="updateProfile">
-                                        <div class="row">
-                                            <div class="col-md-6">
-                                                <div class="mb-3">
-                                                    <label for="patient_name" class="form-label">Full Name</label>
-                                                    <input type="text" class="form-control" id="patient_name" v-model="profileForm.name" required>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <div class="mb-3">
-                                                    <label for="patient_email" class="form-label">Email</label>
-                                                    <input type="email" class="form-control" id="patient_email" v-model="profileForm.email" required>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        
-                                        <div class="row">
-                                            <div class="col-md-6">
-                                                <div class="mb-3">
-                                                    <label for="patient_phone" class="form-label">Phone</label>
-                                                    <input type="tel" class="form-control" id="patient_phone" v-model="profileForm.phone" required>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <div class="mb-3">
-                                                    <label for="patient_age" class="form-label">Age</label>
-                                                    <input type="number" class="form-control" id="patient_age" v-model="profileForm.age" min="0" max="120" required>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        
-                                        <div class="row">
-                                            <div class="col-md-6">
-                                                <div class="mb-3">
-                                                    <label for="patient_gender" class="form-label">Gender</label>
-                                                    <select class="form-control" id="patient_gender" v-model="profileForm.gender" required>
-                                                        <option value="">Select Gender</option>
-                                                        <option value="Male">Male</option>
-                                                        <option value="Female">Female</option>
-                                                        <option value="Other">Other</option>
-                                                    </select>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <div class="mb-3">
-                                                    <label for="patient_address" class="form-label">Address</label>
-                                                    <textarea class="form-control" id="patient_address" v-model="profileForm.address" rows="2"></textarea>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        
-                                        <button type="submit" class="btn btn-primary" :disabled="loading">
-                                            <span v-if="loading" class="spinner-border spinner-border-sm me-2"></span>
-                                            Update Profile
-                                        </button>
-                                    </form>
-                                </div>
-                            </div>
-                        </div>
+                        
                     </div>
                 </div>
             </div>

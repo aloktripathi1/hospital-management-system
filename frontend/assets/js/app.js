@@ -6,6 +6,7 @@ const App = {
     return {
       currentUser: null,
       currentView: "home",
+      appView: "dashboard", // 'dashboard' | 'profile'
       loading: false,
       error: null,
       success: null,
@@ -104,6 +105,12 @@ const App = {
   },
 
   methods: {
+    openProfilePage() {
+      this.appView = 'profile'
+    },
+    openDashboard() {
+      this.appView = 'dashboard'
+    },
     async checkAuth() {
       try {
         const response = await window.ApiService.getCurrentUser()
