@@ -3,6 +3,8 @@
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background-color: #f8f9fa;
+    margin: 0; /* Add this */
+    padding: 0; /* Add this */
 }
 
 .homepage {
@@ -10,9 +12,12 @@ body {
 }
 
 .hero-section {
-    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+    background: linear-gradient(135deg, #006064 0%, #00838F 100%);
+    margin: 0 -15px; /* Add this line */
+    padding: 4rem 15px; /* Add this line - adjust 4rem as needed */
 }
 
+/* ... rest of your existing CSS remains the same ... */
 .auth-container {
     min-height: 100vh;
 }
@@ -48,8 +53,8 @@ body {
 }
 
 .form-control:focus {
-    border-color: #007bff;
-    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+    border-color: #006064;
+    box-shadow: 0 0 0 0.2rem rgba(0, 96, 100, 0.25);
 }
 
 .navbar-brand {
