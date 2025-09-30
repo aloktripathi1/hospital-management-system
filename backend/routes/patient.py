@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify, session
 from database import db
 from models import User, Patient, Doctor, Appointment, Treatment, DoctorAvailability
-from datetime import datetime, date, time
+from datetime import datetime, date, time, timedelta
 from decorators import patient_required
 
 patient_bp = Blueprint('patient', __name__)
@@ -64,16 +64,16 @@ def get_departments():
         
         department_list = []
         for dept in departments:
-            doctor_count = Doctor.query.filter_by(
-                department_id=dept.id,
-                is_active=True
-            ).count()
+            doctors_q = Doctor.query.filter_by(department_id=dept.id, is_active=True)
+            doctor_count = doctors_q.count()
+            doctors_list = [ { 'id': d.id, 'name': d.name, 'specialization': d.specialization } for d in doctors_q.all() ]
             
             department_list.append({
                 'id': dept.id,
                 'name': dept.name,
                 'description': dept.description,
-                'doctor_count': doctor_count
+                'doctor_count': doctor_count,
+                'doctors': doctors_list
             })
         
         return jsonify({
