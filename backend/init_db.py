@@ -3,7 +3,8 @@ Database initialization script
 Run this to create tables and sample data
 """
 from app import app, create_tables
-from models import db, User, Doctor, Patient, DoctorAvailability, Department
+from database import db
+from models import User, Doctor, Patient, DoctorAvailability, Department
 from werkzeug.security import generate_password_hash
 from datetime import time
 

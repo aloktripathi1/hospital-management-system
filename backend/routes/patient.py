@@ -129,7 +129,7 @@ def get_available_slots():
             status='booked'
         ).order_by(Appointment.appointment_time.asc()).all()
         
-        # Auto-generate slots if none exist yet (simple, 30-min based on availability)
+        # Auto-generate slots if none exist yet (simple, 2-hour based on availability)
         if not available_slots:
             # Derive availability window for that weekday
             day_of_week = appointment_date.weekday()
@@ -164,10 +164,10 @@ def get_available_slots():
                     )
                     db.session.add(slot)
                     generated += 1
-                # next 30 min
-                dt_next = datetime.combine(date.today(), current_time)
+                # next 2 hours
+                dt_next = datetime.combine(appointment_date, current_time)
                 dt_next = dt_next.replace(second=0, microsecond=0)
-                dt_next = dt_next + timedelta(minutes=30)
+                dt_next = dt_next + timedelta(hours=2)
                 current_time = dt_next.time()
             if generated:
                 db.session.commit()

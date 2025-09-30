@@ -331,7 +331,7 @@ def update_availability():
 @doctor_bp.route('/set-slots', methods=['POST'])
 @doctor_required
 def set_availability_slots():
-    """Create 30-minute appointment slots for a specific date range"""
+    """Create 2-hour appointment slots for a specific date range"""
     try:
         user_id = session.get('user_id')
         doctor = Doctor.query.filter_by(user_id=user_id).first()
@@ -387,7 +387,7 @@ def set_availability_slots():
                         return True
                 return False
 
-            # Create 30-minute slots excluding breaks
+            # Create 2-hour slots excluding breaks
             current_time = slot_start
             while current_time < slot_end:
                 if not in_break(current_time):
@@ -402,8 +402,8 @@ def set_availability_slots():
                     db.session.add(slot)
                     slots_created += 1
 
-                # Move to next 30-minute slot
-                current_time = (datetime.combine(date.today(), current_time) + timedelta(minutes=30)).time()
+                # Move to next 2-hour slot
+                current_time = (datetime.combine(current_date, current_time) + timedelta(hours=2)).time()
             
             current_date += timedelta(days=1)
         

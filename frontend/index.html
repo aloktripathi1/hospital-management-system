@@ -1217,7 +1217,7 @@
                                             <div class="col-md-6">
                                                 <div class="mb-3">
                                                     <label for="specialization" class="form-label">Department</label>
-                                                    <select class="form-control" id="specialization" v-model="selectedDepartment" @change="selectDepartment" required>
+                                                    <select class="form-control" id="specialization" v-model="selectedDepartment" @change="selectDepartment(selectedDepartment)" required>
                                                         <option value="">Select Department</option>
                                                         <option v-for="dept in departments" :key="dept.id" :value="dept">
                                                             {{ dept.name }} ({{ dept.doctor_count }} doctors)
@@ -1233,7 +1233,7 @@
                                             <div class="col-md-6">
                                                 <div class="mb-3">
                                                     <label for="doctor_id" class="form-label">Doctor</label>
-                                                    <select class="form-control" id="doctor_id" v-model="selectedDoctor" @change="selectDoctor" required>
+                                                    <select class="form-control" id="doctor_id" v-model="selectedDoctor" @change="selectDoctor(selectedDoctor)" required>
                                                         <option value="">Select Doctor</option>
                                                         <option v-for="doctor in availableDoctors" :key="doctor.id" :value="doctor">
                                                             Dr. {{ doctor.name }} - {{ doctor.specialization }}
