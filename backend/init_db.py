@@ -3,7 +3,7 @@ Database initialization script
 Run this to create tables and sample data
 """
 from app import app, create_tables
-from models import db, User, Doctor, Patient, DoctorAvailability
+from models import db, User, Doctor, Patient, DoctorAvailability, Department
 from werkzeug.security import generate_password_hash
 from datetime import time
 
@@ -89,6 +89,13 @@ if __name__ == '__main__':
     print("Initializing database...")
     with app.app_context():
         create_tables()
+        # Ensure at least a couple departments for demo
+        with app.app_context():
+            if not Department.query.first():
+                dept1 = Department(name='Cardiology', description='Heart-related care', is_active=True)
+                dept2 = Department(name='Orthopedics', description='Bones and joints', is_active=True)
+                db.session.add_all([dept1, dept2])
+                db.session.commit()
         create_sample_availability()
         create_sample_patients()
     print("Database initialization complete!")

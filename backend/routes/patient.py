@@ -129,6 +129,54 @@ def get_available_slots():
             status='booked'
         ).order_by(Appointment.appointment_time.asc()).all()
         
+        # Auto-generate slots if none exist yet (simple, 30-min based on availability)
+        if not available_slots:
+            # Derive availability window for that weekday
+            day_of_week = appointment_date.weekday()
+            availability = DoctorAvailability.query.filter_by(
+                doctor_id=doctor_id,
+                day_of_week=day_of_week,
+                is_available=True
+            ).first()
+            start_time = availability.start_time if availability else time(9, 0)
+            end_time = availability.end_time if availability else time(17, 0)
+
+            # Safety: ensure window is valid
+            if start_time >= end_time:
+                start_time, end_time = time(9, 0), time(17, 0)
+
+            current_time = start_time
+            generated = 0
+            while current_time < end_time:
+                exists = Appointment.query.filter_by(
+                    doctor_id=doctor_id,
+                    appointment_date=appointment_date,
+                    appointment_time=current_time
+                ).first()
+                if not exists:
+                    slot = Appointment(
+                        doctor_id=doctor_id,
+                        patient_id=None,
+                        appointment_date=appointment_date,
+                        appointment_time=current_time,
+                        status='available',
+                        notes=''
+                    )
+                    db.session.add(slot)
+                    generated += 1
+                # next 30 min
+                dt_next = datetime.combine(date.today(), current_time)
+                dt_next = dt_next.replace(second=0, microsecond=0)
+                dt_next = dt_next + timedelta(minutes=30)
+                current_time = dt_next.time()
+            if generated:
+                db.session.commit()
+                available_slots = Appointment.query.filter_by(
+                    doctor_id=doctor_id,
+                    appointment_date=appointment_date,
+                    status='available'
+                ).order_by(Appointment.appointment_time.asc()).all()
+
         slots_data = []
         
         # Add available slots
