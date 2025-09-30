@@ -46,56 +46,69 @@
 
             <!-- Homepage -->
             <div v-if="!currentUser && currentView === 'home'" class="homepage">
-                <div class="hero-section bg-primary text-white py-5">
-                    <div class="container text-center">
-                        <h1 class="display-4 mb-4">
-                            <i class="fas fa-hospital"></i> Hospital Management System
-                        </h1>
-                        <p class="lead mb-4">Efficient healthcare management for patients, doctors, and administrators</p>
+                <div class="hero-section d-flex align-items-center justify-content-center min-vh-100 bg-primary text-white">
+                    <div class="container">
                         <div class="row justify-content-center">
-                            <div class="col-md-8">
-                                <div class="row">
-                                    <div class="col-md-4 mb-3">
-                                        <div class="card bg-light text-dark">
-                                            <div class="card-body text-center">
-                                                <i class="fas fa-user-md fa-3x text-primary mb-3"></i>
-                                                <h5>For Doctors</h5>
-                                                <p class="small">Manage appointments and patient records</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4 mb-3">
-                                        <div class="card bg-light text-dark">
-                                            <div class="card-body text-center">
-                                                <i class="fas fa-user fa-3x text-success mb-3"></i>
-                                                <h5>For Patients</h5>
-                                                <p class="small">Book appointments and view medical history</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4 mb-3">
-                                        <div class="card bg-light text-dark">
-                                            <div class="card-body text-center">
-                                                <i class="fas fa-cog fa-3x text-warning mb-3"></i>
-                                                <h5>For Admins</h5>
-                                                <p class="small">Manage hospital operations and staff</p>
-                                            </div>
-                                        </div>
-                                    </div>
+                            <div class="col-lg-8 col-md-10 text-center">
+                                <!-- Hospital Logo/Name -->
+                                <div class="mb-4">
+                                    <i class="fas fa-hospital fa-4x mb-3"></i>
+                                    <h1 class="display-3 fw-bold mb-0">MediHub</h1>
+                                </div>
+                                
+                                <!-- Tagline -->
+                                <h2 class="h4 fw-light mb-4">
+                                    "Seamless Hospital Management, Simplified"
+                                </h2>
+                                
+                                <!-- Description -->
+                                <p class="lead mb-5">
+                                    Manage doctors, patients, appointments, and treatments<br>
+                                    efficiently—all in one place.
+                                </p>
+                                
+                                <!-- Action Buttons -->
+                                <div class="d-flex gap-3 justify-content-center">
+                                    <button class="btn btn-light btn-lg px-5 py-3" @click="currentView = 'login'">
+                                        <i class="fas fa-sign-in-alt me-2"></i>Login
+                                    </button>
+                                    <button class="btn btn-outline-light btn-lg px-5 py-3" @click="currentView = 'register'">
+                                        <i class="fas fa-user-plus me-2"></i>Register
+                                    </button>
                                 </div>
                             </div>
-                        </div>
-                        <div class="mt-4">
-                            <button class="btn btn-light btn-lg me-3" @click="currentView = 'login'">
-                                <i class="fas fa-sign-in-alt"></i> Login
-                            </button>
-                            <button class="btn btn-outline-light btn-lg" @click="currentView = 'register'">
-                                <i class="fas fa-user-plus"></i> Register as Patient
-                            </button>
                         </div>
                     </div>
                 </div>
             </div>
+
+<style>
+/* Custom styles for hero section */
+.hero-section {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.hero-section .btn-light {
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.hero-section .btn-light:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.hero-section .btn-outline-light {
+    font-weight: 600;
+    border-width: 2px;
+    transition: all 0.3s ease;
+}
+
+.hero-section .btn-outline-light:hover {
+    transform: translateY(-2px);
+    background-color: rgba(255,255,255,0.1);
+}
+</style>
 
             <!-- Auth Forms -->
             <div v-if="!currentUser && (currentView === 'login' || currentView === 'register')" class="auth-container">
