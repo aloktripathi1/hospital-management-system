@@ -151,6 +151,10 @@ class ApiService {
     return this.get("/patient/departments")
   }
 
+  static async updateDepartment(id, data) {
+    return this.put(`/admin/departments/${id}`, data)
+  }
+
   static async getDoctorsBySpecialization(specialization) {
     return this.get(`/patient/doctors?specialization=${encodeURIComponent(specialization)}`)
   }
