@@ -100,3 +100,28 @@ body {
         padding: 1.5rem;
     }
 }
+
+/* Override Bootstrap navbar colors */
+.navbar {
+    background: linear-gradient(135deg, #006064 0%, #00838F 100%) !important;
+}
+
+/* Override Bootstrap primary buttons */
+.btn-primary {
+    background: linear-gradient(135deg, #006064 0%, #00838F 100%) !important;
+    border: none;
+}
+
+/* Override card headers */
+.card-header.bg-primary {
+    background: linear-gradient(135deg, #006064 0%, #00838F 100%) !important;
+}
+
+/* Override any other primary elements */
+.bg-primary {
+    background-color: #006064 !important;
+}
+
+.text-primary {
+    color: #006064 !important;
+}
