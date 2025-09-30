@@ -218,14 +218,10 @@
             <!-- Admin Dashboard -->
             <div v-if="currentUser && currentUser.role === 'admin'" class="dashboard-container">
                 <div class="container">
-                    <h2 class="mb-4"><i class="fas fa-tachometer-alt"></i> Admin Dashboard</h2>
-                    
                     <!-- Welcome Message -->
-                    <div class="alert alert-info mb-4">
-                        <h4 class="alert-heading">
-                            <i class="fas fa-hand-wave"></i> Hello {{ currentUser.username }}, Welcome to Admin Dashboard!
-                        </h4>
-                        <p class="mb-0">Manage doctors, patients, and appointments efficiently.</p>
+                    <div class="mb-4">
+                        <h3 class="text-primary mb-2">Welcome, {{ currentUser.name }}!</h3>
+                        <p class="text-muted fs-5">Manage doctors, patients, and appointments efficiently.</p>
                     </div>
 
                     <!-- Navigation -->
@@ -677,14 +673,10 @@
             <!-- Doctor Dashboard -->
             <div v-if="currentUser && currentUser.role === 'doctor'" class="dashboard-container">
                 <div class="container">
-                    <h2 class="mb-4"><i class="fas fa-user-md"></i> Doctor Dashboard</h2>
-                    
                     <!-- Welcome Message -->
-                    <div class="alert alert-info mb-4">
-                        <h4 class="alert-heading">
-                            <i class="fas fa-hand-wave"></i> Hello Dr. {{ currentUser.username }}, Welcome to Doctor Dashboard!
-                        </h4>
-                        <p class="mb-0">Manage your appointments, patients, and treatment records.</p>
+                    <div class="mb-4">
+                        <h3 class="text-primary mb-2">Welcome, Dr. {{ currentUser.name }}!</h3>
+                        <p class="text-muted fs-5">Here are your appointments for today.</p>
                     </div>
                     
                     <!-- Stats Cards -->
@@ -1008,16 +1000,12 @@
             </div>
 
             <!-- Patient Dashboard -->
-            <div v-if="currentUser && currentUser.role === 'patient'" class="dashboard-container">
+             <div v-if="currentUser && currentUser.role === 'patient'" class="dashboard-container">
                 <div class="container">
-                    <h2 class="mb-4"><i class="fas fa-user"></i> Patient Dashboard</h2>
-                    
-                    <!-- Welcome Message -->
-                    <div class="alert alert-info mb-4">
-                        <h4 class="alert-heading">
-                            <i class="fas fa-hand-wave"></i> Hello {{ getPatientPrefix() }}{{ currentUser.username }}, Welcome to Patient Dashboard!
-                        </h4>
-                        <p class="mb-0">Book appointments, view your medical history, and manage your healthcare.</p>
+                    <!-- Welcome Message - Simplified -->
+                    <div class="mb-4">
+                        <h3 class="text-primary mb-2">Welcome, {{ currentUser.name }}!</h3>
+                        <p class="text-muted fs-5">Here are your upcoming appointments.</p>
                     </div>
                     
                     <!-- Stats Cards -->
