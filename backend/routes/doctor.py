@@ -365,21 +365,9 @@ def set_availability_slots():
         # Generate slots for each day in the range
         current_date = start_date
         while current_date <= end_date:
-            # Check if doctor is available on this day of week
-            day_of_week = current_date.weekday()  # 0=Monday, 6=Sunday
-            availability = DoctorAvailability.query.filter_by(
-                doctor_id=doctor.id,
-                day_of_week=day_of_week,
-                is_available=True
-            ).first()
-            
-            # Use doctor's availability times if available, otherwise use provided times
-            if availability:
-                slot_start = max(start_time, availability.start_time)
-                slot_end = min(end_time, availability.end_time)
-            else:
-                slot_start = start_time
-                slot_end = end_time
+            # Always use provided time window for simplicity
+            slot_start = start_time
+            slot_end = end_time
             
             # Build excluded break windows as time tuples for the day
             day_breaks = []
