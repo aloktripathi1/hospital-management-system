@@ -13,6 +13,7 @@ class Patient(db.Model):
     gender = db.Column(db.String(10))
     medical_history = db.Column(db.Text)
     emergency_contact = db.Column(db.String(100))
+    is_blacklisted = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     # Relationships
@@ -29,6 +30,7 @@ class Patient(db.Model):
             'gender': self.gender,
             'medical_history': self.medical_history,
             'emergency_contact': self.emergency_contact,
+            'is_blacklisted': self.is_blacklisted,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'user': self.user.to_dict() if self.user else None
         }

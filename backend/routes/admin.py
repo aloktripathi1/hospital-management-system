@@ -477,3 +477,70 @@ def add_doctor():
             'message': 'Failed to create doctor account',
             'errors': [str(e)]
         }), 500
+
+@admin_bp.route('/patients/<int:patient_id>/blacklist', methods=['PUT'])
+@admin_required
+def toggle_patient_blacklist(patient_id):
+    """Toggle patient blacklist status"""
+    try:
+        patient = Patient.query.get(patient_id)
+        if not patient:
+            return jsonify({
+                'success': False,
+                'message': 'Patient not found',
+                'errors': ['Patient not found']
+            }), 404
+        
+        # Toggle blacklist status
+        patient.is_blacklisted = not patient.is_blacklisted
+        db.session.commit()
+        
+        action = "blacklisted" if patient.is_blacklisted else "unblacklisted"
+        
+        return jsonify({
+            'success': True,
+            'message': f'Patient {action} successfully',
+            'data': {
+                'patient': patient.to_dict()
+            }
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({
+            'success': False,
+            'message': 'Failed to update patient blacklist status',
+            'errors': [str(e)]
+        }), 500
+
+@admin_bp.route('/patients/<int:patient_id>/history', methods=['GET'])
+@admin_required
+def get_patient_history(patient_id):
+    """Get patient appointment history"""
+    try:
+        patient = Patient.query.get(patient_id)
+        if not patient:
+            return jsonify({
+                'success': False,
+                'message': 'Patient not found',
+                'errors': ['Patient not found']
+            }), 404
+        
+        # Get all appointments for this patient
+        appointments = Appointment.query.filter_by(patient_id=patient_id).order_by(Appointment.appointment_date.desc()).all()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Patient history retrieved successfully',
+            'data': {
+                'patient': patient.to_dict(),
+                'appointments': [appointment.to_dict() for appointment in appointments]
+            }
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': 'Failed to get patient history',
+            'errors': [str(e)]
+        }), 500

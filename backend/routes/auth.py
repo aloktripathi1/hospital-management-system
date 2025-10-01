@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify, session
 from werkzeug.security import generate_password_hash, check_password_hash
 from database import db
-from models import User, Patient
+from models import User, Patient, Doctor
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -146,11 +146,23 @@ def get_current_user():
                 'errors': ['User not found']
             }), 404
         
+        # Get user data and add name based on role
+        user_data = user.to_dict()
+        
+        if user.role == 'patient' and user.patient:
+            user_data['name'] = user.patient.name
+        elif user.role == 'doctor' and user.doctor:
+            user_data['name'] = user.doctor.name
+        elif user.role == 'admin':
+            user_data['name'] = 'Administrator'
+        else:
+            user_data['name'] = user.username
+        
         return jsonify({
             'success': True,
             'message': 'User retrieved successfully',
             'data': {
-                'user': user.to_dict()
+                'user': user_data
             }
         })
         
