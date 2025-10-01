@@ -18,15 +18,53 @@ class ApiService {
 
     try {
       const response = await fetch(url, config)
-      const data = await response.json()
+      
+      // Check if response has content
+      const contentType = response.headers.get('content-type')
+      let data = {}
+      
+      if (contentType && contentType.includes('application/json')) {
+        const responseText = await response.text()
+        
+        if (responseText && responseText.trim()) {
+          try {
+            data = JSON.parse(responseText)
+          } catch (parseError) {
+            console.error("Failed to parse JSON:", {
+              endpoint,
+              status: response.status,
+              contentType,
+              responseText,
+              parseError: parseError.message
+            })
+            throw new Error(`JSON parsing failed for ${endpoint}: ${parseError.message}`)
+          }
+        } else {
+          console.warn("Empty JSON response from", endpoint)
+          data = { success: false, message: "Empty response" }
+        }
+      } else {
+        const responseText = await response.text()
+        console.error("Non-JSON response:", {
+          endpoint,
+          status: response.status,
+          contentType,
+          responseText
+        })
+        throw new Error(`Server returned non-JSON response from ${endpoint}: ${response.status}`)
+      }
 
       if (!response.ok) {
-        throw new Error(data.message || "Request failed")
+        throw new Error(data.message || `Request failed with status ${response.status}`)
       }
 
       return data
     } catch (error) {
-      console.error("API Request failed:", error)
+      console.error("API Request failed:", {
+        endpoint,
+        error: error.message,
+        stack: error.stack
+      })
       throw error
     }
   }

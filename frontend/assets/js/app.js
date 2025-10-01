@@ -118,7 +118,9 @@ const App = {
       searchResults: {
         doctors: [],
         patients: []
-      }
+      },
+      // Auth check flag
+      authCheckInProgress: false
     }
   },
 
@@ -130,15 +132,28 @@ const App = {
       this.appView = 'dashboard'
     },
     async checkAuth() {
+      if (this.authCheckInProgress) {
+        return // Prevent multiple concurrent auth checks
+      }
+      
+      this.authCheckInProgress = true
       try {
         const response = await window.ApiService.getCurrentUser()
-        if (response.success) {
+        if (response && response.success) {
           this.currentUser = response.data.user
           await this.loadDashboardData()
+        } else {
+          // Clear any existing session data
+          this.currentUser = null
+          this.currentView = "home"
         }
       } catch (error) {
         console.error("Auth check failed:", error)
-        // User is not authenticated, which is fine
+        // User is not authenticated, clear session data
+        this.currentUser = null
+        this.currentView = "home"
+      } finally {
+        this.authCheckInProgress = false
       }
     },
 
