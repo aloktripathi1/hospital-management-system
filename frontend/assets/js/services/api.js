@@ -118,8 +118,13 @@ class ApiService {
     return this.get("/doctor/dashboard")
   }
 
-  static async getDoctorAppointments() {
-    return this.get("/doctor/appointments")
+  static async getDoctorAppointments(params = '') {
+    const url = params ? `/doctor/appointments?${params}` : "/doctor/appointments"
+    return this.get(url)
+  }
+
+  static async updateAppointmentStatus(appointmentId, status) {
+    return this.put(`/doctor/appointments/${appointmentId}/status`, { status })
   }
 
   static async getDoctorPatients() {

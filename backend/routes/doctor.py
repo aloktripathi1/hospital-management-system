@@ -50,11 +50,61 @@ def get_dashboard():
         })
         
     except Exception as e:
-        return jsonify({
-            'success': False,
-            'message': 'Failed to get dashboard data',
-            'errors': [str(e)]
-        }), 500
+        return jsonify({"error": str(e)}), 500
+
+@doctor_bp.route('/patient-history/<int:patient_id>', methods=['GET'])
+@doctor_required
+def get_patient_history_details(patient_id):
+    """Get patient history and appointments for this doctor"""
+    try:
+        doctor_id = session.get('user_id')
+        doctor = Doctor.query.get(doctor_id)
+        
+        if not doctor:
+            return jsonify({"error": "Doctor not found"}), 404
+        
+        # Get patient details
+        patient = Patient.query.get(patient_id)
+        if not patient:
+            return jsonify({"error": "Patient not found"}), 404
+        
+        # Get all appointments for this patient with this doctor
+        appointments = Appointment.query.filter_by(
+            patient_id=patient_id,
+            doctor_id=doctor.id
+        ).order_by(Appointment.appointment_date.desc()).all()
+        
+        appointment_history = []
+        for appointment in appointments:
+            appointment_history.append({
+                'id': appointment.id,
+                'appointment_date': appointment.appointment_date.strftime('%Y-%m-%d'),
+                'appointment_time': appointment.appointment_time.strftime('%H:%M'),
+                'status': appointment.status,
+                'treatment': {
+                    'id': appointment.treatment.id if appointment.treatment else None,
+                    'diagnosis': appointment.treatment.diagnosis if appointment.treatment else None,
+                    'prescription': appointment.treatment.prescription if appointment.treatment else None,
+                    'notes': appointment.treatment.notes if appointment.treatment else None
+                } if appointment.treatment else None
+            })
+        
+        patient_data = {
+            'id': patient.id,
+            'name': patient.name,
+            'email': patient.email,
+            'phone': patient.phone,
+            'address': patient.address,
+            'date_of_birth': patient.date_of_birth.strftime('%Y-%m-%d') if patient.date_of_birth else None,
+            'gender': patient.gender,
+            'medical_history': patient.medical_history,
+            'appointments': appointment_history
+        }
+        
+        return jsonify(patient_data)
+    
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 @doctor_bp.route('/appointments', methods=['GET'])
 @doctor_required
@@ -70,11 +120,24 @@ def get_appointments():
                 'errors': ['Profile not found']
             }), 404
         
-        # Get appointments with optional date filter
+        # Get appointments with optional filters
         date_filter = request.args.get('date')
         status_filter = request.args.get('status')
+        time_filter = request.args.get('time_filter')  # 'today', 'upcoming', 'completed'
         
         query = Appointment.query.filter_by(doctor_id=doctor.id)
+        
+        # Apply time-based filters
+        if time_filter == 'today':
+            query = query.filter_by(appointment_date=date.today())
+        elif time_filter == 'upcoming':
+            query = query.filter(Appointment.appointment_date >= date.today())
+            query = query.filter(Appointment.status.in_(['booked', 'available']))
+        elif time_filter == 'completed':
+            query = query.filter(Appointment.status == 'completed')
+        else:
+            # Default: show today's and upcoming appointments
+            query = query.filter(Appointment.appointment_date >= date.today())
         
         if date_filter:
             try:
@@ -137,6 +200,64 @@ def get_patients():
         return jsonify({
             'success': False,
             'message': 'Failed to get patients',
+            'errors': [str(e)]
+        }), 500
+
+@doctor_bp.route('/appointments/<int:appointment_id>/status', methods=['PUT'])
+@doctor_required
+def update_appointment_status(appointment_id):
+    """Update appointment status (completed, cancelled)"""
+    try:
+        user_id = session.get('user_id')
+        doctor = Doctor.query.filter_by(user_id=user_id).first()
+        
+        if not doctor:
+            return jsonify({
+                'success': False,
+                'message': 'Doctor profile not found',
+                'errors': ['Profile not found']
+            }), 404
+        
+        appointment = Appointment.query.filter_by(id=appointment_id, doctor_id=doctor.id).first()
+        
+        if not appointment:
+            return jsonify({
+                'success': False,
+                'message': 'Appointment not found',
+                'errors': ['Appointment not found']
+            }), 404
+        
+        data = request.get_json()
+        new_status = data.get('status')
+        
+        if new_status not in ['completed', 'cancelled', 'booked']:
+            return jsonify({
+                'success': False,
+                'message': 'Invalid status',
+                'errors': ['Status must be completed, cancelled, or booked']
+            }), 400
+        
+        appointment.status = new_status
+        appointment.updated_at = datetime.utcnow()
+        
+        if 'notes' in data:
+            appointment.notes = data['notes']
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Appointment marked as {new_status}',
+            'data': {
+                'appointment': appointment.to_dict()
+            }
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({
+            'success': False,
+            'message': 'Failed to update appointment status',
             'errors': [str(e)]
         }), 500
 
@@ -212,43 +333,7 @@ def add_patient_history():
             'errors': [str(e)]
         }), 500
 
-@doctor_bp.route('/patient-history/<int:patient_id>', methods=['GET'])
-@doctor_required
-def get_patient_history(patient_id):
-    try:
-        user_id = session.get('user_id')
-        doctor = Doctor.query.filter_by(user_id=user_id).first()
-        
-        if not doctor:
-            return jsonify({
-                'success': False,
-                'message': 'Doctor profile not found',
-                'errors': ['Profile not found']
-            }), 404
-        
-        # Get patient's treatment history with this doctor
-        treatments = db.session.query(Treatment).join(Appointment).filter(
-            Appointment.patient_id == patient_id,
-            Appointment.doctor_id == doctor.id
-        ).order_by(Treatment.created_at.desc()).all()
-        
-        patient = Patient.query.get(patient_id)
-        
-        return jsonify({
-            'success': True,
-            'message': 'Patient history retrieved successfully',
-            'data': {
-                'patient': patient.to_dict() if patient else None,
-                'treatments': [treatment.to_dict() for treatment in treatments]
-            }
-        })
-        
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'message': 'Failed to get patient history',
-            'errors': [str(e)]
-        }), 500
+
 
 @doctor_bp.route('/availability', methods=['GET'])
 @doctor_required

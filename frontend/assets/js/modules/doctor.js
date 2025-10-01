@@ -20,30 +20,66 @@
         }
       }
 
-      const appointmentsResponse = await window.ApiService.getDoctorAppointments()
-      if (appointmentsResponse.success) ctx.doctorAppointments = appointmentsResponse.data.appointments
-
-      const patientsResponse = await window.ApiService.getDoctorPatients()
-      if (patientsResponse.success) ctx.doctorPatients = patientsResponse.data.patients
+      await loadAppointments(ctx)
+      await loadPatients(ctx)
     } catch (e) { console.error('Failed to load doctor data', e) }
   }
 
-  async function completeAppointment(ctx, appointment) {
-    if (confirm('Mark this appointment as completed?')) {
-      try {
-        const response = await window.ApiService.updateAppointment(appointment.id, { status: 'completed' })
-        if (response.success) { ctx.success='Appointment marked as completed'; await loadDoctorData(ctx) }
-      } catch (e) { ctx.error='Failed to update appointment' }
+  async function loadAppointments(ctx) {
+    try {
+      const params = new URLSearchParams()
+      if (ctx.appointmentFilter && ctx.appointmentFilter !== 'all') {
+        params.append('time_filter', ctx.appointmentFilter)
+      }
+      
+      const appointmentsResponse = await window.ApiService.getDoctorAppointments(params.toString())
+      if (appointmentsResponse.success) {
+        ctx.doctorAppointments = appointmentsResponse.data.appointments.map((appointment, index) => ({
+          ...appointment,
+          sr_no: index + 1
+        }))
+      }
+    } catch (e) { 
+      console.error('Failed to load appointments', e) 
+      ctx.error = 'Failed to load appointments'
     }
   }
 
-  async function cancelAppointment(ctx, appointmentId) {
-    if (confirm('Cancel this appointment?')) {
-      try {
-        const response = await window.ApiService.updateAppointment(appointmentId, { status: 'cancelled' })
-        if (response.success) { ctx.success='Appointment cancelled'; await loadDoctorData(ctx) }
-      } catch (e) { ctx.error='Failed to cancel appointment' }
+  async function loadPatients(ctx) {
+    try {
+      const patientsResponse = await window.ApiService.getDoctorPatients()
+      if (patientsResponse.success) {
+        ctx.doctorPatients = patientsResponse.data.patients.map((patient, index) => ({
+          ...patient,
+          sr_no: index + 1
+        }))
+      }
+    } catch (e) { 
+      console.error('Failed to load patients', e) 
+      ctx.error = 'Failed to load patients'
     }
+  }
+
+  async function updateAppointmentStatus(ctx, appointmentId, status) {
+    const statusText = status === 'completed' ? 'completed' : 'cancelled'
+    if (confirm(`Mark this appointment as ${statusText}?`)) {
+      try {
+        const response = await window.ApiService.updateAppointmentStatus(appointmentId, status)
+        if (response.success) { 
+          ctx.success = `Appointment marked as ${statusText}`
+          await loadAppointments(ctx)
+        } else {
+          ctx.error = response.message || `Failed to ${statusText} appointment`
+        }
+      } catch (e) { 
+        ctx.error = `Failed to ${statusText} appointment`
+      }
+    }
+  }
+
+  async function filterAppointments(ctx, filter) {
+    ctx.appointmentFilter = filter
+    await loadAppointments(ctx)
   }
 
   async function addTreatment(ctx) {
@@ -71,12 +107,34 @@
     } catch (e) { ctx.error = e.message || 'Failed to create slots' } finally { ctx.loading=false }
   }
 
+  async function viewPatientHistory(ctx, patientId) {
+    try {
+      ctx.loading = true
+      const response = await window.ApiService.getPatientHistory(patientId)
+      if (response) {
+        ctx.selectedPatientHistory = response
+        const modal = new bootstrap.Modal(document.getElementById('patientHistoryModal'))
+        modal.show()
+      } else {
+        ctx.error = 'Failed to load patient history'
+      }
+    } catch (e) {
+      console.error('Failed to load patient history:', e)
+      ctx.error = 'Failed to load patient history'
+    } finally {
+      ctx.loading = false
+    }
+  }
+
   window.DoctorModule = {
     loadDoctorData,
-    completeAppointment,
-    cancelAppointment,
+    loadAppointments,
+    loadPatients,
+    updateAppointmentStatus,
+    filterAppointments,
     addTreatment,
     setAvailabilitySlots,
+    viewPatientHistory
   }
 })();
 

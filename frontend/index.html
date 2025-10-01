@@ -1103,12 +1103,12 @@
                     <ul class="nav nav-tabs" id="doctorTabs" role="tablist">
                         <li class="nav-item" role="presentation">
                             <button class="nav-link active" id="appointments-tab" data-bs-toggle="tab" data-bs-target="#doctor-appointments" type="button" role="tab">
-                                <i class="fas fa-calendar"></i> Appointments
+                                <i class="fas fa-calendar"></i> Upcoming Appointments
                             </button>
                         </li>
                         <li class="nav-item" role="presentation">
                             <button class="nav-link" id="patients-tab" data-bs-toggle="tab" data-bs-target="#doctor-patients" type="button" role="tab">
-                                <i class="fas fa-users"></i> Patients
+                                <i class="fas fa-users"></i> Assigned Patients
                             </button>
                         </li>
                         <li class="nav-item" role="presentation">
@@ -1128,8 +1128,25 @@
                         <!-- Appointments Tab -->
                         <div class="tab-pane fade show active" id="doctor-appointments" role="tabpanel">
                             <div class="card mt-3">
-                                <div class="card-header">
-                                    <h5 class="mb-0">My Appointments</h5>
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <h5 class="mb-0">Upcoming Appointments</h5>
+                                    <div class="btn-group" role="group">
+                                        <button type="button" class="btn btn-outline-primary btn-sm" 
+                                                :class="{ active: appointmentFilter === 'upcoming' || !appointmentFilter }" 
+                                                @click="DoctorModule.filterAppointments(this, 'upcoming')">
+                                            Upcoming
+                                        </button>
+                                        <button type="button" class="btn btn-outline-primary btn-sm" 
+                                                :class="{ active: appointmentFilter === 'today' }" 
+                                                @click="DoctorModule.filterAppointments(this, 'today')">
+                                            Today's
+                                        </button>
+                                        <button type="button" class="btn btn-outline-primary btn-sm" 
+                                                :class="{ active: appointmentFilter === 'completed' }" 
+                                                @click="DoctorModule.filterAppointments(this, 'completed')">
+                                            Completed
+                                        </button>
+                                    </div>
                                 </div>
                                 <div class="card-body">
                                     <div class="table-responsive">
@@ -1145,8 +1162,8 @@
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                <tr v-for="(appointment, index) in doctorAppointments" :key="appointment.id">
-                                                    <td>{{ index + 1 }}</td>
+                                                <tr v-for="appointment in doctorAppointments" :key="appointment.id">
+                                                    <td>{{ appointment.sr_no }}</td>
                                                     <td>{{ getPatientPrefix() }}{{ appointment.patient ? appointment.patient.name : 'N/A' }}</td>
                                                     <td>{{ appointment.appointment_date }} {{ appointment.appointment_time }}</td>
                                                     <td>{{ appointment.patient ? appointment.patient.age : 'N/A' }} / {{ appointment.patient ? appointment.patient.gender : 'N/A' }}</td>
@@ -1156,10 +1173,26 @@
                                                         </span>
                                                     </td>
                                                     <td>
-                                                        <button class="btn btn-sm btn-outline-info me-1" @click="viewPatientHistory(appointment.patient)" title="View History">
+                                                        <button v-if="appointment.status === 'booked'" 
+                                                                class="btn btn-sm btn-success me-1" 
+                                                                @click="DoctorModule.updateAppointmentStatus(this, appointment.id, 'completed')" 
+                                                                title="Mark as Completed">
+                                                            <i class="fas fa-check"></i> Complete
+                                                        </button>
+                                                        <button v-if="appointment.status === 'booked'" 
+                                                                class="btn btn-sm btn-warning me-1" 
+                                                                @click="DoctorModule.updateAppointmentStatus(this, appointment.id, 'cancelled')" 
+                                                                title="Cancel Appointment">
+                                                            <i class="fas fa-times"></i> Cancel
+                                                        </button>
+                                                        <button class="btn btn-sm btn-outline-info me-1" 
+                                                                @click="DoctorModule.viewPatientHistory(this, appointment.patient.id)" 
+                                                                title="View Patient History">
                                                             <i class="fas fa-history"></i>
                                                         </button>
-                                                        <button class="btn btn-sm btn-outline-primary" @click="addTreatment(appointment)" title="Update History">
+                                                        <button class="btn btn-sm btn-outline-primary" 
+                                                                @click="addTreatment(appointment)" 
+                                                                title="Add Treatment">
                                                             <i class="fas fa-notes-medical"></i>
                                                         </button>
                                                     </td>
@@ -1171,29 +1204,39 @@
                             </div>
                         </div>
 
-                        <!-- Patients Tab -->
+                        <!-- Assigned Patients Tab -->
                         <div class="tab-pane fade" id="doctor-patients" role="tabpanel">
                             <div class="card mt-3">
                                 <div class="card-header">
-                                    <h5 class="mb-0">My Patients</h5>
+                                    <h5 class="mb-0">Assigned Patients</h5>
                                 </div>
                                 <div class="card-body">
                                     <div class="table-responsive">
                                         <table class="table table-striped">
                                             <thead>
                                                 <tr>
+                                                    <th>Sr. No</th>
                                                     <th>Name</th>
                                                     <th>Phone</th>
                                                     <th>Age</th>
                                                     <th>Gender</th>
+                                                    <th>Actions</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
                                                 <tr v-for="patient in doctorPatients" :key="patient.id">
+                                                    <td>{{ patient.sr_no }}</td>
                                                     <td>{{ patient.name }}</td>
                                                     <td>{{ patient.phone }}</td>
                                                     <td>{{ patient.age }}</td>
                                                     <td>{{ patient.gender }}</td>
+                                                    <td>
+                                                        <button class="btn btn-sm btn-outline-info" 
+                                                                @click="DoctorModule.viewPatientHistory(this, patient.id)" 
+                                                                title="View Patient History">
+                                                            <i class="fas fa-eye"></i> View
+                                                        </button>
+                                                    </td>
                                                 </tr>
                                             </tbody>
                                         </table>
@@ -1672,6 +1715,86 @@
                             Add Doctor
                         </button>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Patient History Modal -->
+    <div class="modal fade" id="patientHistoryModal" tabindex="-1" aria-labelledby="patientHistoryModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="patientHistoryModalLabel">
+                        Patient History - {{ selectedPatientHistory ? selectedPatientHistory.name : '' }}
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" v-if="selectedPatientHistory">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <strong>Name:</strong> {{ selectedPatientHistory.name }}
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Email:</strong> {{ selectedPatientHistory.email }}
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <strong>Phone:</strong> {{ selectedPatientHistory.phone }}
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Gender:</strong> {{ selectedPatientHistory.gender }}
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <strong>Date of Birth:</strong> {{ selectedPatientHistory.date_of_birth }}
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Address:</strong> {{ selectedPatientHistory.address }}
+                        </div>
+                    </div>
+                    <div class="mb-3" v-if="selectedPatientHistory.medical_history">
+                        <strong>Medical History:</strong>
+                        <p class="mt-2">{{ selectedPatientHistory.medical_history }}</p>
+                    </div>
+                    
+                    <h6 class="mt-4 mb-3">Appointment History</h6>
+                    <div class="table-responsive" v-if="selectedPatientHistory.appointments && selectedPatientHistory.appointments.length > 0">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Time</th>
+                                    <th>Status</th>
+                                    <th>Diagnosis</th>
+                                    <th>Prescription</th>
+                                    <th>Notes</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="appointment in selectedPatientHistory.appointments" :key="appointment.id">
+                                    <td>{{ appointment.appointment_date }}</td>
+                                    <td>{{ appointment.appointment_time }}</td>
+                                    <td>
+                                        <span class="badge" :class="getStatusClass(appointment.status)">
+                                            {{ appointment.status }}
+                                        </span>
+                                    </td>
+                                    <td>{{ appointment.treatment ? appointment.treatment.diagnosis : '-' }}</td>
+                                    <td>{{ appointment.treatment ? appointment.treatment.prescription : '-' }}</td>
+                                    <td>{{ appointment.treatment ? appointment.treatment.notes : '-' }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div v-else>
+                        <p class="text-muted">No appointment history found.</p>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                 </div>
             </div>
         </div>

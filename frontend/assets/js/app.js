@@ -64,6 +64,8 @@ const App = {
       // Doctor data
       doctorAppointments: [],
       doctorPatients: [],
+      appointmentFilter: 'upcoming',
+      selectedPatientHistory: null,
       treatmentForm: {
         appointment_id: '',
         visit_type: '',
@@ -272,36 +274,7 @@ const App = {
 
     async loadDoctorData() {
       try {
-        // Load dashboard data
-        const dashboardResponse = await window.ApiService.getDoctorDashboard()
-        if (dashboardResponse.success) {
-          this.stats = dashboardResponse.data
-          this.doctorInfo = dashboardResponse.data.doctor
-          
-          // Populate profile form with doctor info
-          if (this.doctorInfo) {
-            this.profileForm = {
-              name: this.doctorInfo.name || '',
-              specialization: this.doctorInfo.specialization || '',
-              experience: this.doctorInfo.experience || '',
-              phone: this.doctorInfo.phone || '',
-              qualification: this.doctorInfo.qualification || '',
-              consultation_fee: this.doctorInfo.consultation_fee || ''
-            };
-          }
-        }
-        
-        // Load appointments
-        const appointmentsResponse = await window.ApiService.getDoctorAppointments()
-        if (appointmentsResponse.success) {
-          this.doctorAppointments = appointmentsResponse.data.appointments
-        }
-        
-        // Load patients
-        const patientsResponse = await window.ApiService.getDoctorPatients()
-        if (patientsResponse.success) {
-          this.doctorPatients = patientsResponse.data.patients
-        }
+        await window.DoctorModule.loadDoctorData(this)
       } catch (error) {
         console.error("Failed to load doctor data:", error)
       }
