@@ -333,12 +333,21 @@ def book_appointment():
         # Parse date and time
         try:
             appointment_date = datetime.strptime(data['appointment_date'], '%Y-%m-%d').date()
-            appointment_time = datetime.strptime(data['appointment_time'], '%H:%M').time()
-        except ValueError:
+            
+            # Handle time range format (e.g., "09:00-11:00") or simple time format (e.g., "09:00")
+            time_str = data['appointment_time']
+            if '-' in time_str:
+                # Extract start time from time range
+                start_time_str = time_str.split('-')[0].strip()
+                appointment_time = datetime.strptime(start_time_str, '%H:%M').time()
+            else:
+                # Simple time format
+                appointment_time = datetime.strptime(time_str, '%H:%M').time()
+        except ValueError as e:
             return jsonify({
                 'success': False,
                 'message': 'Invalid date or time format',
-                'errors': ['Invalid format']
+                'errors': [f'Invalid format: {str(e)}']
             }), 400
         
         # Find available slot
