@@ -181,18 +181,32 @@ def get_available_slots():
         
         # Add available slots
         for slot in available_slots:
+            # Calculate end time (2 hours after start time)
+            start_datetime = datetime.combine(appointment_date, slot.appointment_time)
+            end_datetime = start_datetime + timedelta(hours=2)
+            end_time = end_datetime.time()
+            
             slots_data.append({
                 'id': slot.id,
-                'time': slot.appointment_time.strftime('%H:%M'),
+                'time': f"{slot.appointment_time.strftime('%H:%M')}-{end_time.strftime('%H:%M')}",
+                'start_time': slot.appointment_time.strftime('%H:%M'),
+                'end_time': end_time.strftime('%H:%M'),
                 'status': 'available',
                 'patient_id': None
             })
         
         # Add booked slots
         for slot in booked_slots:
+            # Calculate end time (2 hours after start time)
+            start_datetime = datetime.combine(appointment_date, slot.appointment_time)
+            end_datetime = start_datetime + timedelta(hours=2)
+            end_time = end_datetime.time()
+            
             slots_data.append({
                 'id': slot.id,
-                'time': slot.appointment_time.strftime('%H:%M'),
+                'time': f"{slot.appointment_time.strftime('%H:%M')}-{end_time.strftime('%H:%M')}",
+                'start_time': slot.appointment_time.strftime('%H:%M'),
+                'end_time': end_time.strftime('%H:%M'),
                 'status': 'booked',
                 'patient_id': slot.patient_id
             })
