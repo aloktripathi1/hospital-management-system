@@ -423,7 +423,7 @@ def add_doctor():
                 'errors': ['Email taken']
             }), 400
         
-        # Generate username from email
+        # Generate username from email (part before @)
         username = data['email'].split('@')[0]
         # Ensure username is unique
         original_username = username
@@ -432,8 +432,11 @@ def add_doctor():
             username = f"{original_username}{counter}"
             counter += 1
         
-        # Generate temporary password
-        temp_password = f"doctor{datetime.now().strftime('%Y%m%d')}"
+        # Generate simple temporary password: firstname + 123
+        name_parts = data['name'].split()
+        # Skip titles like Dr., Mr., Ms., etc.
+        first_name = name_parts[1].lower() if name_parts[0].lower() in ['dr.', 'dr', 'mr.', 'mr', 'ms.', 'ms', 'mrs.', 'mrs'] else name_parts[0].lower()
+        temp_password = f"{first_name}123"
         
         # Create user account
         user = User(
@@ -475,6 +478,90 @@ def add_doctor():
         return jsonify({
             'success': False,
             'message': 'Failed to create doctor account',
+            'errors': [str(e)]
+        }), 500
+
+@admin_bp.route('/patients', methods=['POST'])
+@admin_required
+def add_patient():
+    """Add a new patient"""
+    try:
+        data = request.get_json()
+        
+        required_fields = ['name', 'email', 'phone', 'age']
+        for field in required_fields:
+            if not data.get(field):
+                return jsonify({
+                    'success': False,
+                    'message': f'{field.replace("_", " ").title()} is required',
+                    'errors': [f'Missing {field}']
+                }), 400
+        
+        # Check if email already exists
+        if User.query.filter_by(email=data['email']).first():
+            return jsonify({
+                'success': False,
+                'message': 'Email already exists',
+                'errors': ['Email taken']
+            }), 400
+        
+        # Generate username from email (part before @)
+        username = data['email'].split('@')[0]
+        # Ensure username is unique
+        original_username = username
+        counter = 1
+        while User.query.filter_by(username=username).first():
+            username = f"{original_username}{counter}"
+            counter += 1
+        
+        # Generate simple temporary password: firstname + 123
+        name_parts = data['name'].split()
+        # Skip titles like Dr., Mr., Ms., etc.
+        first_name = name_parts[1].lower() if name_parts[0].lower() in ['dr.', 'dr', 'mr.', 'mr', 'ms.', 'ms', 'mrs.', 'mrs'] else name_parts[0].lower()
+        temp_password = f"{first_name}123"
+        
+        # Create user account
+        user = User(
+            username=username,
+            email=data['email'],
+            password_hash=generate_password_hash(temp_password),
+            role='patient'
+        )
+        db.session.add(user)
+        db.session.flush()
+        
+        # Create patient profile
+        patient = Patient(
+            user_id=user.id,
+            name=data['name'],
+            phone=data['phone'],
+            age=data['age'],
+            gender=data.get('gender', ''),
+            address=data.get('address', ''),
+            medical_history=data.get('medical_history', ''),
+            emergency_contact=data.get('emergency_contact', ''),
+            is_blacklisted=False
+        )
+        db.session.add(patient)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Patient account created successfully',
+            'data': {
+                'patient': patient.to_dict(),
+                'credentials': {
+                    'username': username,
+                    'password': temp_password
+                }
+            }
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({
+            'success': False,
+            'message': 'Failed to create patient account',
             'errors': [str(e)]
         }), 500
 
