@@ -35,7 +35,7 @@ const App = {
             doctorSpecializations: [],
             filteredDoctors: [],
             filteredPatients: [],
-            adminView: 'dashboard', // 'dashboard', 'add-doctor', 'edit-doctor'
+            adminView: 'dashboard', // 'dashboard', 'add-doctor', 'edit-doctor', 'edit-patient', 'patient-history'
       newDoctor: {
         name: '',
         email: '',
@@ -45,6 +45,22 @@ const App = {
         qualification: ''
       },
       doctorCredentials: null,
+      editingPatient: null,
+      selectedPatient: null,
+      patientHistory: [],
+      newPatient: {
+        name: '',
+        email: '',
+        phone: '',
+        age: '',
+        gender: '',
+        address: '',
+        medical_history: '',
+        emergency_contact: ''
+      },
+      showCredentials: false,
+      generatedCredentials: { username: '', password: '' },
+      credentialsType: 'user',
       // Doctor data
       doctorAppointments: [],
       doctorPatients: [],
@@ -732,14 +748,45 @@ const App = {
       this.filteredPatients = this.patients;
     },
 
-    editPatient(patient) {
-      // TODO: Implement patient edit functionality
-      alert('Patient edit functionality coming soon!');
+    async togglePatientBlacklist(patient) {
+      if (window.AdminModule && window.AdminModule.togglePatientBlacklist) {
+        await window.AdminModule.togglePatientBlacklist(this, patient);
+      }
     },
 
-    viewPatientHistory(patient) {
-      // TODO: Implement patient history view
-      alert('Patient history view coming soon!');
+    openAdminPatientEdit(patient) {
+      if (window.AdminModule && window.AdminModule.openAdminPatientEdit) {
+        window.AdminModule.openAdminPatientEdit(this, patient);
+      }
+    },
+
+    openAdminPatientHistory(patient) {
+      if (window.AdminModule && window.AdminModule.openAdminPatientHistory) {
+        window.AdminModule.openAdminPatientHistory(this, patient);
+      }
+    },
+
+    async updatePatient() {
+      if (window.AdminModule && window.AdminModule.updatePatient) {
+        await window.AdminModule.updatePatient(this);
+      }
+    },
+
+    showAddPatientForm() {
+      if (window.AdminModule && window.AdminModule.showAddPatientForm) {
+        window.AdminModule.showAddPatientForm(this);
+      }
+    },
+
+    async addPatient() {
+      if (window.AdminModule && window.AdminModule.addPatient) {
+        await window.AdminModule.addPatient(this);
+      }
+    },
+
+    closeCredentialsModal() {
+      this.showCredentials = false;
+      this.generatedCredentials = { username: '', password: '' };
     },
 
     viewAppointmentPatientHistory(appointment) {

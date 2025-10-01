@@ -220,6 +220,22 @@ class ApiService {
     return this.post("/admin/reports/users")
   }
 
+  static async togglePatientBlacklist(patientId) {
+    return this.put(`/admin/patients/${patientId}/blacklist`)
+  }
+
+  static async getPatientHistory(patientId) {
+    return this.get(`/admin/patients/${patientId}/history`)
+  }
+
+  static async updatePatient(patientId, patientData) {
+    return this.put(`/admin/patients/${patientId}`, patientData)
+  }
+
+  static async addPatient(patientData) {
+    return this.post("/admin/patients", patientData)
+  }
+
   // Doctor methods
   static async updatePatientHistory(historyData) {
     return this.post("/doctor/patient-history", historyData)

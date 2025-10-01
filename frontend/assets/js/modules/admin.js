@@ -72,9 +72,17 @@
     try {
       const response = await window.ApiService.addDoctor(ctx.newDoctor)
       if (response.success) {
-        ctx.success = 'Doctor added successfully!'
-        ctx.adminView = 'dashboard'
+        ctx.success = 'Doctor account created successfully!'
+        
+        // Show generated credentials
+        ctx.generatedCredentials = response.data.credentials
+        ctx.credentialsType = 'doctor'
+        ctx.showCredentials = true
+        
+        // Reset form
         ctx.newDoctor = { name:'', email:'', specialization:'', experience:'', phone:'', qualification:'', consultation_fee:'' }
+        
+        ctx.adminView = 'dashboard'
         await loadAdminData(ctx)
       } else {
         ctx.error = response.message || 'Failed to add doctor'
@@ -93,6 +101,122 @@
     } catch(e) { ctx.error = 'Error updating doctor' } finally { ctx.loading=false }
   }
 
+  function searchPatients(ctx) {
+    if (!ctx.patientSearchQuery.trim()) {
+      ctx.filteredPatients = [...ctx.patients]
+    } else {
+      const q = ctx.patientSearchQuery.toLowerCase()
+      ctx.filteredPatients = ctx.patients.filter(p => 
+        p.name.toLowerCase().includes(q) || 
+        (p.user && p.user.email.toLowerCase().includes(q))
+      )
+    }
+  }
+
+  function clearPatientSearch(ctx) {
+    ctx.patientSearchQuery = ''
+    ctx.filteredPatients = [...ctx.patients]
+  }
+
+  async function togglePatientBlacklist(ctx, patient) {
+    const action = patient.is_blacklisted ? 'unblacklist' : 'blacklist'
+    if (confirm(`Are you sure you want to ${action} ${patient.name}?`)) {
+      try {
+        const response = await window.ApiService.togglePatientBlacklist(patient.id)
+        if (response.success) {
+          ctx.success = `Patient ${action}ed successfully`
+          await loadAdminData(ctx)
+        } else {
+          ctx.error = response.message || `Failed to ${action} patient`
+        }
+      } catch (e) {
+        ctx.error = `Failed to ${action} patient`
+      }
+    }
+  }
+
+  function openAdminPatientEdit(ctx, patient) {
+    ctx.editingPatient = { ...patient }
+    ctx.adminView = 'edit-patient'
+  }
+
+  function openAdminPatientHistory(ctx, patient) {
+    ctx.selectedPatient = patient
+    ctx.adminView = 'patient-history'
+    // Load patient history
+    loadPatientHistory(ctx, patient.id)
+  }
+
+  async function loadPatientHistory(ctx, patientId) {
+    try {
+      const response = await window.ApiService.getPatientHistory(patientId)
+      if (response.success) {
+        ctx.patientHistory = response.data.appointments || []
+      }
+    } catch (e) {
+      console.error('Error loading patient history:', e)
+      ctx.patientHistory = []
+    }
+  }
+
+  async function updatePatient(ctx) {
+    ctx.loading = true
+    try {
+      const response = await window.ApiService.updatePatient(ctx.editingPatient.id, ctx.editingPatient)
+      if (response.success) {
+        ctx.success = 'Patient updated successfully!'
+        ctx.adminView = 'dashboard'
+        await loadAdminData(ctx)
+      } else {
+        ctx.error = response.message || 'Failed to update patient'
+      }
+    } catch (e) {
+      ctx.error = 'Error updating patient'
+    } finally {
+      ctx.loading = false
+    }
+  }
+
+  function showAddPatientForm(ctx) {
+    ctx.adminView = 'add-patient'
+  }
+
+  async function addPatient(ctx) {
+    ctx.loading = true
+    try {
+      const response = await window.ApiService.addPatient(ctx.newPatient)
+      if (response.success) {
+        ctx.success = 'Patient account created successfully!'
+        
+        // Show generated credentials
+        ctx.generatedCredentials = response.data.credentials
+        ctx.credentialsType = 'patient'
+        ctx.showCredentials = true
+        
+        // Reset form
+        ctx.newPatient = {
+          name: '',
+          email: '',
+          phone: '',
+          age: '',
+          gender: '',
+          address: '',
+          medical_history: '',
+          emergency_contact: ''
+        }
+        
+        ctx.adminView = 'dashboard'
+        await loadAdminData(ctx)
+      } else {
+        ctx.error = response.message || 'Failed to create patient account'
+      }
+    } catch (e) {
+      ctx.error = 'Error creating patient account'
+    } finally {
+      ctx.loading = false
+    }
+  }
+
   window.AdminModule = {
     loadAdminData,
     searchDoctors,
@@ -103,6 +227,15 @@
     editDoctor,
     addDoctor,
     updateDoctor,
+    searchPatients,
+    clearPatientSearch,
+    togglePatientBlacklist,
+    openAdminPatientEdit,
+    openAdminPatientHistory,
+    loadPatientHistory,
+    updatePatient,
+    showAddPatientForm,
+    addPatient,
   }
 })();
 

@@ -17,7 +17,7 @@
                     <i class="fas fa-hospital"></i> MediHub
                 </a>
                 <div class="navbar-nav ms-auto">
-                    <button v-if="currentUser" 
+                    <button v-if="currentUser && currentUser.role !== 'admin'" 
                             class="btn btn-outline-light btn-sm me-2" 
                             @click="openProfilePage()">
                         <i class="fas fa-user-edit"></i> Edit Profile
@@ -321,9 +321,9 @@
             <!-- Admin Dashboard -->
             <div v-if="currentUser && currentUser.role === 'admin' && appView === 'dashboard'" class="dashboard-container">
                 <div class="container">
-                    <!-- Welcome Message -->
-                    <div class="mb-4">
-                        <h3 class="text-primary mb-2">Welcome, {{ currentUser.name }}!</h3>
+                    <!-- Welcome Message - Only show on main dashboard -->
+                    <div v-if="adminView === 'dashboard'" class="mb-4">
+                        <h3 class="text-primary mb-2">Welcome, {{ currentUser.name || currentUser.username }}!</h3>
                         <p class="text-muted fs-5">Manage doctors, patients, and appointments efficiently.</p>
                     </div>
 
@@ -554,8 +554,11 @@
                         <!-- Patients Tab -->
                         <div class="tab-pane fade" id="patients" role="tabpanel">
                             <div class="card mt-3">
-                                <div class="card-header">
+                                <div class="card-header d-flex justify-content-between align-items-center">
                                     <h5 class="mb-0">Manage Patients</h5>
+                                    <button class="btn btn-outline-primary" @click="showAddPatientForm">
+                                        <i class="fas fa-plus"></i> Add Patient
+                                    </button>
                                 </div>
                                 <div class="card-body">
                                     <!-- Search Form -->
@@ -584,16 +587,22 @@
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                <tr v-for="(patient, index) in filteredPatients" :key="patient.id">
+                                                <tr v-for="(patient, index) in filteredPatients" :key="patient.id" :class="{ 'table-danger': patient.is_blacklisted }">
                                                     <td>{{ index + 1 }}</td>
-                                                    <td>{{ getPatientPrefix() }}{{ patient.name }}</td>
+                                                    <td>
+                                                        {{ getPatientPrefix() }}{{ patient.name }}
+                                                        <span v-if="patient.is_blacklisted" class="badge bg-danger ms-2">Blacklisted</span>
+                                                    </td>
                                                     <td>{{ patient.user ? patient.user.email : 'N/A' }}</td>
                                                     <td>{{ patient.phone }}</td>
                                                     <td>{{ patient.age }}</td>
                                                     <td>{{ patient.gender }}</td>
                                                     <td>
-                                                        <button class="btn btn-sm btn-outline-primary me-1" @click="openAdminPatientEdit(patient)" title="Edit Patient">
-                                                            <i class="fas fa-edit"></i> Edit
+                                                        <button class="btn btn-sm btn-outline-primary me-1" @click="openAdminPatientEdit(patient)" title="Edit Patient Details">
+                                                            <i class="fas fa-edit"></i> Edit Details
+                                                        </button>
+                                                        <button class="btn btn-sm btn-outline-warning me-1" @click="togglePatientBlacklist(patient)" title="Blacklist/Unblacklist Patient">
+                                                            <i class="fas fa-ban"></i> {{ patient.is_blacklisted ? 'Unblacklist' : 'Blacklist' }}
                                                         </button>
                                                         <button class="btn btn-sm btn-outline-info" @click="openAdminPatientHistory(patient)" title="View Patient History">
                                                             <i class="fas fa-history"></i> View History
@@ -738,6 +747,7 @@
                                         <div class="mb-3">
                                             <label for="new_email" class="form-label">Email</label>
                                             <input type="email" class="form-control" id="new_email" v-model="newDoctor.email" required>
+                                            <small class="text-muted">Login credentials will be auto-generated</small>
                                         </div>
                                     </div>
                                 </div>
@@ -845,6 +855,210 @@
                             </form>
                         </div>
                     </div>
+
+                    <!-- Edit Patient View -->
+                    <div v-if="adminView === 'edit-patient'" class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">Edit Patient Details</h5>
+                        </div>
+                        <div class="card-body">
+                            <form @submit.prevent="updatePatient">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="edit_patient_name" class="form-label">Full Name</label>
+                                            <input type="text" class="form-control" id="edit_patient_name" v-model="editingPatient.name" required>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="edit_patient_phone" class="form-label">Phone</label>
+                                            <input type="text" class="form-control" id="edit_patient_phone" v-model="editingPatient.phone">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="edit_patient_age" class="form-label">Age</label>
+                                            <input type="number" class="form-control" id="edit_patient_age" v-model="editingPatient.age" min="1" max="120">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="edit_patient_gender" class="form-label">Gender</label>
+                                            <select class="form-control" id="edit_patient_gender" v-model="editingPatient.gender">
+                                                <option value="">Select Gender</option>
+                                                <option value="Male">Male</option>
+                                                <option value="Female">Female</option>
+                                                <option value="Other">Other</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="edit_patient_address" class="form-label">Address</label>
+                                    <textarea class="form-control" id="edit_patient_address" v-model="editingPatient.address" rows="3"></textarea>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="edit_patient_medical_history" class="form-label">Medical History</label>
+                                    <textarea class="form-control" id="edit_patient_medical_history" v-model="editingPatient.medical_history" rows="4"></textarea>
+                                </div>
+                                <button type="submit" class="btn btn-primary" :disabled="loading">
+                                    <span v-if="loading" class="spinner-border spinner-border-sm me-2"></span>
+                                    Update Patient
+                                </button>
+                                <button type="button" class="btn btn-secondary ms-2" @click="adminView = 'dashboard'">
+                                    Cancel
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Patient History View -->
+                    <div v-if="adminView === 'patient-history'" class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">Patient History - {{ selectedPatient?.name }}</h5>
+                        </div>
+                        <div class="card-body">
+                            <div v-if="patientHistory.length === 0" class="text-center text-muted py-4">
+                                <i class="fas fa-history fa-3x mb-3"></i>
+                                <p>No appointment history found for this patient.</p>
+                            </div>
+                            <div v-else class="table-responsive">
+                                <table class="table table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>Time</th>
+                                            <th>Doctor</th>
+                                            <th>Status</th>
+                                            <th>Notes</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr v-for="appointment in patientHistory" :key="appointment.id">
+                                            <td>{{ new Date(appointment.appointment_date).toLocaleDateString() }}</td>
+                                            <td>{{ appointment.appointment_time }}</td>
+                                            <td>{{ appointment.doctor?.name || 'N/A' }}</td>
+                                            <td>
+                                                <span class="badge" :class="{
+                                                    'bg-success': appointment.status === 'completed',
+                                                    'bg-primary': appointment.status === 'booked',
+                                                    'bg-warning': appointment.status === 'available',
+                                                    'bg-danger': appointment.status === 'cancelled'
+                                                }">
+                                                    {{ appointment.status }}
+                                                </span>
+                                            </td>
+                                            <td>{{ appointment.notes || 'N/A' }}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <button type="button" class="btn btn-secondary" @click="adminView = 'dashboard'">
+                                Back to Dashboard
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Add Patient View -->
+                    <div v-if="adminView === 'add-patient'" class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">Add New Patient</h5>
+                        </div>
+                        <div class="card-body">
+                            <form @submit.prevent="addPatient">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="new_patient_name" class="form-label">Full Name *</label>
+                                            <input type="text" class="form-control" id="new_patient_name" v-model="newPatient.name" required>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="new_patient_email" class="form-label">Email *</label>
+                                            <input type="email" class="form-control" id="new_patient_email" v-model="newPatient.email" required>
+                                            <small class="text-muted">Login credentials will be auto-generated</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="new_patient_phone" class="form-label">Phone *</label>
+                                            <input type="text" class="form-control" id="new_patient_phone" v-model="newPatient.phone" required>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="new_patient_age" class="form-label">Age *</label>
+                                            <input type="number" class="form-control" id="new_patient_age" v-model="newPatient.age" min="1" max="120" required>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="new_patient_gender" class="form-label">Gender</label>
+                                            <select class="form-control" id="new_patient_gender" v-model="newPatient.gender">
+                                                <option value="">Select Gender</option>
+                                                <option value="Male">Male</option>
+                                                <option value="Female">Female</option>
+                                                <option value="Other">Other</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="new_patient_emergency_contact" class="form-label">Emergency Contact</label>
+                                            <input type="text" class="form-control" id="new_patient_emergency_contact" v-model="newPatient.emergency_contact">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="new_patient_address" class="form-label">Address</label>
+                                    <textarea class="form-control" id="new_patient_address" v-model="newPatient.address" rows="3"></textarea>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="new_patient_medical_history" class="form-label">Medical History</label>
+                                    <textarea class="form-control" id="new_patient_medical_history" v-model="newPatient.medical_history" rows="4" placeholder="Any pre-existing conditions, allergies, or medical notes"></textarea>
+                                </div>
+                                <button type="submit" class="btn btn-primary" :disabled="loading">
+                                    <span v-if="loading" class="spinner-border spinner-border-sm me-2"></span>
+                                    Add Patient
+                                </button>
+                                <button type="button" class="btn btn-secondary ms-2" @click="adminView = 'dashboard'">
+                                    Cancel
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Credentials Display Modal -->
+                    <div v-if="showCredentials" class="modal d-block" tabindex="-1">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">Account Created Successfully</h5>
+                                </div>
+                                <div class="modal-body">
+                                    <div class="alert alert-success">
+                                        <h6>Auto-Generated Login Credentials:</h6>
+                                        <p><strong>Username:</strong> <code>{{ generatedCredentials.username }}</code></p>
+                                        <p><strong>Password:</strong> <code>{{ generatedCredentials.password }}</code></p>
+                                        <small class="text-muted">Please save these credentials and share them with the {{ credentialsType }}.</small>
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-primary" @click="closeCredentialsModal">
+                                        Got it!
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -853,7 +1067,7 @@
                 <div class="container">
                     <!-- Welcome Message -->
                     <div class="mb-4">
-                        <h3 class="text-primary mb-2">Welcome, Dr. {{ currentUser.name }}!</h3>
+                        <h3 class="text-primary mb-2">Welcome, Dr. {{ currentUser.name || currentUser.username }}!</h3>
                         <p class="text-muted fs-5">Here are your appointments for today.</p>
                     </div>
                     
@@ -1115,7 +1329,7 @@
                 <div class="container">
                     <!-- Welcome Message - Simplified -->
                     <div class="mb-4">
-                        <h3 class="text-primary mb-2">Welcome, {{ currentUser.name }}!</h3>
+                        <h3 class="text-primary mb-2">Welcome, {{ currentUser.name || currentUser.username }}!</h3>
                         <p class="text-muted fs-5">Here are your upcoming appointments.</p>
                     </div>
                     
