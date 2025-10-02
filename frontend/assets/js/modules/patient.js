@@ -31,24 +31,24 @@
     } catch (e) { console.error('Failed to load patient data', e) }
   }
 
-  async function loadDoctorsBySpecialization(ctx) {
-    if (!ctx.bookingForm.specialization) return
-    try {
-      const response = await window.ApiService.getDoctorsBySpecialization(ctx.bookingForm.specialization)
-      if (response.success) ctx.availableDoctors = response.data.doctors
-    } catch (e) { ctx.error = 'Failed to load doctors' }
-  }
-
   function selectDepartment(ctx, department) {
     ctx.selectedDepartment = department
-    ctx.bookingForm.specialization = department.name
-    loadDoctorsBySpecialization(ctx)
+    ctx.selectedDoctor = null // Reset doctor selection
+    ctx.availableSlots = [] // Reset slots
+    ctx.bookingForm.appointment_date = ''
+    ctx.bookingForm.appointment_time = ''
+    ctx.bookingForm.doctor_id = ''
   }
 
   function selectDoctor(ctx, doctor) {
     ctx.selectedDoctor = doctor
     ctx.bookingForm.doctor_id = doctor.id
-    loadAvailableSlots(ctx)
+    ctx.availableSlots = [] // Reset slots
+    ctx.bookingForm.appointment_time = ''
+    // If date is already selected, load slots immediately
+    if (ctx.bookingForm.appointment_date) {
+      loadAvailableSlots(ctx)
+    }
   }
 
   async function loadAvailableSlots(ctx) {
@@ -83,7 +83,6 @@
 
   window.PatientModule = {
     loadPatientData,
-    loadDoctorsBySpecialization,
     selectDepartment,
     selectDoctor,
     loadAvailableSlots,

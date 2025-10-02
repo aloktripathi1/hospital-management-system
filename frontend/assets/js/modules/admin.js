@@ -74,11 +74,6 @@
       if (response.success) {
         ctx.success = 'Doctor account created successfully!'
         
-        // Show generated credentials
-        ctx.generatedCredentials = response.data.credentials
-        ctx.credentialsType = 'doctor'
-        ctx.showCredentials = true
-        
         // Reset form
         ctx.newDoctor = { name:'', email:'', specialization:'', experience:'', phone:'', qualification:'', consultation_fee:'' }
         
@@ -187,11 +182,6 @@
       const response = await window.ApiService.addPatient(ctx.newPatient)
       if (response.success) {
         ctx.success = 'Patient account created successfully!'
-        
-        // Show generated credentials
-        ctx.generatedCredentials = response.data.credentials
-        ctx.credentialsType = 'patient'
-        ctx.showCredentials = true
         
         // Reset form
         ctx.newPatient = {

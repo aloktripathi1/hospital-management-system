@@ -25,6 +25,8 @@ const App = {
             doctors: [],
             patients: [],
             appointments: [],
+            appointmentFilter: 'all', // 'all', 'upcoming', 'available', 'past'
+            filteredAppointments: [],
             doctorSearchQuery: '',
             patientSearchQuery: '',
             doctorSpecializationFilter: '',
@@ -54,9 +56,6 @@ const App = {
         medical_history: '',
         emergency_contact: ''
       },
-      showCredentials: false,
-      generatedCredentials: { username: '', password: '' },
-      credentialsType: 'user',
       // Admin Department data
       adminDepartments: [],
       newDepartment: {
@@ -284,6 +283,7 @@ const App = {
         const appointmentsResponse = await window.ApiService.getAppointments()
         if (appointmentsResponse.success) {
           this.appointments = appointmentsResponse.data.appointments
+          this.filterAppointments() // Initialize filtered appointments
         }
         
         // Load departments
@@ -781,14 +781,37 @@ const App = {
       }
     },
 
-    closeCredentialsModal() {
-      this.showCredentials = false;
-      this.generatedCredentials = { username: '', password: '' };
+    backToAdminDashboard() {
+      this.adminView = 'dashboard';
+      this.selectedPatient = null;
+      this.patientHistory = [];
     },
 
-    viewAppointmentPatientHistory(appointment) {
-      // TODO: Implement appointment patient history view
-      alert('Appointment patient history view coming soon!');
+    // Appointment filtering methods
+    setAppointmentFilter(filter) {
+      this.appointmentFilter = filter;
+      this.filterAppointments();
+    },
+
+    filterAppointments() {
+      if (this.appointmentFilter === 'all') {
+        this.filteredAppointments = [...this.appointments];
+      } else if (this.appointmentFilter === 'upcoming') {
+        // Upcoming: booked appointments
+        this.filteredAppointments = this.appointments.filter(appointment => 
+          appointment.status === 'booked'
+        );
+      } else if (this.appointmentFilter === 'available') {
+        // Available: available slots
+        this.filteredAppointments = this.appointments.filter(appointment => 
+          appointment.status === 'available'
+        );
+      } else if (this.appointmentFilter === 'past') {
+        // Past: completed, cancelled appointments
+        this.filteredAppointments = this.appointments.filter(appointment => 
+          appointment.status === 'completed' || appointment.status === 'cancelled'
+        );
+      }
     },
 
     // Doctor methods

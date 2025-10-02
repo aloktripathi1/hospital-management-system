@@ -66,10 +66,10 @@
                                 
                                 <!-- Action Buttons -->
                                 <div class="d-flex gap-3 justify-content-center">
-                                    <button class="btn btn-light btn-lg px-5 py-3" @click="currentView = 'login'">
+                                    <button class="btn btn-light btn-lg px-4 py-3" @click="currentView = 'login'">
                                         <i class="bi bi-box-arrow-in-right me-2"></i>Login
                                     </button>
-                                    <button class="btn btn-outline-light btn-lg px-5 py-3" @click="currentView = 'register'">
+                                    <button class="btn btn-outline-light btn-lg px-4 py-3" @click="currentView = 'register'">
                                         <i class="bi bi-person-plus me-2"></i>Register
                                     </button>
                                 </div>
@@ -658,6 +658,23 @@
                                     <h5 class="mb-0">All Appointments</h5>
                                 </div>
                                 <div class="card-body">
+                                    <!-- Appointment Filter -->
+                                    <div class="mb-3">
+                                        <div class="btn-group" role="group">
+                                            <button type="button" class="btn" :class="appointmentFilter === 'all' ? 'btn-primary' : 'btn-outline-primary'" @click="setAppointmentFilter('all')">
+                                                All
+                                            </button>
+                                            <button type="button" class="btn" :class="appointmentFilter === 'upcoming' ? 'btn-primary' : 'btn-outline-primary'" @click="setAppointmentFilter('upcoming')">
+                                                Upcoming
+                                            </button>
+                                            <button type="button" class="btn" :class="appointmentFilter === 'available' ? 'btn-primary' : 'btn-outline-primary'" @click="setAppointmentFilter('available')">
+                                                Available
+                                            </button>
+                                            <button type="button" class="btn" :class="appointmentFilter === 'past' ? 'btn-primary' : 'btn-outline-primary'" @click="setAppointmentFilter('past')">
+                                                Past
+                                            </button>
+                                        </div>
+                                    </div>
                                     <div class="table-responsive">
                                         <table class="table table-striped">
                                             <thead>
@@ -668,11 +685,10 @@
                                                     <th>Department</th>
                                                     <th>Date & Time</th>
                                                     <th>Status</th>
-                                                    <th>Patient History</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                <tr v-for="(appointment, index) in appointments" :key="appointment.id">
+                                                <tr v-for="(appointment, index) in filteredAppointments" :key="appointment.id">
                                                     <td>{{ index + 1 }}.</td>
                                                     <td>{{ getPatientPrefix() }}{{ appointment.patient ? appointment.patient.name : 'N/A' }}</td>
                                                     <td>Dr. {{ appointment.doctor ? appointment.doctor.name : 'N/A' }}</td>
@@ -682,11 +698,6 @@
                                                         <span class="badge" :class="getStatusClass(appointment.status)">
                                                             {{ appointment.status }}
                                                         </span>
-                                                    </td>
-                                                    <td>
-                                                        <button class="btn btn-sm btn-outline-info" @click="viewAppointmentPatientHistory(appointment)" title="View Patient History">
-                                                            <i class="bi bi-clock-history"></i> View
-                                                        </button>
                                                     </td>
                                                 </tr>
                                             </tbody>
@@ -887,46 +898,51 @@
                     <!-- Patient History View -->
                     <div v-if="adminView === 'patient-history'" class="card">
                         <div class="card-header">
-                            <h5 class="mb-0">Patient History - {{ selectedPatient?.name }}</h5>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0">
+                                    <i class="bi bi-clock-history"></i> Patient History - {{ selectedPatient?.name }}
+                                </h5>
+                                <span class="badge bg-info">{{ patientHistory.length }} appointments</span>
+                            </div>
                         </div>
                         <div class="card-body">
                             <div v-if="patientHistory.length === 0" class="text-center text-muted py-4">
                                 <i class="bi bi-clock-history icon-3x mb-3"></i>
-                                <p>No appointment history found for this patient.</p>
+                                <p>No booked appointments found for this patient.</p>
+                                <small class="text-muted">Only showing appointments that are booked, completed, or cancelled.</small>
                             </div>
                             <div v-else class="table-responsive">
                                 <table class="table table-striped">
-                                    <thead>
+                                    <thead class="table-dark">
                                         <tr>
+                                            <th>Sr. No.</th>
                                             <th>Date</th>
                                             <th>Time</th>
                                             <th>Doctor</th>
+                                            <th>Department</th>
                                             <th>Status</th>
                                             <th>Notes</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        <tr v-for="appointment in patientHistory" :key="appointment.id">
+                                        <tr v-for="(appointment, index) in patientHistory" :key="appointment.id">
+                                            <td>{{ index + 1 }}</td>
                                             <td>{{ new Date(appointment.appointment_date).toLocaleDateString() }}</td>
                                             <td>{{ appointment.appointment_time }}</td>
-                                            <td>{{ appointment.doctor?.name || 'N/A' }}</td>
+                                            <td>Dr. {{ appointment.doctor?.name || 'N/A' }}</td>
+                                            <td>{{ appointment.doctor?.specialization || 'N/A' }}</td>
                                             <td>
-                                                <span class="badge" :class="{
-                                                    'bg-success': appointment.status === 'completed',
-                                                    'bg-primary': appointment.status === 'booked',
-                                                    'bg-warning': appointment.status === 'available',
-                                                    'bg-danger': appointment.status === 'cancelled'
-                                                }">
+                                                <span class="badge" :class="getStatusClass(appointment.status)">
                                                     {{ appointment.status }}
                                                 </span>
                                             </td>
-                                            <td>{{ appointment.notes || 'N/A' }}</td>
+                                            <td>{{ appointment.notes || '—' }}</td>
                                         </tr>
                                     </tbody>
                                 </table>
                             </div>
-                            <button type="button" class="btn btn-secondary" @click="adminView = 'dashboard'">
-                                Back to Dashboard
+                            <button type="button" class="btn btn-secondary" @click="backToAdminDashboard()">
+                                <i class="bi bi-arrow-left"></i> Back to List
                             </button>
                         </div>
                     </div>
@@ -1002,30 +1018,6 @@
                                     Cancel
                                 </button>
                             </form>
-                        </div>
-                    </div>
-
-                    <!-- Credentials Display Modal -->
-                    <div v-if="showCredentials" class="modal d-block" tabindex="-1">
-                        <div class="modal-dialog">
-                            <div class="modal-content">
-                                <div class="modal-header">
-                                    <h5 class="modal-title">Account Created Successfully</h5>
-                                </div>
-                                <div class="modal-body">
-                                    <div class="alert alert-success">
-                                        <h6>Auto-Generated Login Credentials:</h6>
-                                        <p><strong>Username:</strong> <code>{{ generatedCredentials.username }}</code></p>
-                                        <p><strong>Password:</strong> <code>{{ generatedCredentials.password }}</code></p>
-                                        <small class="text-muted">Please save these credentials and share them with the {{ credentialsType }}.</small>
-                                    </div>
-                                </div>
-                                <div class="modal-footer">
-                                    <button type="button" class="btn btn-primary" @click="closeCredentialsModal">
-                                        Got it!
-                                    </button>
-                                </div>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -1485,78 +1477,74 @@
                                 </div>
                                 <div class="card-body">
                                     <form @submit.prevent="bookAppointment">
-                                        <div class="row">
-                                            <div class="col-md-6">
-                                                <div class="mb-3">
-                                                    <label for="specialization" class="form-label">Department</label>
-                                                    <select class="form-control" id="specialization" v-model="selectedDepartment" @change="selectDepartment(selectedDepartment)" required>
-                                                        <option value="">Select Department</option>
-                                                        <option v-for="dept in departments" :key="dept.id" :value="dept">
-                                                            {{ dept.name }} ({{ dept.doctor_count }} doctors)
-                                                        </option>
-                                                    </select>
-                                                    <div v-if="selectedDepartment" class="mt-2">
-                                                        <small class="text-muted">
-                                                            <strong>Description:</strong> {{ selectedDepartment.description || 'No description available' }}
-                                                        </small>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <div class="mb-3">
-                                                    <label for="doctor_id" class="form-label">Doctor</label>
-                                                    <select class="form-control" id="doctor_id" v-model="selectedDoctor" @change="selectDoctor(selectedDoctor)" required>
-                                                        <option value="">Select Doctor</option>
-                                                        <option v-for="doctor in availableDoctors" :key="doctor.id" :value="doctor">
-                                                            Dr. {{ doctor.name }} - {{ doctor.specialization }}
-                                                        </option>
-                                                    </select>
-                                                    <div v-if="selectedDoctor" class="mt-2">
-                                                        <small class="text-muted">
-                                                            <strong>Experience:</strong> {{ selectedDoctor.experience }} years | 
-                                                            <strong>Fee:</strong> ${{ selectedDoctor.consultation_fee }} | 
-                                                            <strong>Qualification:</strong> {{ selectedDoctor.qualification }}
-                                                        </small>
-                                                    </div>
-                                                </div>
+                                        <!-- Step 1: Select Department -->
+                                        <div class="mb-4">
+                                            <label class="form-label">Step 1: Select Department</label>
+                                            <select class="form-control" v-model="selectedDepartment" @change="selectDepartment(selectedDepartment)" required>
+                                                <option value="">Choose Department</option>
+                                                <option v-for="dept in departments" :key="dept.id" :value="dept">
+                                                    {{ dept.name }} ({{ dept.doctor_count }} doctors)
+                                                </option>
+                                            </select>
+                                            <div v-if="selectedDepartment" class="mt-2">
+                                                <small class="text-muted">{{ selectedDepartment.description || 'No description available' }}</small>
                                             </div>
                                         </div>
-                                        
-                                        <div class="row">
-                                            <div class="col-md-6">
-                                                <div class="mb-3">
-                                                    <label for="appointment_date" class="form-label">Date</label>
-                                                    <input type="date" class="form-control" id="appointment_date" v-model="bookingForm.appointment_date" @change="loadAvailableSlots" required>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <div class="mb-3">
-                                                    <label for="appointment_time" class="form-label">Available Time Slots</label>
-                                                    <select class="form-control" id="appointment_time" v-model="bookingForm.appointment_time" required>
-                                                        <option value="">Select Available Time</option>
-                                                        <option v-for="slot in availableSlots" :key="slot.id" :value="slot.time" :disabled="slot.status === 'booked'">
-                                                            {{ slot.time }} - {{ slot.status === 'available' ? 'Available' : 'Booked' }}
-                                                        </option>
-                                                    </select>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        
-                                        <!-- Available Slots Display -->
-                                        <div v-if="availableSlots.length > 0" class="mb-3">
-                                            <h6>Available Time Slots:</h6>
+
+                                        <!-- Step 2: Select Doctor -->
+                                        <div v-if="selectedDepartment && selectedDepartment.doctors.length > 0" class="mb-4">
+                                            <label class="form-label">Step 2: Select Doctor</label>
                                             <div class="row">
-                                                <div v-for="slot in availableSlots" :key="slot.id" class="col-md-3 mb-2">
+                                                <div v-for="doctor in selectedDepartment.doctors" :key="doctor.id" class="col-md-6 mb-2">
                                                     <button type="button" 
-                                                            class="btn btn-sm w-100" 
-                                                            :class="slot.status === 'available' ? 'btn-success' : 'btn-secondary'"
-                                                            :disabled="slot.status === 'booked'"
-                                                            @click="bookingForm.appointment_time = slot.time">
-                                                        {{ slot.time }}
-                                                        <br>
-                                                        <small>{{ slot.status === 'available' ? 'Available' : 'Booked' }}</small>
+                                                            class="btn w-100 text-start"
+                                                            :class="selectedDoctor?.id === doctor.id ? 'btn-primary' : 'btn-outline-primary'"
+                                                            @click="selectDoctor(doctor)">
+                                                        <strong>Dr. {{ doctor.name }}</strong><br>
+                                                        <small>{{ doctor.specialization }}</small>
                                                     </button>
                                                 </div>
+                                            </div>
+                                            <div v-if="selectedDoctor" class="mt-2 p-2 bg-light rounded">
+                                                <small class="text-muted">
+                                                    <strong>Selected:</strong> Dr. {{ selectedDoctor.name }} - {{ selectedDoctor.specialization }}
+                                                </small>
+                                            </div>
+                                        </div>
+
+                                        <!-- Step 3: Select Date -->
+                                        <div v-if="selectedDoctor" class="mb-4">
+                                            <label class="form-label">Step 3: Select Date</label>
+                                            <input type="date" class="form-control" v-model="bookingForm.appointment_date" @change="loadAvailableSlots" required>
+                                        </div>
+
+                                        <!-- Step 4: Select Time Slot -->
+                                        <div v-if="selectedDoctor && bookingForm.appointment_date" class="mb-4">
+                                            <label class="form-label">Step 4: Select Time Slot</label>
+                                            <div v-if="availableSlots.length > 0">
+                                                <div class="row">
+                                                    <div v-for="slot in availableSlots" :key="slot.id" class="col-md-3 mb-2">
+                                                        <button type="button" 
+                                                                class="btn w-100" 
+                                                                :class="[
+                                                                    slot.status === 'available' ? 'btn-success' : 'btn-danger',
+                                                                    bookingForm.appointment_time === slot.time ? 'active' : ''
+                                                                ]"
+                                                                :disabled="slot.status !== 'available'"
+                                                                @click="bookingForm.appointment_time = slot.time">
+                                                            <strong>{{ slot.time }}</strong><br>
+                                                            <small>{{ slot.status === 'available' ? '✓ Available' : '✗ Booked' }}</small>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                                <div v-if="bookingForm.appointment_time" class="mt-2 p-2 bg-success bg-opacity-10 rounded">
+                                                    <small class="text-success">
+                                                        <strong>Selected Time:</strong> {{ bookingForm.appointment_time }}
+                                                    </small>
+                                                </div>
+                                            </div>
+                                            <div v-else-if="selectedDoctor && bookingForm.appointment_date" class="text-muted">
+                                                Loading available slots...
                                             </div>
                                         </div>
                                         
