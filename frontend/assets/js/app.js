@@ -1031,6 +1031,13 @@ const App = {
 
   async created() {
     await this.checkAuth()
+  },
+
+  mounted() {
+    // Add loaded class to prevent template flashing
+    this.$nextTick(() => {
+      document.getElementById('app').classList.add('loaded')
+    })
   }
 }
 
