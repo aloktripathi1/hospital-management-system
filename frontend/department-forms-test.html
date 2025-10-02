@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Department Forms Test</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+</head>
+<body>
+    <div class="container mt-4">
+        <h2>Department Forms Testing</h2>
+        
+        <div class="alert alert-info">
+            <h5>✅ Issue Fixed!</h5>
+            <p>The department forms were blank because they were placed inside the tab-pane. 
+               I've moved them outside the tab-content area, similar to how the doctor forms are structured.</p>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h5>What was wrong:</h5>
+            </div>
+            <div class="card-body">
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item">
+                        <strong>❌ Problem:</strong> Department forms were inside the <code>admin-departments</code> tab-pane
+                    </li>
+                    <li class="list-group-item">
+                        <strong>🔍 Root Cause:</strong> Bootstrap tabs can only show one tab-pane at a time. When you navigate to add/edit forms, the tab system doesn't know how to handle the view switching.
+                    </li>
+                    <li class="list-group-item">
+                        <strong>✅ Solution:</strong> Moved department forms outside tab-content area (same level as doctor/patient forms)
+                    </li>
+                    <li class="list-group-item">
+                        <strong>📍 Location:</strong> Forms now placed right before "Doctor Dashboard" section
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="mt-4">
+            <h5>Current Structure (Fixed):</h5>
+            <pre class="bg-light p-3">
+&lt;!-- Admin Dashboard with Tabs --&gt;
+&lt;div class="tab-content"&gt;
+    &lt;div class="tab-pane" id="admin-departments"&gt;
+        &lt;!-- Only the departments LIST view --&gt;
+    &lt;/div&gt;
+&lt;/div&gt;
+
+&lt;!-- ADD Department Form (Outside tabs) --&gt;
+&lt;div v-if="adminView === 'add-department'" class="card"&gt;
+    &lt;!-- Add department form --&gt;
+&lt;/div&gt;
+
+&lt;!-- EDIT Department Form (Outside tabs) --&gt;
+&lt;div v-if="adminView === 'edit-department'" class="card"&gt;
+    &lt;!-- Edit department form --&gt;
+&lt;/div&gt;
+
+&lt;!-- Doctor Dashboard --&gt;
+&lt;div v-if="currentUser.role === 'doctor'"&gt;
+    &lt;!-- Doctor content --&gt;
+&lt;/div&gt;
+            </pre>
+        </div>
+
+        <div class="mt-4">
+            <h5>Testing Steps:</h5>
+            <ol class="list-group list-group-numbered">
+                <li class="list-group-item">Login as admin</li>
+                <li class="list-group-item">Go to Departments tab</li>
+                <li class="list-group-item">Click "Add Department" → Should show form page</li>
+                <li class="list-group-item">Click "Edit" on any department → Should show edit page</li>
+                <li class="list-group-item">Forms should now be visible and functional</li>
+            </ol>
+        </div>
+
+        <div class="mt-4 text-center">
+            <a href="http://127.0.0.1:5000" class="btn btn-primary btn-lg" target="_blank">
+                <i class="bi bi-box-arrow-up-right"></i> Test Application Now
+            </a>
+        </div>
+
+        <div class="mt-4 alert alert-success">
+            <h6><i class="bi bi-check-circle"></i> Expected Result:</h6>
+            <p class="mb-0">The Add Department and Edit Department pages should now display properly with forms instead of blank pages.</p>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

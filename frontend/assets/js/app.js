@@ -31,7 +31,7 @@ const App = {
             doctorSpecializations: [],
             filteredDoctors: [],
             filteredPatients: [],
-            adminView: 'dashboard', // 'dashboard', 'add-doctor', 'edit-doctor', 'edit-patient', 'patient-history'
+            adminView: 'dashboard', // 'dashboard', 'add-doctor', 'edit-doctor', 'edit-patient', 'patient-history', 'departments', 'add-department', 'edit-department'
       newDoctor: {
         name: '',
         email: '',
@@ -59,12 +59,15 @@ const App = {
       credentialsType: 'user',
       // Admin Department data
       adminDepartments: [],
-      departmentForm: {
+      newDepartment: {
+        name: '',
+        description: ''
+      },
+      editingDepartment: {
         id: null,
         name: '',
         description: ''
       },
-      departmentFormMode: 'add', // 'add' or 'edit'
       // Doctor data
       doctorAppointments: [],
       doctorPatients: [],
@@ -901,60 +904,57 @@ const App = {
     },
 
     // Department Management Methods
-    showAddDepartmentModal() {
-      this.departmentForm = {
-        id: null,
-        name: '',
-        description: ''
-      };
-      this.departmentFormMode = 'add';
-      const modal = new bootstrap.Modal(document.getElementById('departmentModal'));
-      modal.show();
+    showAddDepartmentForm() {
+      this.adminView = 'add-department';
+    },
+
+    async addDepartment() {
+      try {
+        this.loading = true;
+        const response = await window.ApiService.addDepartment(this.newDepartment);
+        if (response.success) {
+          this.success = 'Department added successfully!';
+          this.adminView = 'dashboard';
+          this.newDepartment = {
+            name: '',
+            description: ''
+          };
+          await this.loadAdminData();
+        } else {
+          this.error = response.message || 'Failed to add department';
+        }
+      } catch (error) {
+        this.error = 'Error adding department: ' + error.message;
+      } finally {
+        this.loading = false;
+      }
     },
 
     editDepartment(department) {
-      this.departmentForm = {
+      this.editingDepartment = {
         id: department.id,
         name: department.name,
         description: department.description || ''
       };
-      this.departmentFormMode = 'edit';
-      const modal = new bootstrap.Modal(document.getElementById('departmentModal'));
-      modal.show();
+      this.adminView = 'edit-department';
     },
 
-    async saveDepartment() {
+    async updateDepartment() {
       try {
         this.loading = true;
-        let response;
-        
-        if (this.departmentFormMode === 'add') {
-          response = await window.ApiService.addDepartment({
-            name: this.departmentForm.name,
-            description: this.departmentForm.description
-          });
-          if (response.success) {
-            this.success = 'Department added successfully!';
-          }
-        } else {
-          response = await window.ApiService.updateDepartment(this.departmentForm.id, {
-            name: this.departmentForm.name,
-            description: this.departmentForm.description
-          });
-          if (response.success) {
-            this.success = 'Department updated successfully!';
-          }
-        }
-
+        const response = await window.ApiService.updateDepartment(this.editingDepartment.id, {
+          name: this.editingDepartment.name,
+          description: this.editingDepartment.description
+        });
         if (response.success) {
-          const modal = bootstrap.Modal.getInstance(document.getElementById('departmentModal'));
-          modal.hide();
+          this.success = 'Department updated successfully!';
+          this.adminView = 'dashboard';
           await this.loadAdminData();
         } else {
-          this.error = response.message || 'Failed to save department';
+          this.error = response.message || 'Failed to update department';
         }
       } catch (error) {
-        this.error = 'Error saving department: ' + error.message;
+        this.error = 'Error updating department: ' + error.message;
       } finally {
         this.loading = false;
       }
