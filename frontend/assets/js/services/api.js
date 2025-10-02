@@ -279,6 +279,23 @@ class ApiService {
     return this.post("/admin/patients", patientData)
   }
 
+  // Department management methods
+  static async getAdminDepartments() {
+    return this.get("/admin/departments")
+  }
+
+  static async addDepartment(departmentData) {
+    return this.post("/admin/departments", departmentData)
+  }
+
+  static async updateDepartment(departmentId, departmentData) {
+    return this.put(`/admin/departments/${departmentId}`, departmentData)
+  }
+
+  static async deleteDepartment(departmentId) {
+    return this.delete(`/admin/departments/${departmentId}`)
+  }
+
   // Doctor methods
   static async updatePatientHistory(historyData) {
     return this.post("/doctor/patient-history", historyData)

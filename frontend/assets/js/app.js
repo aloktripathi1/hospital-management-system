@@ -19,11 +19,7 @@ const App = {
         username: '',
         email: '',
         password: '',
-        name: '',
-        phone: '',
-        age: '',
-        gender: '',
-        address: ''
+        name: ''
       },
             // Admin data
             doctors: [],
@@ -61,6 +57,14 @@ const App = {
       showCredentials: false,
       generatedCredentials: { username: '', password: '' },
       credentialsType: 'user',
+      // Admin Department data
+      adminDepartments: [],
+      departmentForm: {
+        id: null,
+        name: '',
+        description: ''
+      },
+      departmentFormMode: 'add', // 'add' or 'edit'
       // Doctor data
       doctorAppointments: [],
       doctorPatients: [],
@@ -190,11 +194,7 @@ const App = {
             username: '',
             email: '',
             password: '',
-            name: '',
-            phone: '',
-            age: '',
-            gender: '',
-            address: ''
+            name: ''
           }
         } else {
           this.error = response.message || 'Registration failed'
@@ -281,6 +281,12 @@ const App = {
         const appointmentsResponse = await window.ApiService.getAppointments()
         if (appointmentsResponse.success) {
           this.appointments = appointmentsResponse.data.appointments
+        }
+        
+        // Load departments
+        const departmentsResponse = await window.ApiService.getAdminDepartments()
+        if (departmentsResponse.success) {
+          this.adminDepartments = departmentsResponse.data.departments
         }
       } catch (error) {
         console.error("Failed to load admin data:", error)
@@ -891,6 +897,111 @@ const App = {
         }
       } catch (error) {
         this.error = 'Failed to generate user report'
+      }
+    },
+
+    // Department Management Methods
+    showAddDepartmentModal() {
+      this.departmentForm = {
+        id: null,
+        name: '',
+        description: ''
+      };
+      this.departmentFormMode = 'add';
+      const modal = new bootstrap.Modal(document.getElementById('departmentModal'));
+      modal.show();
+    },
+
+    editDepartment(department) {
+      this.departmentForm = {
+        id: department.id,
+        name: department.name,
+        description: department.description || ''
+      };
+      this.departmentFormMode = 'edit';
+      const modal = new bootstrap.Modal(document.getElementById('departmentModal'));
+      modal.show();
+    },
+
+    async saveDepartment() {
+      try {
+        this.loading = true;
+        let response;
+        
+        if (this.departmentFormMode === 'add') {
+          response = await window.ApiService.addDepartment({
+            name: this.departmentForm.name,
+            description: this.departmentForm.description
+          });
+          if (response.success) {
+            this.success = 'Department added successfully!';
+          }
+        } else {
+          response = await window.ApiService.updateDepartment(this.departmentForm.id, {
+            name: this.departmentForm.name,
+            description: this.departmentForm.description
+          });
+          if (response.success) {
+            this.success = 'Department updated successfully!';
+          }
+        }
+
+        if (response.success) {
+          const modal = bootstrap.Modal.getInstance(document.getElementById('departmentModal'));
+          modal.hide();
+          await this.loadAdminData();
+        } else {
+          this.error = response.message || 'Failed to save department';
+        }
+      } catch (error) {
+        this.error = 'Error saving department: ' + error.message;
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    async deactivateDepartment(department) {
+      if (department.doctor_count > 0) {
+        this.error = 'Cannot deactivate department with assigned doctors';
+        return;
+      }
+      
+      if (confirm(`Are you sure you want to deactivate "${department.name}" department?`)) {
+        try {
+          this.loading = true;
+          const response = await window.ApiService.updateDepartment(department.id, {
+            is_active: false
+          });
+          if (response.success) {
+            this.success = 'Department deactivated successfully!';
+            await this.loadAdminData();
+          } else {
+            this.error = response.message || 'Failed to deactivate department';
+          }
+        } catch (error) {
+          this.error = 'Error deactivating department: ' + error.message;
+        } finally {
+          this.loading = false;
+        }
+      }
+    },
+
+    async activateDepartment(department) {
+      try {
+        this.loading = true;
+        const response = await window.ApiService.updateDepartment(department.id, {
+          is_active: true
+        });
+        if (response.success) {
+          this.success = 'Department activated successfully!';
+          await this.loadAdminData();
+        } else {
+          this.error = response.message || 'Failed to activate department';
+        }
+      } catch (error) {
+        this.error = 'Error activating department: ' + error.message;
+      } finally {
+        this.loading = false;
       }
     }
   },

@@ -118,3 +118,11 @@ cd backend && python app.py
 ```
 
 Access at: `http://127.0.0.1:5000`
+
+## 📝 Recent Updates
+
+### Simplified Patient Registration
+- **Removed from registration**: Phone Number, Age, Gender, Address
+- **Rationale**: Streamlined registration process for better user experience
+- **Profile Completion**: Users can add these details later through profile editing
+- **Fields Status**: All removed fields remain optional in patient profiles

@@ -89,6 +89,10 @@ body {
     background-color: #dc3545;
 }
 
+.status-available {
+    background-color: #000000;
+}
+
 /* Simple responsive design */
 @media (max-width: 768px) {
     .hero-section h1 {
@@ -124,4 +128,24 @@ body {
 
 .text-primary {
     color: #006064 !important;
+}
+
+/* Custom icon sizes for Bootstrap Icons */
+.icon-xs { font-size: 0.75rem; }
+.icon-sm { font-size: 1rem; }
+.icon-md { font-size: 1.5rem; }
+.icon-lg { font-size: 2rem; }
+.icon-xl { font-size: 2.5rem; }
+.icon-xxl { font-size: 3rem; }
+.icon-3x { font-size: 3rem; }
+.icon-4x { font-size: 4rem; }
+.icon-5x { font-size: 5rem; }
+.icon-6x { font-size: 6rem; }
+.icon-7x { font-size: 7rem; }
+
+/* Responsive icon sizes */
+@media (max-width: 768px) {
+    .icon-6x, .icon-7x { font-size: 4rem; }
+    .icon-5x { font-size: 3rem; }
+    .icon-4x { font-size: 2.5rem; }
 }

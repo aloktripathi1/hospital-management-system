@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify
 from database import db
-from models import User, Patient, Doctor, Appointment, Treatment
+from models import User, Patient, Doctor, Appointment, Treatment, Department
 from werkzeug.security import generate_password_hash
 from datetime import datetime, date
 from sqlalchemy import or_
@@ -629,5 +629,163 @@ def get_patient_history(patient_id):
         return jsonify({
             'success': False,
             'message': 'Failed to get patient history',
+            'errors': [str(e)]
+        }), 500
+
+# Department CRUD Operations
+@admin_bp.route('/departments', methods=['GET'])
+@admin_required
+def get_departments():
+    """Get all departments"""
+    try:
+        departments = Department.query.all()
+        return jsonify({
+            'success': True,
+            'message': 'Departments retrieved successfully',
+            'data': {
+                'departments': [dept.to_dict() for dept in departments]
+            }
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': 'Failed to get departments',
+            'errors': [str(e)]
+        }), 500
+
+@admin_bp.route('/departments', methods=['POST'])
+@admin_required
+def add_department():
+    """Add a new department"""
+    try:
+        data = request.get_json()
+        
+        if not data.get('name'):
+            return jsonify({
+                'success': False,
+                'message': 'Department name is required',
+                'errors': ['Missing name']
+            }), 400
+        
+        # Check if department already exists
+        if Department.query.filter_by(name=data['name']).first():
+            return jsonify({
+                'success': False,
+                'message': 'Department already exists',
+                'errors': ['Department name taken']
+            }), 400
+        
+        # Create department
+        department = Department(
+            name=data['name'],
+            description=data.get('description', ''),
+            is_active=True
+        )
+        db.session.add(department)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Department created successfully',
+            'data': {
+                'department': department.to_dict()
+            }
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({
+            'success': False,
+            'message': 'Failed to create department',
+            'errors': [str(e)]
+        }), 500
+
+@admin_bp.route('/departments/<int:department_id>', methods=['PUT'])
+@admin_required
+def update_department(department_id):
+    """Update department"""
+    try:
+        department = Department.query.get(department_id)
+        if not department:
+            return jsonify({
+                'success': False,
+                'message': 'Department not found',
+                'errors': ['Department not found']
+            }), 404
+        
+        data = request.get_json()
+        
+        # Update department fields
+        if 'name' in data:
+            # Check if new name already exists (except current department)
+            existing = Department.query.filter_by(name=data['name']).first()
+            if existing and existing.id != department_id:
+                return jsonify({
+                    'success': False,
+                    'message': 'Department name already exists',
+                    'errors': ['Name taken']
+                }), 400
+            department.name = data['name']
+        
+        if 'description' in data:
+            department.description = data['description']
+        
+        if 'is_active' in data:
+            department.is_active = data['is_active']
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Department updated successfully',
+            'data': {
+                'department': department.to_dict()
+            }
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({
+            'success': False,
+            'message': 'Failed to update department',
+            'errors': [str(e)]
+        }), 500
+
+@admin_bp.route('/departments/<int:department_id>', methods=['DELETE'])
+@admin_required
+def delete_department(department_id):
+    """Delete department"""
+    try:
+        department = Department.query.get(department_id)
+        if not department:
+            return jsonify({
+                'success': False,
+                'message': 'Department not found',
+                'errors': ['Department not found']
+            }), 404
+        
+        # Check if department has doctors
+        if department.doctors:
+            return jsonify({
+                'success': False,
+                'message': 'Cannot delete department with assigned doctors',
+                'errors': ['Department has doctors']
+            }), 400
+        
+        # Delete department
+        db.session.delete(department)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Department deleted successfully',
+            'data': {}
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({
+            'success': False,
+            'message': 'Failed to delete department',
             'errors': [str(e)]
         }), 500

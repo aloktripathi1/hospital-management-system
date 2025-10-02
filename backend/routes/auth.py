@@ -62,7 +62,7 @@ def register():
         data = request.get_json()
         
         # Validate required fields
-        required_fields = ['username', 'email', 'password', 'name', 'phone']
+        required_fields = ['username', 'email', 'password', 'name']
         for field in required_fields:
             if not data.get(field):
                 return jsonify({
@@ -96,14 +96,14 @@ def register():
         db.session.add(user)
         db.session.flush()
         
-        # Create patient profile
+        # Create patient profile with minimal required info
         patient = Patient(
             user_id=user.id,
             name=data['name'],
-            phone=data['phone'],
-            address=data.get('address', ''),
-            age=data.get('age'),
-            gender=data.get('gender'),
+            phone=data.get('phone', ''),  # Optional - can be updated later
+            address=data.get('address', ''),  # Optional - can be updated later
+            age=data.get('age'),  # Optional - can be updated later
+            gender=data.get('gender', ''),  # Optional - can be updated later
             emergency_contact=data.get('emergency_contact', '')
         )
         db.session.add(patient)
@@ -111,7 +111,7 @@ def register():
         
         return jsonify({
             'success': True,
-            'message': 'Registration successful',
+            'message': 'Registration successful! Please login to complete your profile with additional information.',
             'data': {
                 'user': user.to_dict()
             }

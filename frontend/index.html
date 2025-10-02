@@ -49,7 +49,7 @@
                             <div class="col-lg-8 col-md-10 text-center">
                                 <!-- Hospital Logo/Name -->
                                 <div class="mb-4">
-                                    <i class="bi bi-hospital fa-4x mb-3"></i>
+                                    <i class="bi bi-hospital icon-5x mb-3"></i>
                                     <h1 class="display-3 fw-bold mb-0">MediHub</h1>
                                 </div>
                                 
@@ -90,6 +90,9 @@
                         <h5 class="mb-0">Edit Profile</h5>
                     </div>
                     <div class="card-body">
+                        <div class="alert alert-info" v-if="currentUser.role === 'patient'">
+                            <small><i class="bi bi-info-circle"></i> Complete your profile with additional information. All fields except name are optional.</small>
+                        </div>
                         <form @submit.prevent="updateProfile">
                             <div class="row">
                                 <div class="col-md-6" v-if="currentUser.role === 'doctor'">
@@ -122,7 +125,7 @@
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <label for="profile_phone" class="form-label">Phone</label>
-                                        <input type="tel" class="form-control" id="profile_phone" v-model="profileForm.phone" required>
+                                        <input type="tel" class="form-control" id="profile_phone" v-model="profileForm.phone">
                                     </div>
                                 </div>
                                 <div class="col-md-6" v-if="currentUser.role === 'doctor'">
@@ -152,13 +155,13 @@
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <label for="patient_age" class="form-label">Age</label>
-                                        <input type="number" class="form-control" id="patient_age" v-model="profileForm.age" min="0" max="120" required>
+                                        <input type="number" class="form-control" id="patient_age" v-model="profileForm.age" min="0" max="120">
                                     </div>
                                 </div>
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <label for="patient_gender" class="form-label">Gender</label>
-                                        <select class="form-control" id="patient_gender" v-model="profileForm.gender" required>
+                                        <select class="form-control" id="patient_gender" v-model="profileForm.gender">
                                             <option value="">Select Gender</option>
                                             <option value="Male">Male</option>
                                             <option value="Female">Female</option>
@@ -223,7 +226,7 @@
                                     <!-- Login Form -->
                                     <div v-if="currentView === 'login'">
                                         <div class="text-center mb-4">
-                                            <i class="bi bi-hospital fa-3x text-primary mb-3"></i>
+                                            <i class="bi bi-hospital icon-3x text-primary mb-3"></i>
                                             <h3 class="card-title">Sign In</h3>
                                             <p class="text-muted">Welcome to MediHub</p>
                                         </div>
@@ -258,47 +261,26 @@
                                     <!-- Registration Form -->
                                     <div v-if="currentView === 'register'">
                                         <div class="text-center mb-4">
-                                            <i class="bi bi-person-plus fa-3x text-primary mb-3"></i>
+                                            <i class="bi bi-person-plus icon-3x text-primary mb-3"></i>
                                             <h3 class="card-title">Register as Patient</h3>
                                             <p class="text-muted">Create your patient account</p>
                                         </div>
                                         <form @submit.prevent="handleRegister">
                                             <div class="mb-3">
+                                                <label for="reg_name" class="form-label">Name</label>
+                                                <input type="text" class="form-control" id="reg_name" v-model="registerForm.name" required>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="reg_email" class="form-label">Email Id</label>
+                                                <input type="email" class="form-control" id="reg_email" v-model="registerForm.email" required>
+                                            </div>
+                                            <div class="mb-3">
                                                 <label for="reg_username" class="form-label">Username</label>
                                                 <input type="text" class="form-control" id="reg_username" v-model="registerForm.username" required>
                                             </div>
                                             <div class="mb-3">
-                                                <label for="reg_email" class="form-label">Email</label>
-                                                <input type="email" class="form-control" id="reg_email" v-model="registerForm.email" required>
-                                            </div>
-                                            <div class="mb-3">
                                                 <label for="reg_password" class="form-label">Password</label>
                                                 <input type="password" class="form-control" id="reg_password" v-model="registerForm.password" required>
-                                            </div>
-                                            <div class="mb-3">
-                                                <label for="reg_name" class="form-label">Full Name</label>
-                                                <input type="text" class="form-control" id="reg_name" v-model="registerForm.name" required>
-                                            </div>
-                                            <div class="mb-3">
-                                                <label for="reg_phone" class="form-label">Phone Number</label>
-                                                <input type="tel" class="form-control" id="reg_phone" v-model="registerForm.phone" required>
-                                            </div>
-                                            <div class="mb-3">
-                                                <label for="reg_age" class="form-label">Age</label>
-                                                <input type="number" class="form-control" id="reg_age" v-model="registerForm.age" min="1" max="120">
-                                            </div>
-                                            <div class="mb-3">
-                                                <label for="reg_gender" class="form-label">Gender</label>
-                                                <select class="form-control" id="reg_gender" v-model="registerForm.gender">
-                                                    <option value="">Select Gender</option>
-                                                    <option value="Male">Male</option>
-                                                    <option value="Female">Female</option>
-                                                    <option value="Other">Other</option>
-                                                </select>
-                                            </div>
-                                            <div class="mb-3">
-                                                <label for="reg_address" class="form-label">Address</label>
-                                                <textarea class="form-control" id="reg_address" v-model="registerForm.address" rows="3"></textarea>
                                             </div>
                                             <button type="submit" class="btn btn-primary w-100 mb-3" :disabled="loading">
                                                 <span v-if="loading" class="spinner-border spinner-border-sm me-2"></span>
@@ -536,11 +518,8 @@
                                                         <button class="btn btn-sm btn-outline-primary me-1" @click="editDoctor(doctor)" title="Edit Doctor">
                                                             <i class="bi bi-pencil"></i>
                                                         </button>
-                                                        <button class="btn btn-sm btn-outline-warning me-1" @click="toggleDoctorStatus(doctor)" :title="doctor.is_active ? 'Blacklist Doctor' : 'Activate Doctor'">
-                                                            <i class="fas" :class="doctor.is_active ? 'fa-ban' : 'fa-check'"></i>
-                                                        </button>
-                                                        <button class="btn btn-sm btn-outline-danger" @click="deleteDoctor(doctor.id)" title="Delete Doctor">
-                                                            <i class="fas fa-trash"></i>
+                                                        <button class="btn btn-sm btn-outline-warning" @click="toggleDoctorStatus(doctor)" :title="doctor.is_active ? 'Blacklist Doctor' : 'Activate Doctor'">
+                                                            <i class="bi" :class="doctor.is_active ? 'bi-ban' : 'bi-check-circle'"></i>
                                                         </button>
                                                     </td>
                                                 </tr>
@@ -599,13 +578,12 @@
                                                     <td>{{ patient.gender }}</td>
                                                     <td>
                                                         <button class="btn btn-sm btn-outline-primary me-1" @click="openAdminPatientEdit(patient)" title="Edit Patient Details">
-                                                            <i class="bi bi-pencil"></i> Edit Details
+                                                            <i class="bi bi-pencil"></i>
                                                         </button>
                                                         <button class="btn btn-sm btn-outline-warning me-1" @click="togglePatientBlacklist(patient)" title="Blacklist/Unblacklist Patient">
-                                                            <i class="fas fa-ban"></i> {{ patient.is_blacklisted ? 'Unblacklist' : 'Blacklist' }}
+                                                            <i class="bi bi-ban"></i> {{ patient.is_blacklisted ? 'Unblacklist' : 'Blacklist' }}
                                                         </button>
                                                         <button class="btn btn-sm btn-outline-info" @click="openAdminPatientHistory(patient)" title="View Patient History">
-                                                            <i class="bi bi-clock-history"></i> View History
                                                         </button>
                                                     </td>
                                                 </tr>
@@ -620,63 +598,81 @@
                         <div class="tab-pane fade" id="admin-departments" role="tabpanel">
                             <div class="card mt-3">
                                 <div class="card-header d-flex justify-content-between align-items-center">
-                                    <h5 class="mb-0">Departments</h5>
-                                    <button class="btn btn-sm btn-outline-secondary" @click="loadAdminDepartments()">
-                                        <i class="fas fa-rotate"></i> Refresh
+                                    <h5 class="mb-0">Manage Departments</h5>
+                                    <button class="btn btn-primary" @click="showAddDepartmentModal()">
+                                        <i class="bi bi-plus"></i> Add Department
                                     </button>
                                 </div>
                                 <div class="card-body">
-                                    <div class="row">
-                                        <div class="col-md-7">
-                                            <div class="table-responsive">
-                                                <table class="table table-striped">
-                                                    <thead>
-                                                        <tr>
-                                                            <th>Name</th>
-                                                            <th>Description</th>
-                                                            <th>Doctors</th>
-                                                            <th>Actions</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                        <tr v-for="dept in adminDepartments" :key="dept.id" @click="selectAdminDepartment(dept)" style="cursor:pointer">
-                                                            <td>{{ dept.name }}</td>
-                                                            <td class="text-truncate" style="max-width:260px">{{ dept.description || '—' }}</td>
-                                                            <td>{{ dept.doctor_count || 0 }}</td>
-                                                            <td>
-                                                                <button class="btn btn-sm btn-outline-primary" @click.stop="selectAdminDepartment(dept)">
-                                                                    <i class="bi bi-pencil"></i> Edit
-                                                                </button>
-                                                            </td>
-                                                        </tr>
-                                                    </tbody>
-                                                </table>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-5">
-                                            <div class="card">
-                                                <div class="card-header">
-                                                    <h6 class="mb-0">Edit Department</h6>
-                                                </div>
-                                                <div class="card-body">
-                                                    <div v-if="!selectedAdminDepartment" class="text-muted">Select a department to edit</div>
-                                                    <form v-else @submit.prevent="updateAdminDepartment">
-                                                        <div class="mb-3">
-                                                            <label class="form-label">Name</label>
-                                                            <input class="form-control" v-model="selectedAdminDepartment.name" required>
-                                                        </div>
-                                                        <div class="mb-3">
-                                                            <label class="form-label">Description</label>
-                                                            <textarea class="form-control" v-model="selectedAdminDepartment.description" rows="3"></textarea>
-                                                        </div>
-                                                        <button class="btn btn-primary" type="submit" :disabled="loading">
-                                                            <span v-if="loading" class="spinner-border spinner-border-sm me-2"></span>
-                                                            Save
+                                    <div class="table-responsive">
+                                        <table class="table table-striped">
+                                            <thead class="table-dark">
+                                                <tr>
+                                                    <th>Sr. No.</th>
+                                                    <th>Department Name</th>
+                                                    <th>Description</th>
+                                                    <th>No. of Doctors</th>
+                                                    <th>Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr v-for="(dept, index) in adminDepartments" :key="dept.id" :class="{ 'table-secondary': !dept.is_active }">
+                                                    <td>{{ index + 1 }}</td>
+                                                    <td>
+                                                        {{ dept.name }}
+                                                        <span v-if="!dept.is_active" class="badge bg-secondary ms-2">Inactive</span>
+                                                    </td>
+                                                    <td>{{ dept.description || '—' }}</td>
+                                                    <td>{{ dept.doctor_count || 0 }}</td>
+                                                    <td>
+                                                        <button class="btn btn-sm btn-outline-primary me-1" @click="editDepartment(dept)" title="Edit Department">
+                                                            <i class="bi bi-pencil"></i> Edit
                                                         </button>
-                                                    </form>
+                                                        <button v-if="dept.is_active" class="btn btn-sm btn-outline-warning" @click="deactivateDepartment(dept)" title="Deactivate Department" :disabled="dept.doctor_count > 0">
+                                                            <i class="bi bi-x-circle"></i> Deactivate
+                                                        </button>
+                                                        <button v-else class="btn btn-sm btn-outline-success" @click="activateDepartment(dept)" title="Activate Department">
+                                                            <i class="bi bi-check-circle"></i> Activate
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                                <tr v-if="adminDepartments.length === 0">
+                                                    <td colspan="5" class="text-center text-muted">No departments found</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Add/Edit Department Modal -->
+                            <div class="modal fade" id="departmentModal" tabindex="-1">
+                                <div class="modal-dialog">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title">{{ departmentFormMode === 'add' ? 'Add New Department' : 'Edit Department' }}</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                        </div>
+                                        <form @submit.prevent="saveDepartment">
+                                            <div class="modal-body">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Department Name <span class="text-danger">*</span></label>
+                                                    <input type="text" class="form-control" v-model="departmentForm.name" required maxlength="100" placeholder="Enter department name">
+                                                    <div class="form-text">Maximum 100 characters</div>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">Description</label>
+                                                    <textarea class="form-control" v-model="departmentForm.description" rows="4" placeholder="Enter department description (optional)"></textarea>
                                                 </div>
                                             </div>
-                                        </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                <button type="submit" class="btn btn-primary" :disabled="loading">
+                                                    <span v-if="loading" class="spinner-border spinner-border-sm me-2"></span>
+                                                    {{ departmentFormMode === 'add' ? 'Add Department' : 'Update Department' }}
+                                                </button>
+                                            </div>
+                                        </form>
                                     </div>
                                 </div>
                             </div>
@@ -922,7 +918,7 @@
                         </div>
                         <div class="card-body">
                             <div v-if="patientHistory.length === 0" class="text-center text-muted py-4">
-                                <i class="bi bi-clock-history fa-3x mb-3"></i>
+                                <i class="bi bi-clock-history icon-3x mb-3"></i>
                                 <p>No appointment history found for this patient.</p>
                             </div>
                             <div v-else class="table-responsive">
@@ -1284,7 +1280,7 @@
                                         </div>
                                         
                                         <div class="alert alert-info">
-                                            <i class="fas fa-info-circle"></i>
+                                            <i class="bi bi-info-circle"></i>
                                             <strong>Note:</strong> This will create 30-minute appointment slots for the specified date range. 
                                             Patients will be able to book these available slots.
                                         </div>
@@ -1436,7 +1432,7 @@
                                 <div class="card-header d-flex justify-content-between align-items-center">
                                     <h5 class="mb-0">Departments</h5>
                                     <button class="btn btn-sm btn-outline-secondary" @click="loadPatientData()">
-                                        <i class="fas fa-rotate"></i> Refresh
+                                        <i class="bi bi-arrow-clockwise"></i> Refresh
                                     </button>
                                 </div>
                                 <div class="card-body">
@@ -1610,12 +1606,12 @@
                                 <div class="card-header d-flex justify-content-between align-items-center">
                                     <h5 class="mb-0">Past Appointments</h5>
                                     <button class="btn btn-success btn-sm" @click="exportHistory">
-                                        <i class="fas fa-download"></i> Export CSV
+                                        <i class="bi bi-download"></i> Export CSV
                                     </button>
                                 </div>
                                 <div class="card-body">
                                     <div v-if="treatments.length === 0" class="text-center py-4">
-                                        <i class="bi bi-file-medical fa-3x text-muted mb-3"></i>
+                                        <i class="bi bi-file-medical icon-3x text-muted mb-3"></i>
                                         <p class="text-muted">No medical history available</p>
                                     </div>
                                     <div v-else>
