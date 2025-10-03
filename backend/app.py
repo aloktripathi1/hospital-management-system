@@ -1,153 +1,132 @@
+# =================== IMPORTS SECTION ===================
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
-from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.security import generate_password_hash
 from datetime import datetime, timedelta
 import os
 from celery import Celery
 from database import db
 
-# Initialize Flask app
-app = Flask(__name__, static_folder='../frontend/assets', static_url_path='/static')
+# =================== FLASK APPLICATION SETUP SECTION ===================
 
-# Configuration
-app.config['SECRET_KEY'] = 'hospital-management-secret-key-2024'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['CELERY_BROKER_URL'] = 'redis://localhost:6379/0'
-app.config['CELERY_RESULT_BACKEND'] = 'redis://localhost:6379/0'
+# Create Flask application instance
+main_app = Flask(__name__, static_folder='../frontend/assets', static_url_path='/static')
 
-# Initialize extensions
-db.init_app(app)
-CORS(app)
+# =================== APPLICATION CONFIGURATION SECTION ===================
 
-# Function to make Celery work with Flask app context
-def make_celery(app):
-    celery = Celery(
-        app.import_name,
-        backend=app.config['CELERY_RESULT_BACKEND'],
-        broker=app.config['CELERY_BROKER_URL']
+# Set application secret key for sessions
+main_app.config['SECRET_KEY'] = 'hospital-management-secret-key-2024'
+
+# Configure database connection (SQLite)
+main_app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
+main_app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+# Configure Redis for background tasks
+main_app.config['CELERY_BROKER_URL'] = 'redis://localhost:6379/0'
+main_app.config['CELERY_RESULT_BACKEND'] = 'redis://localhost:6379/0'
+
+# =================== EXTENSIONS INITIALIZATION SECTION ===================
+
+# Initialize database with application
+db.init_app(main_app)
+
+# Enable Cross-Origin Resource Sharing (CORS)
+CORS(main_app)
+
+# =================== CELERY BACKGROUND TASKS SETUP SECTION ===================
+
+def setup_celery_with_flask(flask_app):
+    # Create Celery instance with Flask app configuration
+    celery_instance = Celery(
+        flask_app.import_name,
+        backend=flask_app.config['CELERY_RESULT_BACKEND'],
+        broker=flask_app.config['CELERY_BROKER_URL']
     )
-    celery.conf.update(app.config)
-
-    class ContextTask(celery.Task):
-        """Make celery tasks work with Flask app context."""
+    
+    # Update Celery configuration with Flask config
+    celery_instance.conf.update(flask_app.config)
+    
+    # Create custom task class that works with Flask context
+    class FlaskContextTask(celery_instance.Task):
         def __call__(self, *args, **kwargs):
-            with app.app_context():
+            with flask_app.app_context():
                 return self.run(*args, **kwargs)
+    
+    # Set the custom task class
+    celery_instance.Task = FlaskContextTask
+    return celery_instance
 
-    celery.Task = ContextTask
-    return celery
+# Initialize Celery with Flask app
+background_tasks_celery = setup_celery_with_flask(main_app)
 
-# Initialize Celery
-celery = make_celery(app)
+# Export commonly used variables for other modules
+app = main_app  # For backward compatibility with existing imports
+celery = background_tasks_celery  # For backward compatibility with existing imports
 
-# Import models and routes after db initialization
+# =================== MODELS AND ROUTES IMPORTS SECTION ===================
+
+# Import all database models after database initialization
 from models import *
 from routes import *
 
-# Register blueprints
-app.register_blueprint(auth_bp, url_prefix='/api/auth')
-app.register_blueprint(admin_bp, url_prefix='/api/admin')
-app.register_blueprint(doctor_bp, url_prefix='/api/doctor')
-app.register_blueprint(patient_bp, url_prefix='/api/patient')
+# =================== BLUEPRINTS REGISTRATION SECTION ===================
 
-@app.route('/')
-def index():
+# Register authentication routes
+main_app.register_blueprint(auth_bp, url_prefix='/api/auth')
+
+# Register admin management routes
+main_app.register_blueprint(admin_bp, url_prefix='/api/admin')
+
+# Register doctor functionality routes
+main_app.register_blueprint(doctor_bp, url_prefix='/api/doctor')
+
+# Register patient functionality routes
+main_app.register_blueprint(patient_bp, url_prefix='/api/patient')
+
+# =================== MAIN ROUTES SECTION ===================
+
+@main_app.route('/')
+def serve_homepage():
+    # Serve the main frontend page
     return send_from_directory('../frontend', 'index.html')
 
-def create_tables():
-    """Create all database tables and default admin user"""
-    with app.app_context():
-        db.create_all()
-        create_default_admin()
-        create_sample_data()
+# =================== DATABASE SETUP SECTION ===================
 
-def create_default_admin():
-    """Create default admin user if not exists"""
-    if not User.query.filter_by(role='admin').first():
-        admin_user = User(
+def create_database_tables():
+    # Create all database tables and setup default admin user
+    with main_app.app_context():
+        # Create all database tables
+        db.create_all()
+        
+        # Create default admin user only
+        setup_default_admin_user()
+
+def setup_default_admin_user():
+    # Check if admin user already exists
+    existing_admin = User.query.filter_by(role='admin').first()
+    
+    # Create admin user only if it doesn't exist
+    if existing_admin is None:
+        # Create new admin user
+        new_admin_user = User(
             username='admin',
             email='admin@hospital.com',
             password_hash=generate_password_hash('admin123'),
             role='admin'
         )
-        db.session.add(admin_user)
+        
+        # Add admin user to database
+        db.session.add(new_admin_user)
         db.session.commit()
-        print("Default admin created: admin/admin123")
+        
+        # Print confirmation message
+        print("Default admin user created: admin/admin123")
 
-def create_sample_data():
-    """Create sample departments, doctors and patients for testing"""
-    from models import Department
-    
-    # Create sample departments
-    if not Department.query.first():
-        departments = [
-            {'name': 'Cardiology', 'description': 'Heart and cardiovascular diseases'},
-            {'name': 'Oncology', 'description': 'Cancer treatment and care'},
-            {'name': 'Neurology', 'description': 'Brain and nervous system disorders'},
-            {'name': 'Orthopedics', 'description': 'Bone and joint problems'},
-            {'name': 'Pediatrics', 'description': 'Children\'s health and medicine'}
-        ]
-        
-        for dept_data in departments:
-            department = Department(
-                name=dept_data['name'],
-                description=dept_data['description']
-            )
-            db.session.add(department)
-        
-        db.session.commit()
-        print("Sample departments created")
-    
-    # Sample doctors
-    if not Doctor.query.first():
-        # Get departments
-        cardiology = Department.query.filter_by(name='Cardiology').first()
-        oncology = Department.query.filter_by(name='Oncology').first()
-        
-        sample_doctors = [
-            {
-                'username': 'dr_smith',
-                'email': 'dr.smith@hospital.com',
-                'password': 'doctor123',
-                'name': 'Dr. John Smith',
-                'specialization': 'Cardiology',
-                'department_id': cardiology.id if cardiology else None,
-                'experience': 10
-            },
-            {
-                'username': 'dr_johnson',
-                'email': 'dr.johnson@hospital.com',
-                'password': 'doctor123',
-                'name': 'Dr. Sarah Johnson',
-                'specialization': 'Oncology',
-                'department_id': oncology.id if oncology else None,
-                'experience': 8
-            }
-        ]
-        
-        for doc_data in sample_doctors:
-            user = User(
-                username=doc_data['username'],
-                email=doc_data['email'],
-                password_hash=generate_password_hash(doc_data['password']),
-                role='doctor'
-            )
-            db.session.add(user)
-            db.session.flush()
-            
-            doctor = Doctor(
-                user_id=user.id,
-                name=doc_data['name'],
-                specialization=doc_data['specialization'],
-                department_id=doc_data['department_id'],
-                experience=doc_data['experience']
-            )
-            db.session.add(doctor)
-        
-        db.session.commit()
-        print("Sample doctors created")
+# =================== APPLICATION STARTUP SECTION ===================
 
 if __name__ == '__main__':
-    create_tables()
-    app.run(debug=True, port=5000)
+    # Create database tables when running directly
+    create_database_tables()
+    
+    # Start the Flask application in debug mode
+    main_app.run(debug=True, port=5000)

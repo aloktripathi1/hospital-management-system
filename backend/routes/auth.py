@@ -5,6 +5,8 @@ from models import User, Patient, Doctor
 
 auth_bp = Blueprint('auth', __name__)
 
+# ============= LOGIN =================== #
+
 @auth_bp.route('/login', methods=['POST'])
 def login():
     data = request.get_json()
@@ -52,12 +54,14 @@ def login():
             'message': 'Invalid credentials',
             'errors': ['Invalid username or password']
         }), 401
+    
+# ============= REGISTER =================== #
 
 @auth_bp.route('/register', methods=['POST'])
 def register():
     data = request.get_json()
     
-    # Check if all required fields are provided
+    # check if all required fields are provided
     username = data.get('username')
     email = data.get('email')
     password = data.get('password')
@@ -140,6 +144,8 @@ def register():
         }
     })
 
+# ================= GET CURRENT USER =================== #
+
 @auth_bp.route('/me', methods=['GET'])
 def get_current_user():
     # Check if user is logged in
@@ -183,11 +189,9 @@ def get_current_user():
         }
     })
 
+# ============= LOGOUT =================== # 
+
 @auth_bp.route('/logout', methods=['POST'])
 def logout():
     session.clear()
-    return jsonify({
-        'success': True,
-        'message': 'Logout successful',
-        'data': {}
-    })
+    return jsonify({'success': True, 'message': 'Logout successful', 'data': {}})
