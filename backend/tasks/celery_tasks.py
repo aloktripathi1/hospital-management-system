@@ -2,232 +2,196 @@ from celery import Celery
 from datetime import datetime, date, timedelta
 import csv
 import io
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
 from database import db
 from models import User, Patient, Doctor, Appointment, Treatment
 
-# Initialize Celery
+# ----------- Initialize Celery -----------
 celery = Celery('hospital_management')
 
+# ----------- Send Daily Reminders -----------
 @celery.task
 def send_daily_reminders():
-    """Send daily appointment reminders to patients"""
-    try:
-        today = date.today()
-        
-        # Get all appointments for today
-        appointments = Appointment.query.filter_by(
-            appointment_date=today,
-            status='booked'
-        ).all()
-        
-        reminders_sent = 0
-        
-        for appointment in appointments:
-            if appointment.patient and appointment.patient.user:
-                # In a real application, you would send email/SMS here
-                # For demo purposes, we'll just log the reminder
-                print(f"Reminder: {appointment.patient.name} has an appointment with {appointment.doctor.name} at {appointment.appointment_time}")
-                reminders_sent += 1
-        
-        return f"Sent {reminders_sent} appointment reminders for {today}"
-        
-    except Exception as e:
-        return f"Error sending reminders: {str(e)}"
+    today = date.today()
+    
+    # Get today's appointments
+    appts = Appointment.query.filter_by(
+        appointment_date=today,
+        status='booked'
+    ).all()
+    
+    count = 0
+    for appt in appts:
+        if appt.patient and appt.patient.user:
+            # Just log the reminder (in real app, send email/SMS/gchat webhook)
+            print(f"Reminder: {appt.patient.name} has appointment with {appt.doctor.name} at {appt.appointment_time}")
+            count += 1
+    
+    return f"Sent {count} reminders for {today}"
 
+# ----------- Generate Monthly Report -----------
 @celery.task
 def generate_monthly_report():
-    """Generate monthly activity report for doctors"""
-    try:
-        # Get current month
-        now = datetime.now()
-        month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    now = datetime.now()
+    month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    
+    docs = Doctor.query.filter_by(is_active=True).all()
+    count = 0
+    
+    for doc in docs:
+        # Get this month's appointments
+        appts = Appointment.query.filter(
+            Appointment.doctor_id == doc.id,
+            Appointment.appointment_date >= month_start,
+            Appointment.status == 'completed'
+        ).all()
         
-        # Get all doctors
-        doctors = Doctor.query.filter_by(is_active=True).all()
-        
-        reports_generated = 0
-        
-        for doctor in doctors:
-            # Get appointments for this month
-            appointments = Appointment.query.filter(
-                Appointment.doctor_id == doctor.id,
-                Appointment.appointment_date >= month_start,
-                Appointment.status == 'completed'
-            ).all()
-            
-            # Get treatments for this month
-            treatments = Treatment.query.join(Appointment).filter(
-                Appointment.doctor_id == doctor.id,
-                Treatment.created_at >= month_start
-            ).all()
-            
-            # Generate HTML report
-            html_report = generate_doctor_report_html(doctor, appointments, treatments, now.month, now.year)
-            
-            # In a real application, you would send email here
-            # For demo purposes, we'll just log the report
-            print(f"Monthly report generated for {doctor.name}: {len(appointments)} appointments, {len(treatments)} treatments")
-            reports_generated += 1
-        
-        return f"Generated {reports_generated} monthly reports for {now.strftime('%B %Y')}"
-        
-    except Exception as e:
-        return f"Error generating monthly reports: {str(e)}"
-
-@celery.task
-def export_patient_history_csv(patient_id):
-    """Export patient treatment history as CSV"""
-    try:
-        patient = Patient.query.get(patient_id)
-        if not patient:
-            return f"Patient with ID {patient_id} not found"
-        
-        # Get all treatments for this patient
+        # Get this month's treatments
         treatments = Treatment.query.join(Appointment).filter(
-            Appointment.patient_id == patient_id
-        ).order_by(Treatment.created_at.desc()).all()
+            Appointment.doctor_id == doc.id,
+            Treatment.created_at >= month_start
+        ).all()
         
-        # Create CSV content
-        output = io.StringIO()
-        writer = csv.writer(output)
+        # Generate HTML report
+        html = make_report_html(doc, appts, treatments, now.month, now.year)
         
-        # Write header
-        writer.writerow([
-            'Patient ID', 'Patient Name', 'Doctor Name', 'Appointment Date', 
-            'Visit Type', 'Symptoms', 'Diagnosis', 'Prescription', 'Treatment Notes'
-        ])
-        
-        # Write data
-        for treatment in treatments:
-            writer.writerow([
-                patient.id,
-                patient.name,
-                treatment.appointment.doctor.name if treatment.appointment.doctor else 'N/A',
-                treatment.appointment.appointment_date if treatment.appointment else 'N/A',
-                treatment.visit_type,
-                treatment.symptoms,
-                treatment.diagnosis,
-                treatment.prescription,
-                treatment.treatment_notes
-            ])
-        
-        csv_content = output.getvalue()
-        output.close()
-        
-        # In a real application, you would save the file and send it to the patient
-        # For demo purposes, we'll just log the export
-        print(f"CSV export completed for {patient.name}: {len(treatments)} records")
-        
-        return f"CSV export completed for {patient.name}: {len(treatments)} records"
-        
-    except Exception as e:
-        return f"Error exporting CSV for patient {patient_id}: {str(e)}"
+        # Just log (in real app, send email with HTML)
+        print(f"Report generated for {doc.name}: {len(appts)} appointments, {len(treatments)} treatments")
+        count += 1
+    
+    return f"Generated {count} reports for {now.strftime('%B %Y')}"
 
-def generate_doctor_report_html(doctor, appointments, treatments, month, year):
-    """Generate HTML report for doctor monthly activity"""
+# ----------- Make HTML Report -----------
+def make_report_html(doc, appts, treatments, month, year):
     html = f"""
     <html>
     <head>
-        <title>Monthly Report - {doctor.name}</title>
+        <title>Monthly Report - {doc.name}</title>
         <style>
-            body {{ font-family: Arial, sans-serif; margin: 20px; }}
-            .header {{ background-color: #007bff; color: white; padding: 20px; text-align: center; }}
-            .content {{ margin: 20px 0; }}
-            .stats {{ display: flex; justify-content: space-around; margin: 20px 0; }}
-            .stat-box {{ background-color: #f8f9fa; padding: 20px; border-radius: 5px; text-align: center; }}
+            body {{ font-family: Arial; margin: 20px; }}
+            h1 {{ color: #007bff; }}
             table {{ width: 100%; border-collapse: collapse; margin: 20px 0; }}
-            th, td {{ border: 1px solid #ddd; padding: 8px; text-align: left; }}
+            th, td {{ border: 1px solid #ddd; padding: 8px; }}
             th {{ background-color: #f2f2f2; }}
         </style>
     </head>
     <body>
-        <div class="header">
-            <h1>Monthly Activity Report</h1>
-            <h2>Dr. {doctor.name} - {doctor.specialization}</h2>
-            <p>Report for {month}/{year}</p>
-        </div>
+        <h1>Monthly Activity Report</h1>
+        <h2>Dr. {doc.name} - {doc.specialization}</h2>
+        <p>Report for {month}/{year}</p>
         
-        <div class="content">
-            <div class="stats">
-                <div class="stat-box">
-                    <h3>{len(appointments)}</h3>
-                    <p>Total Appointments</p>
-                </div>
-                <div class="stat-box">
-                    <h3>{len(treatments)}</h3>
-                    <p>Treatments Provided</p>
-                </div>
-                <div class="stat-box">
-                    <h3>{len(set([apt.patient_id for apt in appointments]))}</h3>
-                    <p>Unique Patients</p>
-                </div>
-            </div>
-            
-            <h3>Recent Appointments</h3>
-            <table>
-                <tr>
-                    <th>Date</th>
-                    <th>Patient</th>
-                    <th>Time</th>
-                    <th>Status</th>
-                </tr>
+        <h3>Summary</h3>
+        <p>Total Appointments: {len(appts)}</p>
+        <p>Total Treatments: {len(treatments)}</p>
+        <p>Unique Patients: {len(set([a.patient_id for a in appts]))}</p>
+        
+        <h3>Recent Appointments</h3>
+        <table>
+            <tr>
+                <th>Date</th>
+                <th>Patient</th>
+                <th>Time</th>
+                <th>Status</th>
+            </tr>
     """
     
-    for appointment in appointments[:10]:  # Show last 10 appointments
+    # Show last 10 appointments
+    for a in appts[:10]:
         html += f"""
-                <tr>
-                    <td>{appointment.appointment_date}</td>
-                    <td>{appointment.patient.name if appointment.patient else 'N/A'}</td>
-                    <td>{appointment.appointment_time}</td>
-                    <td>{appointment.status}</td>
-                </tr>
+            <tr>
+                <td>{a.appointment_date}</td>
+                <td>{a.patient.name if a.patient else 'N/A'}</td>
+                <td>{a.appointment_time}</td>
+                <td>{a.status}</td>
+            </tr>
         """
     
     html += """
-            </table>
-            
-            <h3>Recent Treatments</h3>
-            <table>
-                <tr>
-                    <th>Date</th>
-                    <th>Patient</th>
-                    <th>Visit Type</th>
-                    <th>Diagnosis</th>
-                </tr>
+        </table>
+        
+        <h3>Recent Treatments</h3>
+        <table>
+            <tr>
+                <th>Date</th>
+                <th>Patient</th>
+                <th>Visit Type</th>
+                <th>Diagnosis</th>
+            </tr>
     """
     
-    for treatment in treatments[:10]:  # Show last 10 treatments
+    # Show last 10 treatments
+    for t in treatments[:10]:
         html += f"""
-                <tr>
-                    <td>{treatment.created_at.strftime('%Y-%m-%d')}</td>
-                    <td>{treatment.appointment.patient.name if treatment.appointment and treatment.appointment.patient else 'N/A'}</td>
-                    <td>{treatment.visit_type}</td>
-                    <td>{treatment.diagnosis[:50] if treatment.diagnosis else 'N/A'}...</td>
-                </tr>
+            <tr>
+                <td>{t.created_at.strftime('%Y-%m-%d')}</td>
+                <td>{t.appointment.patient.name if t.appointment and t.appointment.patient else 'N/A'}</td>
+                <td>{t.visit_type}</td>
+                <td>{t.diagnosis[:50] if t.diagnosis else 'N/A'}...</td>
+            </tr>
         """
     
     html += """
-            </table>
-        </div>
+        </table>
     </body>
     </html>
     """
     
     return html
 
-# Schedule tasks
+# ----------- Export Patient History -----------
+@celery.task
+def export_patient_history_csv(pt_id):
+    pt = Patient.query.get(pt_id)
+    if not pt:
+        return f"Patient {pt_id} not found"
+    
+    # Get all treatments
+    treatments = Treatment.query.join(Appointment).filter(
+        Appointment.patient_id == pt_id
+    ).order_by(Treatment.created_at.desc()).all()
+    
+    # Create CSV
+    output = io.StringIO()
+    writer = csv.writer(output)
+    
+    # Header
+    writer.writerow([
+        'Patient ID', 'Patient Name', 'Doctor Name', 'Appointment Date', 
+        'Visit Type', 'Symptoms', 'Diagnosis', 'Prescription', 'Treatment Notes', 'Next Visit'
+    ])
+    
+    # Data rows
+    for t in treatments:
+        writer.writerow([
+            pt.id,
+            pt.name,
+            t.appointment.doctor.name if t.appointment.doctor else 'N/A',
+            t.appointment.appointment_date if t.appointment else 'N/A',
+            t.visit_type,
+            t.symptoms,
+            t.diagnosis,
+            t.prescription,
+            t.treatment_notes,
+            t.follow_up_date if hasattr(t, 'follow_up_date') else 'N/A'
+        ])
+    
+    csv_data = output.getvalue()
+    output.close()
+    
+    # Just log (in real app, save file and send notification)
+    print(f"CSV exported for {pt.name}: {len(treatments)} records")
+    
+    return f"CSV exported for {pt.name}: {len(treatments)} records"
+
+# ----------- Schedule Tasks -----------
 from celery.schedules import crontab
 
 celery.conf.beat_schedule = {
     'daily-reminders': {
         'task': 'tasks.celery_tasks.send_daily_reminders',
-        'schedule': crontab(hour=8, minute=0),  # Run at 8 AM daily
+        'schedule': crontab(hour=8, minute=0),  # 8 AM daily
     },
     'monthly-reports': {
         'task': 'tasks.celery_tasks.generate_monthly_report',
-        'schedule': crontab(0, 0, day_of_month=1),  # Run on 1st of every month
+        'schedule': crontab(0, 0, day_of_month=1),  # 1st of month at midnight
     },
 }

@@ -1,74 +1,59 @@
 from functools import wraps
 from flask import session, jsonify
 
+# ----------- Login Required Decorator -----------
 def login_required(f):
     @wraps(f)
-    def decorated_function(*args, **kwargs):
+    def check_login(*args, **kwargs):
         if not session.get('is_authenticated'):
-            return jsonify({
-                'success': False,
-                'message': 'Authentication required',
-                'errors': ['Please login first']
-            }), 401
+            return jsonify({'success': False, 'message': 'Please login first'}), 401
         return f(*args, **kwargs)
-    return decorated_function
+    return check_login
 
+# ----------- Admin Required Decorator -----------
 def admin_required(f):
     @wraps(f)
-    def decorated_function(*args, **kwargs):
+    def check_admin(*args, **kwargs):
         if not session.get('is_authenticated'):
-            return jsonify({
-                'success': False,
-                'message': 'Authentication required',
-                'errors': ['Please login first']
-            }), 401
+            return jsonify({'success': False, 'message': 'Please login first'}), 401
         
         if session.get('role') != 'admin':
-            return jsonify({
-                'success': False,
-                'message': 'Admin access required',
-                'errors': ['Insufficient permissions']
-            }), 403
+            return jsonify({'success': False, 'message': 'Admin access only'}), 403
         
         return f(*args, **kwargs)
-    return decorated_function
+    return check_admin
 
+# ----------- Doctor Required Decorator -----------
 def doctor_required(f):
     @wraps(f)
-    def decorated_function(*args, **kwargs):
+    def check_doctor(*args, **kwargs):
         if not session.get('is_authenticated'):
-            return jsonify({
-                'success': False,
-                'message': 'Authentication required',
-                'errors': ['Please login first']
-            }), 401
+            return jsonify({'success': False,'message': 'Please login first'}), 401
         
         if session.get('role') != 'doctor':
             return jsonify({
                 'success': False,
-                'message': 'Doctor access required',
-                'errors': ['Insufficient permissions']
+                'message': 'Doctor access only'
             }), 403
         
         return f(*args, **kwargs)
-    return decorated_function
+    return check_doctor
 
+# ----------- Patient Required Decorator -----------
 def patient_required(f):
     @wraps(f)
-    def decorated_function(*args, **kwargs):
+    def check_patient(*args, **kwargs):
         if not session.get('is_authenticated'):
             return jsonify({
                 'success': False,
-                'message': 'Authentication required',
-                'errors': ['Please login first']
+                'message': 'Please login first'
             }), 401
         
         if session.get('role') != 'patient':
             return jsonify({
                 'success': False,
-                'message': 'Patient access required',
-                'errors': ['Insufficient permissions']
+                'message': 'Patient access only'
             }), 403
         
         return f(*args, **kwargs)
-    return decorated_function
+    return check_patient
