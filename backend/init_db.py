@@ -1,8 +1,4 @@
-# =================== DATABASE INITIALIZATION SCRIPT ===================
-# This script creates all database tables and populates them with sample data
-# Run this file directly to initialize the database with test data
-
-from app import main_app, create_database_tables
+from app import app
 from database import db
 from models import User, Doctor, Patient, DoctorAvailability, Department
 from werkzeug.security import generate_password_hash
@@ -11,278 +7,209 @@ from datetime import time
 # =================== SAMPLE DEPARTMENTS CREATION SECTION ===================
 
 def create_sample_departments():
-    # Check if departments already exist
     existing_departments = Department.query.first()
-    
-    # Create departments only if none exist
     if existing_departments is None:
-        # List of hospital departments to create
         departments_list = [
-            {'name': 'Cardiology', 'description': 'Heart and cardiovascular diseases'},
-            {'name': 'Oncology', 'description': 'Cancer treatment and care'},
+            {'name': 'Cardiology', 'description': 'Heart and cardiovascular care'},
             {'name': 'Neurology', 'description': 'Brain and nervous system disorders'},
-            {'name': 'Orthopedics', 'description': 'Bone and joint problems'},
-            {'name': 'Pediatrics', 'description': 'Children health and medicine'},
-            {'name': 'Dermatology', 'description': 'Skin and hair related issues'},
-            {'name': 'Psychiatry', 'description': 'Mental health and behavioral disorders'}
+            {'name': 'Orthopedics', 'description': 'Bone, joint and spine care'},
+            {'name': 'Psychiatry', 'description': 'Mental health and behavioural therapy'},
         ]
-        
-        # Create each department
-        for single_department_data in departments_list:
+
+        for d in departments_list:
             new_department = Department(
-                name=single_department_data['name'],
-                description=single_department_data['description'],
+                name=d['name'],
+                description=d['description'],
                 is_active=True
             )
             db.session.add(new_department)
-        
-        # Save all departments to database
         db.session.commit()
         print("Sample departments created successfully")
 
 # =================== SAMPLE DOCTORS CREATION SECTION ===================
 
 def create_sample_doctors():
-    # Check if doctors already exist
     existing_doctors = Doctor.query.first()
-    
-    # Create doctors only if none exist
     if existing_doctors is None:
-        # Get departments for assignment
-        cardiology_department = Department.query.filter_by(name='Cardiology').first()
-        oncology_department = Department.query.filter_by(name='Oncology').first()
-        neurology_department = Department.query.filter_by(name='Neurology').first()
-        orthopedics_department = Department.query.filter_by(name='Orthopedics').first()
-        pediatrics_department = Department.query.filter_by(name='Pediatrics').first()
-        
-        # List of sample doctors to create
+        # fetch departments
+        cardiology = Department.query.filter_by(name='Cardiology').first()
+        neurology = Department.query.filter_by(name='Neurology').first()
+        orthopedics = Department.query.filter_by(name='Orthopedics').first()
+        psychiatry = Department.query.filter_by(name='Psychiatry').first()
+
         sample_doctors_list = [
             {
-                'username': 'dr_smith',
-                'email': 'dr.smith@hospital.com',
-                'password': 'doctor123',
-                'name': 'Dr. John Smith',
+                'username': 'dr_ajay',
+                'email': 'ajay.kumar@medihub.in',
+                'password': 'Doctor#123',
+                'name': 'Ajay Kumar',
                 'specialization': 'Cardiology',
-                'department_id': cardiology_department.id if cardiology_department else None,
-                'experience': 10,
-                'qualification': 'MD Cardiology',
-                'phone': '+1-555-0101',
-                'consultation_fee': 200
+                'department_id': cardiology.id if cardiology else None,
+                'experience': 14,
+                'qualification': 'MD, DM (Cardiology)',
+                'phone': '+91-9876543210',
+                'consultation_fee': 1200
             },
             {
-                'username': 'dr_johnson',
-                'email': 'dr.johnson@hospital.com',
-                'password': 'doctor123',
-                'name': 'Dr. Sarah Johnson',
-                'specialization': 'Oncology',
-                'department_id': oncology_department.id if oncology_department else None,
-                'experience': 8,
-                'qualification': 'MD Oncology',
-                'phone': '+1-555-0102',
-                'consultation_fee': 250
-            },
-            {
-                'username': 'dr_williams',
-                'email': 'dr.williams@hospital.com',
-                'password': 'doctor123',
-                'name': 'Dr. Michael Williams',
+                'username': 'dr_rajesh',
+                'email': 'rajesh.verma@medihub.in',
+                'password': 'Doctor#123',
+                'name': 'Rajesh Verma',
                 'specialization': 'Neurology',
-                'department_id': neurology_department.id if neurology_department else None,
+                'department_id': neurology.id if neurology else None,
                 'experience': 12,
-                'qualification': 'MD Neurology',
-                'phone': '+1-555-0103',
-                'consultation_fee': 300
+                'qualification': 'MBBS, MD (Neurology)',
+                'phone': '+91-9876543212',
+                'consultation_fee': 1400
             },
             {
-                'username': 'dr_davis',
-                'email': 'dr.davis@hospital.com',
-                'password': 'doctor123',
-                'name': 'Dr. Emily Davis',
+                'username': 'dr_sneha',
+                'email': 'sneha.patel@medihub.in',
+                'password': 'Doctor#123',
+                'name': 'Sneha Patel',
                 'specialization': 'Orthopedics',
-                'department_id': orthopedics_department.id if orthopedics_department else None,
-                'experience': 6,
-                'qualification': 'MD Orthopedics',
-                'phone': '+1-555-0104',
-                'consultation_fee': 180
+                'department_id': orthopedics.id if orthopedics else None,
+                'experience': 8,
+                'qualification': 'MS Orthopedics',
+                'phone': '+91-9876543213',
+                'consultation_fee': 1000
             },
             {
-                'username': 'dr_brown',
-                'email': 'dr.brown@hospital.com',
-                'password': 'doctor123',
-                'name': 'Dr. James Brown',
-                'specialization': 'Pediatrics',
-                'department_id': pediatrics_department.id if pediatrics_department else None,
-                'experience': 9,
-                'qualification': 'MD Pediatrics',
-                'phone': '+1-555-0105',
-                'consultation_fee': 150
+                'username': 'dr_rahul',
+                'email': 'rahul.kumar@medihub.in',
+                'password': 'Doctor#123',
+                'name': 'Rahul Kumar',
+                'specialization': 'Psychiatry',
+                'department_id': psychiatry.id if psychiatry else None,
+                'experience': 11,
+                'qualification': 'MD Psychiatry',
+                'phone': '+91-9876543216',
+                'consultation_fee': 1000
             }
         ]
-        
-        # Create each doctor with user account
-        for single_doctor_data in sample_doctors_list:
-            # Create user account for doctor
+
+        for d in sample_doctors_list:
             doctor_user_account = User(
-                username=single_doctor_data['username'],
-                email=single_doctor_data['email'],
-                password_hash=generate_password_hash(single_doctor_data['password']),
+                username=d['username'],
+                email=d['email'],
+                password_hash=generate_password_hash(d['password']),
                 role='doctor',
                 is_active=True
             )
             db.session.add(doctor_user_account)
-            db.session.flush()  # Get the user ID
-            
-            # Create doctor profile
+            db.session.flush()
+
             doctor_profile = Doctor(
                 user_id=doctor_user_account.id,
-                name=single_doctor_data['name'],
-                specialization=single_doctor_data['specialization'],
-                department_id=single_doctor_data['department_id'],
-                experience=single_doctor_data['experience'],
-                qualification=single_doctor_data['qualification'],
-                phone=single_doctor_data['phone'],
-                consultation_fee=single_doctor_data['consultation_fee'],
+                name=d['name'],
+                specialization=d['specialization'],
+                department_id=d['department_id'],
+                experience=d['experience'],
+                qualification=d['qualification'],
+                phone=d['phone'],
+                consultation_fee=d['consultation_fee'],
                 is_active=True
             )
             db.session.add(doctor_profile)
-        
-        # Save all doctors to database
+
         db.session.commit()
         print("Sample doctors created successfully")
 
 # =================== SAMPLE AVAILABILITY SCHEDULES SECTION ===================
 
 def create_sample_availability():
-    # Get all doctors from database
     all_doctors_list = Doctor.query.all()
-    
-    # Create availability schedules for each doctor
-    for single_doctor in all_doctors_list:
-        # Check if this doctor already has availability schedules
-        existing_availability = DoctorAvailability.query.filter_by(doctor_id=single_doctor.id).first()
-        
-        # Create availability only if none exists for this doctor
+    for doc in all_doctors_list:
+        existing_availability = DoctorAvailability.query.filter_by(doctor_id=doc.id).first()
         if existing_availability is None:
-            # Create schedules for weekdays (Monday=0 to Friday=4)
-            for weekday_number in range(5):
-                # Create morning availability (9 AM to 1 PM)
+            # Weekdays (Mon-Fri)
+            for weekday in range(5):
+                # Morning 9:00 - 13:00
                 morning_schedule = DoctorAvailability(
-                    doctor_id=single_doctor.id,
-                    day_of_week=weekday_number,
-                    start_time=time(9, 0),   # 9:00 AM
-                    end_time=time(13, 0),    # 1:00 PM
+                    doctor_id=doc.id,
+                    day_of_week=weekday,
+                    start_time=time(9, 0),
+                    end_time=time(13, 0),
                     is_available=True
                 )
                 db.session.add(morning_schedule)
-                
-                # Create afternoon availability (2 PM to 6 PM)
-                afternoon_schedule = DoctorAvailability(
-                    doctor_id=single_doctor.id,
-                    day_of_week=weekday_number,
-                    start_time=time(14, 0),  # 2:00 PM
-                    end_time=time(18, 0),    # 6:00 PM
+
+                # Evening 15:00 - 18:00
+                evening_schedule = DoctorAvailability(
+                    doctor_id=doc.id,
+                    day_of_week=weekday,
+                    start_time=time(15, 0),
+                    end_time=time(18, 0),
                     is_available=True
                 )
-                db.session.add(afternoon_schedule)
-    
-    # Save all availability schedules to database
+                db.session.add(evening_schedule)
     db.session.commit()
     print("Sample availability schedules created successfully")
 
 # =================== SAMPLE PATIENTS CREATION SECTION ===================
 
 def create_sample_patients():
-    # Check if patients already exist
     existing_patients = Patient.query.first()
-    
-    # Create patients only if none exist
     if existing_patients is None:
-        # List of sample patients to create
         sample_patients_list = [
             {
-                'username': 'patient1',
-                'email': 'patient1@example.com',
-                'password': 'patient123',
-                'name': 'John Doe',
-                'phone': '+1-234-567-8901',
-                'address': '123 Main St, Springfield',
-                'age': 45,
+                'username': 'arjun87',
+                'email': 'arjun.patel@gmail.com',
+                'password': 'Patient#123',
+                'name': 'Arjun Patel',
+                'phone': '+91-9100001001',
+                'address': 'Flat 201, S V Apartments, Andheri East, Mumbai',
+                'age': 37,
                 'gender': 'Male',
-                'medical_history': 'Hypertension, Diabetes Type 2'
+                'medical_history': 'Hypertension'
             },
             {
-                'username': 'patient2',
-                'email': 'patient2@example.com',
-                'password': 'patient123',
-                'name': 'Jane Smith',
-                'phone': '+1-234-567-8902',
-                'address': '456 Oak Ave, Springfield',
-                'age': 32,
-                'gender': 'Female',
-                'medical_history': 'Allergic to penicillin'
-            },
-            {
-                'username': 'patient3',
-                'email': 'patient3@example.com',
-                'password': 'patient123',
-                'name': 'Robert Johnson',
-                'phone': '+1-234-567-8903',
-                'address': '789 Pine Rd, Springfield',
-                'age': 28,
+                'username': 'vikram30',
+                'email': 'vikram.singh@gmail.com',
+                'password': 'Patient#123',
+                'name': 'Vikram Singh',
+                'phone': '+91-9100001003',
+                'address': '12, MG Road, Bengaluru',
+                'age': 29,
                 'gender': 'Male',
-                'medical_history': 'No known medical conditions'
+                'medical_history': 'Asthma'
             },
             {
-                'username': 'patient4',
-                'email': 'patient4@example.com',
-                'password': 'patient123',
-                'name': 'Maria Garcia',
-                'phone': '+1-234-567-8904',
-                'address': '321 Elm St, Springfield',
+                'username': 'anjali56',
+                'email': 'anjali.mukherjee@gmail.com',
+                'password': 'Patient#123',
+                'name': 'Anjali Mukherjee',
+                'phone': '+91-9100001004',
+                'address': 'House No. 7, Salt Lake, Kolkata',
                 'age': 56,
                 'gender': 'Female',
-                'medical_history': 'Arthritis, High cholesterol'
-            },
-            {
-                'username': 'patient5',
-                'email': 'patient5@example.com',
-                'password': 'patient123',
-                'name': 'David Wilson',
-                'phone': '+1-234-567-8905',
-                'address': '654 Maple Dr, Springfield',
-                'age': 41,
-                'gender': 'Male',
-                'medical_history': 'Asthma, Seasonal allergies'
+                'medical_history': 'Diabetes Type 2'
             }
         ]
-        
-        # Create each patient with user account
-        for single_patient_data in sample_patients_list:
-            # Create user account for patient
+
+        for p in sample_patients_list:
             patient_user_account = User(
-                username=single_patient_data['username'],
-                email=single_patient_data['email'],
-                password_hash=generate_password_hash(single_patient_data['password']),
+                username=p['username'],
+                email=p['email'],
+                password_hash=generate_password_hash(p['password']),
                 role='patient',
                 is_active=True
             )
             db.session.add(patient_user_account)
-            db.session.flush()  # Get the user ID
-            
-            # Create patient profile
+            db.session.flush()
+
             patient_profile = Patient(
                 user_id=patient_user_account.id,
-                name=single_patient_data['name'],
-                phone=single_patient_data['phone'],
-                address=single_patient_data['address'],
-                age=single_patient_data['age'],
-                gender=single_patient_data['gender'],
-                medical_history=single_patient_data['medical_history'],
+                name=p['name'],
+                phone=p['phone'],
+                address=p['address'],
+                age=p['age'],
+                gender=p['gender'],
+                medical_history=p['medical_history'],
                 is_blacklisted=False
             )
             db.session.add(patient_profile)
-        
-        # Save all patients to database
+
         db.session.commit()
         print("Sample patients created successfully")
 
@@ -290,42 +217,32 @@ def create_sample_patients():
 
 if __name__ == '__main__':
     print("Starting database initialization process...")
-    
-    # Use Flask application context for database operations
-    with main_app.app_context():
-        # Step 1: Create all database tables and default admin user
-        create_database_tables()
+
+    with app.app_context():
+        # Create all database tables
+        db.create_all()
+        print("✅ Database tables created successfully!")
         
-        # Step 2: Create sample departments
         create_sample_departments()
-        
-        # Step 3: Create sample doctors with their user accounts
         create_sample_doctors()
-        
-        # Step 4: Create availability schedules for all doctors
         create_sample_availability()
-        
-        # Step 5: Create sample patients with their user accounts
         create_sample_patients()
-    
+
     print("\n" + "="*60)
+    print("MediHub - Hospital Management System")
     print("DATABASE INITIALIZATION COMPLETED SUCCESSFULLY!")
     print("="*60)
-    print("\nDefault login credentials for testing:")
+    print("\nDefault login credentials for testing purposes:")
     print("\n📋 ADMIN ACCESS:")
     print("   Username: admin")
-    print("   Password: admin123")
+    print("   Password: Admin@123")
     print("\n👨‍⚕️ DOCTOR ACCOUNTS:")
-    print("   Username: dr_smith     | Password: doctor123 | Specialization: Cardiology")
-    print("   Username: dr_johnson   | Password: doctor123 | Specialization: Oncology")
-    print("   Username: dr_williams  | Password: doctor123 | Specialization: Neurology")
-    print("   Username: dr_davis     | Password: doctor123 | Specialization: Orthopedics")
-    print("   Username: dr_brown     | Password: doctor123 | Specialization: Pediatrics")
+    print("   Username: dr_ajay       | Password: Doctor#123 | Specialization: Cardiology")
+    print("   Username: dr_rajesh     | Password: Doctor#123 | Specialization: Neurology")
+    print("   Username: dr_sneha      | Password: Doctor#123 | Specialization: Orthopedics")
+    print("   Username: dr_rahul      | Password: Doctor#123 | Specialization: Psychiatry")
     print("\n🏥 PATIENT ACCOUNTS:")
-    print("   Username: patient1     | Password: patient123 | Name: John Doe")
-    print("   Username: patient2     | Password: patient123 | Name: Jane Smith")
-    print("   Username: patient3     | Password: patient123 | Name: Robert Johnson")
-    print("   Username: patient4     | Password: patient123 | Name: Maria Garcia")
-    print("   Username: patient5     | Password: patient123 | Name: David Wilson")
-    print("\n💡 TIP: Run 'python app.py' to start the hospital management system!")
+    print("   Username: arjun87       | Password: Patient#123 | Name: Arjun Patel")
+    print("   Username: vikram30      | Password: Patient#123 | Name: Vikram Singh")
+    print("   Username: anjali56      | Password: Patient#123 | Name: Anjali Mukherjee")
     print("="*60)

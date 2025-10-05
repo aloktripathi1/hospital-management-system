@@ -191,15 +191,15 @@ class ApiService {
   }
 
   static async getDepartments() {
-    return this.get("/patient/departments")
+    return this.get("/admin/departments")
   }
 
   static async updateDepartment(id, data) {
     return this.put(`/admin/departments/${id}`, data)
   }
 
-  static async getDoctorsBySpecialization(specialization) {
-    return this.get(`/patient/doctors?specialization=${encodeURIComponent(specialization)}`)
+  static async getDoctorsByDepartment(department) {
+    return this.get(`/patient/doctors?department=${encodeURIComponent(department)}`)
   }
 
   static async getPatientAppointments() {

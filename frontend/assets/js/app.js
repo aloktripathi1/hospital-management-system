@@ -29,15 +29,16 @@ const App = {
             filteredAppointments: [],
             doctorSearchQuery: '',
             patientSearchQuery: '',
-            doctorSpecializationFilter: '',
-            doctorSpecializations: [],
+            doctorDepartmentFilter: '',
+            doctorDepartments: [],
+            allDepartments: [],
             filteredDoctors: [],
             filteredPatients: [],
             adminView: 'dashboard', // 'dashboard', 'add-doctor', 'edit-doctor', 'edit-patient', 'patient-history', 'departments', 'add-department', 'edit-department'
       newDoctor: {
         name: '',
         email: '',
-        specialization: '',
+        department_id: '',
         experience: '',
         phone: '',
         qualification: ''
@@ -89,7 +90,7 @@ const App = {
       },
       profileForm: {
         name: '',
-        specialization: '',
+        department_id: '',
         experience: '',
         phone: '',
         qualification: '',
@@ -105,7 +106,7 @@ const App = {
       availableSlots: [],
       patientInfo: null,
       bookingForm: {
-        specialization: '',
+        department_id: '',
         doctor_id: '',
         appointment_date: '',
         appointment_time: '',
@@ -268,8 +269,14 @@ const App = {
         if (doctorsResponse.success) {
           this.doctors = doctorsResponse.data.doctors
           this.filteredDoctors = [...this.doctors]
-          // Extract unique specializations
-          this.doctorSpecializations = [...new Set(this.doctors.map(d => d.specialization))]
+          // Extract unique departments
+          this.doctorDepartments = [...new Set(this.doctors.map(d => d.department))]
+        }
+
+        // Load departments for forms
+        const allDepartmentsResponse = await window.ApiService.getDepartments()
+        if (allDepartmentsResponse.success) {
+          this.allDepartments = allDepartmentsResponse.data.departments
         }
         
         // Load patients
@@ -286,10 +293,10 @@ const App = {
           this.filterAppointments() // Initialize filtered appointments
         }
         
-        // Load departments
-        const departmentsResponse = await window.ApiService.getAdminDepartments()
-        if (departmentsResponse.success) {
-          this.adminDepartments = departmentsResponse.data.departments
+        // Load admin departments
+        const adminDepartmentsResponse = await window.ApiService.getAdminDepartments()
+        if (adminDepartmentsResponse.success) {
+          this.adminDepartments = adminDepartmentsResponse.data.departments
         }
       } catch (error) {
         console.error("Failed to load admin data:", error)
@@ -361,7 +368,7 @@ const App = {
             email: '',
             password: '',
             name: '',
-            specialization: '',
+            department_id: '',
             experience: '',
             phone: '',
             qualification: ''
@@ -448,7 +455,7 @@ const App = {
     },
 
     // Patient methods
-    async loadDoctorsBySpecialization() { await window.PatientModule.loadDoctorsBySpecialization(this) },
+    async loadDoctorsByDepartment() { await window.PatientModule.loadDoctorsByDepartment(this) },
 
     async bookAppointment() {
       this.loading = true
@@ -459,7 +466,7 @@ const App = {
         if (response.success) {
           this.success = 'Appointment booked successfully'
           this.bookingForm = {
-            specialization: '',
+            department_id: '',
             doctor_id: '',
             appointment_date: '',
             appointment_time: '',
@@ -599,7 +606,7 @@ const App = {
           this.newDoctor = {
             name: '',
             email: '',
-            specialization: '',
+            department_id: '',
             experience: '',
             phone: '',
             qualification: ''
@@ -633,7 +640,7 @@ const App = {
         const query = this.doctorSearchQuery.toLowerCase()
         this.filteredDoctors = this.doctors.filter(doctor => 
           doctor.name.toLowerCase().includes(query) || 
-          doctor.specialization.toLowerCase().includes(query)
+          doctor.department.toLowerCase().includes(query)
         )
       }
     },
@@ -643,12 +650,12 @@ const App = {
       this.filteredDoctors = [...this.doctors]
     },
 
-    filterDoctorsBySpecialization() {
-      if (!this.doctorSpecializationFilter) {
+    filterDoctorsByDepartment() {
+      if (!this.doctorDepartmentFilter) {
         this.filteredDoctors = [...this.doctors]
       } else {
         this.filteredDoctors = this.doctors.filter(doctor => 
-          doctor.specialization === this.doctorSpecializationFilter
+          doctor.department === this.doctorDepartmentFilter
         )
       }
     },
@@ -671,8 +678,8 @@ const App = {
     },
 
     getPatientPrefix() {
-      // This is a simple implementation - in a real app, you'd get gender from user profile
-      return 'Mr. ' // Default to Mr. for now
+      // Return empty string to display patient names without any prefix
+      return ''
     },
 
     // Admin methods
@@ -709,7 +716,7 @@ const App = {
           this.newDoctor = {
             name: '',
             email: '',
-            specialization: '',
+            department_id: '',
             experience: '',
             phone: '',
             qualification: '',

@@ -83,7 +83,7 @@ def get_departments():
             doctor_info = {
                 'id': single_doctor.id,
                 'name': single_doctor.name,
-                'specialization': single_doctor.specialization
+                'department': single_department.name
             }
             doctors_info_list.append(doctor_info)
         
@@ -248,12 +248,14 @@ def get_available_slots():
 @patient_required
 def get_doctors():
     try:
-        specialization = request.args.get('specialization')
+        department_name = request.args.get('department')
         
         query = Doctor.query.filter_by(is_active=True)
         
-        if specialization:
-            query = query.filter_by(specialization=specialization)
+        if department_name:
+            # Join with Department table to filter by department name
+            from models import Department
+            query = query.join(Department).filter(Department.name == department_name)
         
         doctors = query.all()
         

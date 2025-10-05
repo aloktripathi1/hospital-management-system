@@ -56,3 +56,7 @@ class Appointment(db.Model):
     def __repr__(self):
         return f'<Appointment: {self.id} - {self.appointment_date} {self.appointment_time}>'
 
+    # Add to_dict for API compatibility
+    def to_dict(self):
+        return self.get_appointment_data()
+

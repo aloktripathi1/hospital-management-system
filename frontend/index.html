@@ -145,8 +145,8 @@
                                 </div>
                                 <div class="col-md-6" v-if="currentUser.role === 'doctor'">
                                     <div class="mb-3">
-                                        <label for="profile_specialization" class="form-label">Specialization</label>
-                                        <input type="text" class="form-control" id="profile_specialization" v-model="profileForm.specialization" required>
+                                        <label for="profile_department" class="form-label">Department</label>
+                                        <input type="text" class="form-control" id="profile_department" v-model="profileForm.department" required>
                                     </div>
                                 </div>
                             </div>
@@ -282,8 +282,9 @@
                                         <div class="mt-4 p-3 bg-light rounded">
                                             <small class="text-muted">
                                                 <strong>Demo Accounts:</strong><br>
-                                                Admin: admin / admin123<br>
-                                                Doctor: dr_smith / doctor123
+                                                Admin: admin / Admin@123<br>
+                                                Doctor: dr_rahul / Doctor#123<br>
+                                                Patient: arjun87 / Patient#123
                                             </small>
                                         </div>
                                     </div>
@@ -423,15 +424,15 @@
                                         <thead>
                                             <tr>
                                                 <th>Name</th>
-                                                <th>Specialization</th>
+                                                <th>Department</th>
                                                 <th>Experience</th>
                                                 <th>Status</th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             <tr v-for="doctor in searchResults.doctors" :key="doctor.id">
-                                                <td>{{ doctor.name }}</td>
-                                                <td>{{ doctor.specialization }}</td>
+                                                <td>Dr. {{ doctor.name }}</td>
+                                                <td>{{ doctor.department }}</td>
                                                 <td>{{ doctor.experience }} years</td>
                                                 <td>
                                                     <span class="badge" :class="doctor.is_active ? 'bg-success' : 'bg-danger'">
@@ -510,16 +511,16 @@
                                     <div class="row mb-3">
                                         <div class="col-md-6">
                                             <div class="input-group">
-                                                <input type="text" class="form-control" placeholder="Search doctors by name or specialization..." v-model="doctorSearchQuery" @input="searchDoctors">
+                                                <input type="text" class="form-control" placeholder="Search doctors by name or department..." v-model="doctorSearchQuery" @input="searchDoctors">
                                                 <button class="btn btn-outline-secondary" type="button" @click="clearDoctorSearch">
                                                     <i class="bi bi-x"></i>
                                                 </button>
                                             </div>
                                         </div>
                                         <div class="col-md-6">
-                                            <select class="form-control" v-model="doctorSpecializationFilter" @change="filterDoctorsBySpecialization">
-                                                <option value="">All Specializations</option>
-                                                <option v-for="spec in doctorSpecializations" :key="spec" :value="spec">{{ spec }}</option>
+                                            <select class="form-control" v-model="doctorDepartmentFilter" @change="filterDoctorsByDepartment">
+                                                <option value="">All Departments</option>
+                                                <option v-for="dept in doctorDepartments" :key="dept" :value="dept">{{ dept }}</option>
                                             </select>
                                         </div>
                                     </div>
@@ -529,7 +530,7 @@
                                                 <tr>
                                                     <th>Sr. No.</th>
                                                     <th>Name</th>
-                                                    <th>Specialization</th>
+                                                    <th>Department</th>
                                                     <th>Experience</th>
                                                     <th>Status</th>
                                                     <th>Actions</th>
@@ -539,7 +540,7 @@
                                                 <tr v-for="(doctor, index) in filteredDoctors" :key="doctor.id">
                                                     <td>{{ index + 1 }}.</td>
                                                     <td>Dr. {{ doctor.name }}</td>
-                                                    <td>{{ doctor.specialization }}</td>
+                                                    <td>{{ doctor.department }}</td>
                                                     <td>{{ doctor.experience }} years</td>
                                                     <td>
                                                         <span class="badge" :class="doctor.is_active ? 'bg-success' : 'bg-danger'">
@@ -722,7 +723,7 @@
                                                     <td>{{ index + 1 }}.</td>
                                                     <td>{{ getPatientPrefix() }}{{ appointment.patient ? appointment.patient.name : 'N/A' }}</td>
                                                     <td>Dr. {{ appointment.doctor ? appointment.doctor.name : 'N/A' }}</td>
-                                                    <td>{{ appointment.doctor ? appointment.doctor.specialization : 'N/A' }}</td>
+                                                    <td>{{ appointment.doctor ? appointment.doctor.department : 'N/A' }}</td>
                                                     <td>{{ appointment.appointment_date }} {{ appointment.appointment_time }}</td>
                                                     <td>
                                                         <span class="badge" :class="getStatusClass(appointment.status)">
@@ -764,8 +765,11 @@
                                 <div class="row">
                                     <div class="col-md-6">
                                         <div class="mb-3">
-                                            <label for="new_specialization" class="form-label">Specialization</label>
-                                            <input type="text" class="form-control" id="new_specialization" v-model="newDoctor.specialization" required>
+                                            <label for="new_department" class="form-label">Department</label>
+                                            <select class="form-control" id="new_department" v-model="newDoctor.department_id" required>
+                                                <option value="">Select Department</option>
+                                                <option v-for="dept in allDepartments" :key="dept.id" :value="dept.id">{{ dept.name }}</option>
+                                            </select>
                                         </div>
                                     </div>
                                     <div class="col-md-6">
@@ -817,8 +821,11 @@
                                     </div>
                                     <div class="col-md-6">
                                         <div class="mb-3">
-                                            <label for="edit_specialization" class="form-label">Specialization</label>
-                                            <input type="text" class="form-control" id="edit_specialization" v-model="editingDoctor.specialization" required>
+                                            <label for="edit_department" class="form-label">Department</label>
+                                            <select class="form-control" id="edit_department" v-model="editingDoctor.department_id" required>
+                                                <option value="">Select Department</option>
+                                                <option v-for="dept in allDepartments" :key="dept.id" :value="dept.id">{{ dept.name }}</option>
+                                            </select>
                                         </div>
                                     </div>
                                 </div>
@@ -960,7 +967,7 @@
                                             <td>{{ new Date(appointment.appointment_date).toLocaleDateString() }}</td>
                                             <td>{{ appointment.appointment_time }}</td>
                                             <td>Dr. {{ appointment.doctor?.name || 'N/A' }}</td>
-                                            <td>{{ appointment.doctor?.specialization || 'N/A' }}</td>
+                                            <td>{{ appointment.doctor?.department || 'N/A' }}</td>
                                             <td>
                                                 <span class="badge" :class="getStatusClass(appointment.status)">
                                                     {{ appointment.status }}
@@ -1486,7 +1493,7 @@
                                                     <div>
                                                         <strong>Doctors:</strong>
                                                         <ul class="small mb-0" v-if="dept.doctors && dept.doctors.length">
-                                                            <li v-for="doc in dept.doctors" :key="doc.id">Dr. {{ doc.name }} ({{ doc.specialization }})</li>
+                                                            <li v-for="doc in dept.doctors" :key="doc.id">Dr. {{ doc.name }}</li>
                                                         </ul>
                                                         <p v-else class="small text-muted mb-0">No doctors listed</p>
                                                     </div>
@@ -1531,7 +1538,7 @@
                                                             :class="selectedDoctor?.id === doctor.id ? 'btn-primary' : 'btn-outline-primary'"
                                                             @click="selectDoctor(doctor)">
                                                         <strong>Dr. {{ doctor.name }}</strong><br>
-                                                        <small>{{ doctor.specialization }}</small>
+                                                        <small>{{ doctor.department }}</small>
                                                     </button>
                                                 </div>
                                             </div>
@@ -1613,7 +1620,7 @@
                                             </thead>
                                             <tbody>
                                                 <tr v-for="appointment in patientAppointments" :key="appointment.id">
-                                                    <td>{{ appointment.doctor ? appointment.doctor.name : 'N/A' }}</td>
+                                                    <td>{{ appointment.doctor ? 'Dr. ' + appointment.doctor.name : 'N/A' }}</td>
                                                     <td>{{ appointment.doctor ? appointment.doctor.specialization : 'N/A' }}</td>
                                                     <td>{{ appointment.appointment_date }}</td>
                                                     <td>{{ appointment.appointment_time }}</td>
