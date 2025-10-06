@@ -63,12 +63,12 @@ def setup_database():
             admin = User(
                 username='admin',
                 email='admin@medihub.com',
-                password_hash=generate_password_hash('Admin@123'),
+                password_hash=generate_password_hash('admin'),
                 role='admin'
             )
             db.session.add(admin)
             db.session.commit()
-            print("Admin created: admin/Admin@123")
+            print("Admin created: admin/admin")
 
 # ----------- Run App -----------
 if __name__ == '__main__':

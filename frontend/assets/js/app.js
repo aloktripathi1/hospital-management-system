@@ -81,6 +81,13 @@ const App = {
         prescription: '',
         treatment_notes: ''
       },
+      // Complete treatment form for appointment completion
+      completeTreatmentForm: {
+        diagnosis: '',
+        prescription: '',
+        treatment_notes: ''
+      },
+      selectedAppointmentForTreatment: null,
       availabilityForm: {
         start_date: '',
         end_date: '',
@@ -101,6 +108,8 @@ const App = {
       availableDoctors: [],
       patientAppointments: [],
       treatments: [],
+      allPatientAppointments: [], // Unified appointments (both current and past)
+      selectedAppointmentHistory: null, // For appointment history modal
       selectedDepartment: null,
       selectedDoctor: null,
       availableSlots: [],
@@ -235,6 +244,9 @@ const App = {
       this.doctorPatients = []
       this.patientAppointments = []
       this.treatments = []
+      this.allPatientAppointments = []
+      this.selectedAppointmentHistory = null
+      this.selectedAppointmentForTreatment = null
       this.departments = []
       this.availableDoctors = []
     },
@@ -253,6 +265,84 @@ const App = {
       } catch (error) {
         console.error("Failed to load dashboard data:", error)
         this.error = "Failed to load dashboard data"
+      }
+    },
+
+    // Open treatment modal for appointment completion
+    openTreatmentModal(appointment) {
+      this.selectedAppointmentForTreatment = appointment
+      this.completeTreatmentForm = {
+        diagnosis: '',
+        prescription: '',
+        treatment_notes: ''
+      }
+      // Show modal using Bootstrap
+      const modal = new bootstrap.Modal(document.getElementById('completeTreatmentModal'))
+      modal.show()
+    },
+
+    // Complete appointment with treatment notes
+    async completeAppointmentWithTreatment() {
+      if (!this.completeTreatmentForm.diagnosis.trim()) {
+        this.error = 'Diagnosis is required to complete appointment'
+        return
+      }
+      
+      if (!this.completeTreatmentForm.treatment_notes.trim()) {
+        this.error = 'Treatment notes are required to complete appointment'
+        return
+      }
+
+      this.loading = true
+      this.error = null
+
+      try {
+        // First create treatment record
+        const treatmentData = {
+          appointment_id: this.selectedAppointmentForTreatment.id,
+          visit_type: 'consultation',
+          symptoms: '', // Optional for completion
+          diagnosis: this.completeTreatmentForm.diagnosis,
+          prescription: this.completeTreatmentForm.prescription,
+          treatment_notes: this.completeTreatmentForm.treatment_notes
+        }
+
+        const treatmentResponse = await window.ApiService.updatePatientHistory(treatmentData)
+        
+        if (treatmentResponse.success) {
+          // Then mark appointment as completed
+          const statusResponse = await window.ApiService.updateAppointmentStatus(
+            this.selectedAppointmentForTreatment.id, 
+            'completed'
+          )
+          
+          if (statusResponse.success) {
+            this.success = 'Appointment completed successfully with treatment notes'
+            
+            // Close modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('completeTreatmentModal'))
+            if (modal) modal.hide()
+            
+            // Clear form
+            this.selectedAppointmentForTreatment = null
+            this.completeTreatmentForm = {
+              diagnosis: '',
+              prescription: '',
+              treatment_notes: ''
+            }
+            
+            // Reload appointments
+            await this.loadDoctorData()
+          } else {
+            this.error = statusResponse.message || 'Failed to update appointment status'
+          }
+        } else {
+          this.error = treatmentResponse.message || 'Failed to add treatment record'
+        }
+      } catch (error) {
+        this.error = error.message || 'Failed to complete appointment'
+      } finally {
+        this.loading = false
       }
     },
 
@@ -349,9 +439,103 @@ const App = {
         if (historyResponse.success) {
           this.treatments = historyResponse.data.treatments
         }
+        
+        // Merge appointments and treatments into unified list
+        this.mergeAppointmentsAndTreatments()
+        
       } catch (error) {
         console.error("Failed to load patient data:", error)
       }
+    },
+
+    // Merge appointments and treatments into unified list
+    mergeAppointmentsAndTreatments() {
+      const allAppointments = []
+      
+      // Add current appointments (booked, cancelled, etc.)
+      if (this.patientAppointments && this.patientAppointments.length > 0) {
+        this.patientAppointments.forEach(appointment => {
+          allAppointments.push({
+            ...appointment,
+            type: 'appointment',
+            // Ensure we have a department field
+            department: appointment.department || (appointment.doctor ? appointment.doctor.specialization : 'N/A')
+          })
+        })
+      }
+      
+      // Add completed appointments from treatments
+      if (this.treatments && this.treatments.length > 0) {
+        this.treatments.forEach(treatment => {
+          // Create appointment-like object from treatment
+          allAppointments.push({
+            id: `treatment_${treatment.id}`,
+            appointment_date: treatment.created_at ? treatment.created_at.split('T')[0] : '',
+            appointment_time: treatment.created_at ? treatment.created_at.split('T')[1]?.split('.')[0] || '00:00' : '00:00',
+            doctor: treatment.doctor || null,
+            department: treatment.doctor ? treatment.doctor.specialization : 'N/A',
+            status: 'completed',
+            type: 'treatment',
+            treatment: treatment // Store full treatment data for history view
+          })
+        })
+      }
+      
+      // Sort by date (newest first)
+      allAppointments.sort((a, b) => {
+        const dateTimeA = new Date(`${a.appointment_date}T${a.appointment_time}`)
+        const dateTimeB = new Date(`${b.appointment_date}T${b.appointment_time}`)
+        return dateTimeB - dateTimeA
+      })
+      
+      this.allPatientAppointments = allAppointments
+    },
+
+    // Show appointment history on separate page
+    showAppointmentHistory(appointment) {
+      this.selectedAppointmentHistory = appointment
+      // Navigate to appointment history view
+      this.appView = 'appointment-history'
+    },
+
+    // Go back to appointments dashboard from history
+    goBackToAppointments() {
+      this.selectedAppointmentHistory = null
+      // Navigate back to main dashboard
+      this.appView = 'dashboard'
+    },
+
+    // Format date and time for display
+    formatDateTime(date, time) {
+      if (!date) return 'N/A'
+      
+      try {
+        const dateObj = new Date(date)
+        const formattedDate = dateObj.toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric'
+        })
+        
+        if (time && time !== '00:00') {
+          // Format time from 24hr to 12hr
+          const [hours, minutes] = time.split(':')
+          const hour12 = parseInt(hours) % 12 || 12
+          const ampm = parseInt(hours) >= 12 ? 'PM' : 'AM'
+          return `${formattedDate} at ${hour12}:${minutes} ${ampm}`
+        } else {
+          return formattedDate
+        }
+      } catch (error) {
+        console.error('Error formatting date:', error)
+        return `${date} ${time || ''}`
+      }
+    },
+
+    // Capitalize status for display
+    capitalizeStatus(status) {
+      if (!status) return 'N/A'
+      return status.charAt(0).toUpperCase() + status.slice(1).toLowerCase()
     },
 
     // Admin methods
@@ -515,11 +699,11 @@ const App = {
 
     getStatusClass(status) {
       switch (status) {
-        case 'booked': return 'status-booked'
-        case 'completed': return 'status-completed'
-        case 'cancelled': return 'status-cancelled'
-        case 'available': return 'status-available'
-        default: return 'status-pending'
+        case 'booked': return 'bg-info text-white'
+        case 'completed': return 'bg-success text-white'
+        case 'cancelled': return 'bg-danger text-white'
+        case 'available': return 'bg-dark text-white'
+        default: return 'bg-secondary text-white'
       }
     },
 

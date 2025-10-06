@@ -191,7 +191,8 @@ class ApiService {
   }
 
   static async getDepartments() {
-    return this.get("/admin/departments")
+    // Use patient endpoint for patient side department fetching
+    return this.get("/patient/departments")
   }
 
   static async updateDepartment(id, data) {

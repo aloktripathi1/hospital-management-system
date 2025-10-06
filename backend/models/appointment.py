@@ -44,11 +44,32 @@ class Appointment(db.Model):
             appointment_info['patient_name'] = self.patient.name
             appointment_info['patient_phone'] = self.patient.phone
             
-        # Add doctor details
+            # Add nested patient object for frontend
+            appointment_info['patient'] = {
+                'id': self.patient.id,
+                'name': self.patient.name,
+                'phone': self.patient.phone,
+                'age': self.patient.age,
+                'gender': self.patient.gender,
+                'address': self.patient.address,
+                'medical_history': self.patient.medical_history
+            }
+            
+        # Add doctor details in nested object format for frontend compatibility
         if self.doctor:
             appointment_info['doctor_name'] = self.doctor.name
             appointment_info['doctor_specialization'] = self.doctor.specialization
             appointment_info['consultation_fee'] = self.doctor.consultation_fee
+            
+            # Add nested doctor object for frontend
+            appointment_info['doctor'] = {
+                'id': self.doctor.id,
+                'name': self.doctor.name,
+                'specialization': self.doctor.specialization,
+                'department': self.doctor.department.name if self.doctor.department else self.doctor.specialization,
+                'qualification': self.doctor.qualification,
+                'consultation_fee': self.doctor.consultation_fee
+            }
             
         return appointment_info
     

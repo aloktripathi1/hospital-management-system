@@ -77,7 +77,7 @@ def create_sample_doctors():
             {
                 'username': 'dr_rahul',
                 'email': 'rahul.kumar@medihub.in',
-                'password': 'Doctor#123',
+                'password': 'rahul',
                 'name': 'Rahul Kumar',
                 'specialization': 'Psychiatry',
                 'department_id': psychiatry.id if psychiatry else None,
@@ -153,9 +153,9 @@ def create_sample_patients():
     if existing_patients is None:
         sample_patients_list = [
             {
-                'username': 'arjun87',
+                'username': 'arjun',
                 'email': 'arjun.patel@gmail.com',
-                'password': 'Patient#123',
+                'password': 'arjun',
                 'name': 'Arjun Patel',
                 'phone': '+91-9100001001',
                 'address': 'Flat 201, S V Apartments, Andheri East, Mumbai',

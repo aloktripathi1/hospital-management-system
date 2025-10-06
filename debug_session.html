@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Session Debug Tool</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; line-height: 1.6; }
+        .container { max-width: 800px; }
+        button { padding: 8px 16px; margin: 5px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        button.danger { background: #dc3545; }
+        button.danger:hover { background: #c82333; }
+        .result { margin: 15px 0; padding: 15px; border-radius: 4px; border-left: 4px solid #007bff; }
+        .success { border-left-color: #28a745; background: #d4edda; }
+        .error { border-left-color: #dc3545; background: #f8d7da; }
+        .warning { border-left-color: #ffc107; background: #fff3cd; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 4px; overflow-x: auto; }
+        .status-box { background: #e9ecef; padding: 20px; border-radius: 8px; margin: 20px 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Hospital Management - Session Debug Tool</h1>
+        
+        <div class="status-box">
+            <h3>Current Session Status</h3>
+            <div id="sessionStatus">Click "Check Session" to see current login status</div>
+        </div>
+        
+        <div>
+            <button onclick="checkSession()">🔍 Check Session</button>
+            <button onclick="loginAsAdmin()">🔐 Login as Admin</button>
+            <button onclick="testDepartments()">📋 Test Departments API</button>
+            <button onclick="logout()" class="danger">🚪 Logout</button>
+            <button onclick="clearAllData()" class="danger">🧹 Clear All Data</button>
+        </div>
+        
+        <div id="results"></div>
+    </div>
+
+    <script>
+        const baseUrl = '/api';
+        
+        function addResult(title, content, type = 'result') {
+            const resultsDiv = document.getElementById('results');
+            const timestamp = new Date().toLocaleTimeString();
+            
+            const resultDiv = document.createElement('div');
+            resultDiv.className = `result ${type}`;
+            resultDiv.innerHTML = `
+                <h4>${title} <small>(${timestamp})</small></h4>
+                <pre>${content}</pre>
+            `;
+            
+            resultsDiv.insertBefore(resultDiv, resultsDiv.firstChild);
+        }
+        
+        function updateSessionStatus(status) {
+            document.getElementById('sessionStatus').innerHTML = status;
+        }
+
+        async function checkSession() {
+            try {
+                // Try to get current user info
+                const response = await fetch(`${baseUrl}/auth/me`, {
+                    credentials: 'include'
+                });
+                
+                const data = await response.json();
+                
+                if (response.status === 200 && data.success) {
+                    const user = data.data.user;
+                    updateSessionStatus(`
+                        ✅ <strong>LOGGED IN</strong><br>
+                        Username: ${user.username}<br>
+                        Role: <strong>${user.role}</strong><br>
+                        Active: ${user.is_active}
+                    `);
+                    
+                    addResult('✅ Session Check: Logged In', 
+                        `Username: ${user.username}\nRole: ${user.role}\nActive: ${user.is_active}`, 
+                        'success');
+                } else {
+                    updateSessionStatus('❌ <strong>NOT LOGGED IN</strong>');
+                    addResult('❌ Session Check: Not Logged In', 
+                        `Status: ${response.status}\nMessage: ${data.message || 'Unknown error'}`, 
+                        'warning');
+                }
+                
+            } catch (error) {
+                updateSessionStatus('❌ <strong>ERROR CHECKING SESSION</strong>');
+                addResult('❌ Session Check Failed', error.message, 'error');
+            }
+        }
+
+        async function loginAsAdmin() {
+            try {
+                const response = await fetch(`${baseUrl}/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        username: 'admin',
+                        password: 'Admin@123'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.status === 200 && data.success) {
+                    updateSessionStatus(`
+                        ✅ <strong>LOGGED IN AS ADMIN</strong><br>
+                        Username: ${data.data.user.username}<br>
+                        Role: <strong>${data.data.user.role}</strong>
+                    `);
+                    
+                    addResult('✅ Login Successful', 
+                        `Logged in as: ${data.data.user.username}\nRole: ${data.data.user.role}`, 
+                        'success');
+                } else {
+                    addResult('❌ Login Failed', 
+                        `Status: ${response.status}\nMessage: ${data.message}\nResponse: ${JSON.stringify(data, null, 2)}`, 
+                        'error');
+                }
+                
+            } catch (error) {
+                addResult('❌ Login Request Failed', error.message, 'error');
+            }
+        }
+
+        async function testDepartments() {
+            try {
+                const response = await fetch(`${baseUrl}/admin/departments`, {
+                    credentials: 'include'
+                });
+                
+                const data = await response.json();
+                
+                if (response.status === 200 && data.success) {
+                    const departments = data.data.departments || [];
+                    addResult('✅ Departments API Success', 
+                        `Found ${departments.length} departments:\n${departments.map(d => `- ${d.name}: ${d.description}`).join('\n')}`, 
+                        'success');
+                } else if (response.status === 401) {
+                    addResult('🔐 Not Authenticated', 
+                        `Please login first.\nStatus: ${response.status}\nMessage: ${data.message}`, 
+                        'warning');
+                } else if (response.status === 403) {
+                    addResult('🚫 Access Denied', 
+                        `Admin access required.\nStatus: ${response.status}\nMessage: ${data.message}`, 
+                        'error');
+                } else {
+                    addResult('❌ Departments API Failed', 
+                        `Status: ${response.status}\nMessage: ${data.message}\nResponse: ${JSON.stringify(data, null, 2)}`, 
+                        'error');
+                }
+                
+            } catch (error) {
+                addResult('❌ Departments Request Failed', error.message, 'error');
+            }
+        }
+
+        async function logout() {
+            try {
+                const response = await fetch(`${baseUrl}/auth/logout`, {
+                    method: 'POST',
+                    credentials: 'include'
+                });
+                
+                const data = await response.json();
+                
+                if (response.status === 200 && data.success) {
+                    updateSessionStatus('❌ <strong>LOGGED OUT</strong>');
+                    addResult('✅ Logout Successful', 'You have been logged out', 'success');
+                } else {
+                    addResult('❌ Logout Failed', 
+                        `Status: ${response.status}\nMessage: ${data.message}`, 
+                        'error');
+                }
+                
+            } catch (error) {
+                addResult('❌ Logout Request Failed', error.message, 'error');
+            }
+        }
+
+        async function clearAllData() {
+            // Clear all cookies, localStorage, sessionStorage
+            document.cookie.split(";").forEach(function(c) { 
+                document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
+            });
+            localStorage.clear();
+            sessionStorage.clear();
+            
+            updateSessionStatus('🧹 <strong>ALL DATA CLEARED</strong>');
+            addResult('🧹 Data Cleared', 'Cookies, localStorage, and sessionStorage cleared', 'success');
+            
+            // Check session after clearing
+            setTimeout(checkSession, 500);
+        }
+
+        // Auto-check session on page load
+        window.onload = checkSession;
+    </script>
+</body>
+</html>

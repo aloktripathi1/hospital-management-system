@@ -1,38 +1,22 @@
-/* Simple student-level CSS for Hospital Management System */
+/* Simplified CSS for Hospital Management System */
 
+/* Base Styles */
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    /* background-color: #f6f8fb; */
     background-color: #f8f9fa;
-    margin: 0; /* Add this */
-    padding: 0; /* Add this */
+    margin: 0;
+    padding: 0;
 }
 
-.homepage {
-    min-height: 100vh;
-}
-
+/* Hero Section */
 .hero-section {
     background: linear-gradient(135deg, #006064 0%, #00838F 100%);
-    margin: 0 -15px; /* Add this line */
-    padding: 4rem 15px; /* Add this line - adjust 4rem as needed */
+    margin: 0 -15px;
+    padding: 4rem 15px;
 }
 
-/* ... rest of your existing CSS remains the same ... */
-.auth-container {
-    min-height: 100vh;
-}
-
-.auth-form {
-    background: white;
-    padding: 2rem;
-    border-radius: 10px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-}
-
-.dashboard-container {
-    padding: 2rem 0;
-}
-
+/* Cards */
 .card {
     border: none;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
@@ -43,13 +27,12 @@ body {
     transform: translateY(-2px);
 }
 
-.btn {
-    border-radius: 5px;
-}
-
-.form-control {
-    border-radius: 5px;
-    border: 1px solid #ddd;
+/* Forms */
+.auth-form {
+    background: white;
+    padding: 2rem;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 .form-control:focus {
@@ -57,71 +40,17 @@ body {
     box-shadow: 0 0 0 0.2rem rgba(0, 96, 100, 0.25);
 }
 
-.navbar-brand {
-    font-weight: bold;
-    font-size: 1.5rem;
-}
-
-.table {
-    background: white;
-    border-radius: 5px;
-    overflow: hidden;
-}
-
-.alert {
-    border-radius: 5px;
-}
-
-.badge {
-    font-size: 0.8rem;
-}
-
-/* Status badges */
-.status-booked {
-    background-color: #17a2b8;
-}
-
-.status-completed {
-    background-color: #28a745;
-}
-
-.status-cancelled {
-    background-color: #dc3545;
-}
-
-.status-available {
-    background-color: #000000;
-}
-
-/* Simple responsive design */
-@media (max-width: 768px) {
-    .hero-section h1 {
-        font-size: 2rem;
-    }
-    
-    .auth-form {
-        margin: 1rem;
-        padding: 1.5rem;
-    }
-}
-
-/* Override Bootstrap navbar colors */
-.navbar {
-    background: linear-gradient(135deg, #006064 0%, #00838F 100%) !important;
-}
-
-/* Override Bootstrap primary buttons */
-.btn-primary {
-    background: linear-gradient(135deg, #006064 0%, #00838F 100%) !important;
-    border: none;
-}
-
-/* Override card headers */
+/* Primary Color Overrides */
+.navbar,
+.btn-primary,
 .card-header.bg-primary {
     background: linear-gradient(135deg, #006064 0%, #00838F 100%) !important;
 }
 
-/* Override any other primary elements */
+.btn-primary {
+    border: none;
+}
+
 .bg-primary {
     background-color: #006064 !important;
 }
@@ -130,7 +59,13 @@ body {
     color: #006064 !important;
 }
 
-/* Custom icon sizes for Bootstrap Icons */
+/* Status Badges */
+.status-booked { background-color: #17a2b8; }
+.status-completed { background-color: #28a745; }
+.status-cancelled { background-color: #dc3545; }
+.status-available { background-color: #000000; }
+
+/* Icon Sizes */
 .icon-xs { font-size: 0.75rem; }
 .icon-sm { font-size: 1rem; }
 .icon-md { font-size: 1.5rem; }
@@ -143,8 +78,10 @@ body {
 .icon-6x { font-size: 6rem; }
 .icon-7x { font-size: 7rem; }
 
-/* Responsive icon sizes */
+/* Responsive Adjustments */
 @media (max-width: 768px) {
+    .hero-section h1 { font-size: 2rem; }
+    .auth-form { margin: 1rem; padding: 1.5rem; }
     .icon-6x, .icon-7x { font-size: 4rem; }
     .icon-5x { font-size: 3rem; }
     .icon-4x { font-size: 2.5rem; }
