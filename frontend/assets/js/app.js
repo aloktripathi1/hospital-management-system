@@ -532,6 +532,28 @@ const App = {
       }
     },
 
+    // Format time as slot range (e.g., "9:00-11:00")
+    formatTimeSlot(time) {
+      if (!time || time === '00:00') return 'N/A'
+      
+      try {
+        const [hours, minutes] = time.split(':')
+        const startHour = parseInt(hours)
+        const endHour = startHour + 2 // Assuming 2-hour slots
+        
+        // Format start time
+        const startTime = `${startHour}:${minutes}`
+        
+        // Format end time
+        const endTime = `${endHour}:${minutes}`
+        
+        return `${startTime}-${endTime}`
+      } catch (error) {
+        console.error('Error formatting time slot:', error)
+        return time
+      }
+    },
+
     // Capitalize status for display
     capitalizeStatus(status) {
       if (!status) return 'N/A'
@@ -978,31 +1000,15 @@ const App = {
       this.patientHistory = [];
     },
 
-    // Appointment filtering methods
-    setAppointmentFilter(filter) {
-      this.appointmentFilter = filter;
-      this.filterAppointments();
-    },
+    // Appointment filtering methods - simplified to show only relevant appointments
 
     filterAppointments() {
-      if (this.appointmentFilter === 'all') {
-        this.filteredAppointments = [...this.appointments];
-      } else if (this.appointmentFilter === 'upcoming') {
-        // Upcoming: booked appointments
-        this.filteredAppointments = this.appointments.filter(appointment => 
-          appointment.status === 'booked'
-        );
-      } else if (this.appointmentFilter === 'available') {
-        // Available: available slots
-        this.filteredAppointments = this.appointments.filter(appointment => 
-          appointment.status === 'available'
-        );
-      } else if (this.appointmentFilter === 'past') {
-        // Past: completed, cancelled appointments
-        this.filteredAppointments = this.appointments.filter(appointment => 
-          appointment.status === 'completed' || appointment.status === 'cancelled'
-        );
-      }
+      // Show only booked, cancelled, and completed appointments (exclude available slots)
+      this.filteredAppointments = this.appointments.filter(appointment => 
+        appointment.status === 'booked' || 
+        appointment.status === 'cancelled' || 
+        appointment.status === 'completed'
+      );
     },
 
     // Doctor methods
@@ -1044,7 +1050,7 @@ const App = {
       try {
         this.loading = true;
         if (this.currentUser.role === 'doctor') {
-          const response = await window.ApiService.updateDoctor(this.doctorInfo.id, this.profileForm);
+          const response = await window.ApiService.updateDoctorProfile(this.profileForm);
           if (response.success) {
             this.success = 'Profile updated successfully!';
             this.doctorInfo = { ...this.doctorInfo, ...this.profileForm };
@@ -1052,7 +1058,7 @@ const App = {
             this.error = response.message || 'Failed to update profile';
           }
         } else if (this.currentUser.role === 'patient') {
-          const response = await window.ApiService.updatePatient(this.patientInfo.id, this.profileForm);
+          const response = await window.ApiService.updatePatientProfile(this.profileForm);
           if (response.success) {
             this.success = 'Profile updated successfully!';
             this.patientInfo = { ...this.patientInfo, ...this.profileForm };

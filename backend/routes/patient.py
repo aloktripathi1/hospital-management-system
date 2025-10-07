@@ -2,7 +2,7 @@ from flask import Blueprint, request, jsonify, session
 from database import db
 from models import User, Patient, Doctor, Appointment, Treatment, DoctorAvailability
 from datetime import datetime, date, time, timedelta
-from decorators import patient_required
+from decorators import patient_required, patient_or_admin_required
 
 patient_bp = Blueprint('patient', __name__)
 
@@ -57,7 +57,7 @@ def get_dashboard():
 # =============================================================================
 
 @patient_bp.route('/departments', methods=['GET'])
-@patient_required
+@patient_or_admin_required
 def get_departments():
     from models import Department
     
@@ -588,5 +588,73 @@ def export_patient_history():
         return jsonify({
             'success': False,
             'message': 'Failed to start CSV export',
+            'errors': [str(e)]
+        }), 500
+
+# =============================================================================
+# PATIENT PROFILE UPDATE SECTION
+# =============================================================================
+
+@patient_bp.route('/profile', methods=['PUT'])
+@patient_required
+def update_patient_profile():
+    """Update patient's own profile"""
+    try:
+        # Get current patient
+        current_user_id = session.get('user_id')
+        current_patient = Patient.query.filter_by(user_id=current_user_id).first()
+        
+        if not current_patient:
+            return jsonify({
+                'success': False,
+                'message': 'Patient profile not found',
+                'errors': ['Profile not found']
+            }), 404
+        
+        # Get data from request
+        data = request.get_json()
+        if not data:
+            return jsonify({
+                'success': False,
+                'message': 'No data provided',
+                'errors': ['Missing data']
+            }), 400
+        
+        # Update patient fields
+        if 'name' in data:
+            current_patient.name = data['name']
+        if 'phone' in data:
+            current_patient.phone = data['phone']
+        if 'address' in data:
+            current_patient.address = data['address']
+        if 'age' in data:
+            current_patient.age = data['age']
+        if 'gender' in data:
+            current_patient.gender = data['gender']
+        if 'medical_history' in data:
+            current_patient.medical_history = data['medical_history']
+        if 'emergency_contact' in data:
+            current_patient.emergency_contact = data['emergency_contact']
+        
+        # Update user fields if provided
+        if 'email' in data:
+            current_patient.user.email = data['email']
+        
+        # Save changes
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Profile updated successfully',
+            'data': {
+                'patient': current_patient.to_dict()
+            }
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({
+            'success': False,
+            'message': 'Failed to update profile',
             'errors': [str(e)]
         }), 500

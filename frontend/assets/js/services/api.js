@@ -123,8 +123,9 @@ class ApiService {
     return this.post("/admin/doctors", doctorData)
   }
 
-  static async updateDoctor(id, doctorData) {
-    return this.put(`/admin/doctors/${id}`, doctorData)
+  static async updateDoctorProfile(doctorData) {
+    // For self-profile updates, use doctor endpoint
+    return this.put(`/doctor/profile`, doctorData)
   }
 
   static async deleteDoctor(id) {
@@ -135,8 +136,9 @@ class ApiService {
     return this.get("/admin/patients")
   }
 
-  static async updatePatient(id, patientData) {
-    return this.put(`/admin/patients/${id}`, patientData)
+  static async updatePatientProfile(patientData) {
+    // For self-profile updates, use patient endpoint
+    return this.put(`/patient/profile`, patientData)
   }
 
   static async getAppointments() {
@@ -191,7 +193,7 @@ class ApiService {
   }
 
   static async getDepartments() {
-    // Use patient endpoint for patient side department fetching
+    // Use patient endpoint for department fetching with doctor information
     return this.get("/patient/departments")
   }
 

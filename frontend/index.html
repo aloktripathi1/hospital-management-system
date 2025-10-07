@@ -120,9 +120,6 @@
                         <h5 class="mb-0">Edit Profile</h5>
                     </div>
                     <div class="card-body">
-                        <div class="alert alert-info" v-if="currentUser.role === 'patient'">
-                            <small><i class="bi bi-info-circle"></i> Complete your profile with additional information. All fields except name are optional.</small>
-                        </div>
                         <form @submit.prevent="updateProfile">
                             <div class="row">
                                 <div class="col-md-6" v-if="currentUser.role === 'doctor'">
@@ -517,12 +514,6 @@
                                                 </button>
                                             </div>
                                         </div>
-                                        <div class="col-md-6">
-                                            <select class="form-control" v-model="doctorDepartmentFilter" @change="filterDoctorsByDepartment">
-                                                <option value="">All Departments</option>
-                                                <option v-for="dept in doctorDepartments" :key="dept" :value="dept">{{ dept }}</option>
-                                            </select>
-                                        </div>
                                     </div>
                                     <div class="table-responsive">
                                         <table class="table table-striped">
@@ -549,10 +540,10 @@
                                                     </td>
                                                     <td>
                                                         <button class="btn btn-sm btn-outline-primary me-1" @click="editDoctor(doctor)" title="Edit Doctor">
-                                                            <i class="bi bi-pencil"></i>
+                                                            <i class="bi bi-pencil"></i> edit
                                                         </button>
                                                         <button class="btn btn-sm btn-outline-warning" @click="toggleDoctorStatus(doctor)" :title="doctor.is_active ? 'Blacklist Doctor' : 'Activate Doctor'">
-                                                            <i class="bi" :class="doctor.is_active ? 'bi-ban' : 'bi-check-circle'"></i>
+                                                            <i class="bi" :class="doctor.is_active ? 'bi-ban' : 'bi-check-circle'"></i> {{ doctor.is_active ? 'blacklist' : 'unblacklist' }}
                                                         </button>
                                                     </td>
                                                 </tr>
@@ -611,12 +602,13 @@
                                                     <td>{{ patient.gender }}</td>
                                                     <td>
                                                         <button class="btn btn-sm btn-outline-primary me-1" @click="openAdminPatientEdit(patient)" title="Edit Patient Details">
-                                                            <i class="bi bi-pencil"></i>
+                                                            <i class="bi bi-pencil"></i> edit
                                                         </button>
                                                         <button class="btn btn-sm btn-outline-warning me-1" @click="togglePatientBlacklist(patient)" title="Blacklist/Unblacklist Patient">
-                                                            <i class="bi bi-ban"></i> {{ patient.is_blacklisted ? 'Unblacklist' : 'Blacklist' }}
+                                                            <i class="bi bi-ban"></i> {{ patient.is_blacklisted ? 'unblacklist' : 'blacklist' }}
                                                         </button>
                                                         <button class="btn btn-sm btn-outline-info" @click="openAdminPatientHistory(patient)" title="View Patient History">
+                                                            <i class="bi bi-eye"></i> view
                                                         </button>
                                                     </td>
                                                 </tr>
@@ -640,7 +632,7 @@
                                 <div class="card-body">
                                     <div class="table-responsive">
                                         <table class="table table-striped">
-                                            <thead class="table-dark">
+                                            <thead>
                                                 <tr>
                                                     <th>Sr. No.</th>
                                                     <th>Department Name</th>
@@ -659,14 +651,8 @@
                                                     <td>{{ dept.description || '—' }}</td>
                                                     <td>{{ dept.doctor_count || 0 }}</td>
                                                     <td>
-                                                        <button class="btn btn-sm btn-outline-primary me-1" @click="editDepartment(dept)" title="Edit Department">
-                                                            <i class="bi bi-pencil"></i> Edit
-                                                        </button>
-                                                        <button v-if="dept.is_active" class="btn btn-sm btn-outline-warning" @click="deactivateDepartment(dept)" title="Deactivate Department" :disabled="dept.doctor_count > 0">
-                                                            <i class="bi bi-x-circle"></i> Deactivate
-                                                        </button>
-                                                        <button v-else class="btn btn-sm btn-outline-success" @click="activateDepartment(dept)" title="Activate Department">
-                                                            <i class="bi bi-check-circle"></i> Activate
+                                                        <button class="btn btn-sm btn-outline-primary" @click="editDepartment(dept)" title="Edit Department">
+                                                            <i class="bi bi-pencil"></i> edit
                                                         </button>
                                                     </td>
                                                 </tr>
@@ -689,23 +675,6 @@
                                     <h5 class="mb-0">All Appointments</h5>
                                 </div>
                                 <div class="card-body">
-                                    <!-- Appointment Filter -->
-                                    <div class="mb-3">
-                                        <div class="btn-group" role="group">
-                                            <button type="button" class="btn" :class="appointmentFilter === 'all' ? 'btn-primary' : 'btn-outline-primary'" @click="setAppointmentFilter('all')">
-                                                All
-                                            </button>
-                                            <button type="button" class="btn" :class="appointmentFilter === 'upcoming' ? 'btn-primary' : 'btn-outline-primary'" @click="setAppointmentFilter('upcoming')">
-                                                Upcoming
-                                            </button>
-                                            <button type="button" class="btn" :class="appointmentFilter === 'available' ? 'btn-primary' : 'btn-outline-primary'" @click="setAppointmentFilter('available')">
-                                                Available
-                                            </button>
-                                            <button type="button" class="btn" :class="appointmentFilter === 'past' ? 'btn-primary' : 'btn-outline-primary'" @click="setAppointmentFilter('past')">
-                                                Past
-                                            </button>
-                                        </div>
-                                    </div>
                                     <div class="table-responsive">
                                         <table class="table table-striped">
                                             <thead>
@@ -950,22 +919,21 @@
                             </div>
                             <div v-else class="table-responsive">
                                 <table class="table table-striped">
-                                    <thead class="table-dark">
+                                    <thead>
                                         <tr>
-                                            <th>Sr. No.</th>
+                                            <th>Sr. No</th>
                                             <th>Date</th>
-                                            <th>Time</th>
+                                            <th>Slot</th>
                                             <th>Doctor</th>
                                             <th>Department</th>
                                             <th>Status</th>
-                                            <th>Notes</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         <tr v-for="(appointment, index) in patientHistory" :key="appointment.id">
-                                            <td>{{ index + 1 }}</td>
+                                            <td>{{ index + 1 }}.</td>
                                             <td>{{ new Date(appointment.appointment_date).toLocaleDateString() }}</td>
-                                            <td>{{ appointment.appointment_time }}</td>
+                                            <td>{{ formatTimeSlot(appointment.appointment_time) }}</td>
                                             <td>Dr. {{ appointment.doctor?.name || 'N/A' }}</td>
                                             <td>{{ appointment.doctor?.department || 'N/A' }}</td>
                                             <td>
@@ -973,14 +941,10 @@
                                                     {{ appointment.status }}
                                                 </span>
                                             </td>
-                                            <td>{{ appointment.notes || '—' }}</td>
                                         </tr>
                                     </tbody>
                                 </table>
                             </div>
-                            <button type="button" class="btn btn-secondary" @click="backToAdminDashboard()">
-                                <i class="bi bi-arrow-left"></i> Back to List
-                            </button>
                         </div>
                     </div>
 
@@ -1617,22 +1581,22 @@
                                         <table class="table table-striped">
                                             <thead>
                                                 <tr>
-                                                    <th>Sr No</th>
+                                                    <th>Sr. No</th>
                                                     <th>Doctor</th>
                                                     <th>Department</th>
-                                                    <th>Date & Time</th>
+                                                    <th>Date</th>
+                                                    <th>Slot</th>
                                                     <th>Status</th>
                                                     <th>Action</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
                                                 <tr v-for="(appointment, index) in allPatientAppointments" :key="appointment.id">
-                                                    <td>{{ index + 1 }}</td>
+                                                    <td>{{ index + 1 }}.</td>
                                                     <td>{{ appointment.doctor ? 'Dr. ' + appointment.doctor.name : 'N/A' }}</td>
                                                     <td>{{ appointment.department || (appointment.doctor ? appointment.doctor.specialization : 'N/A') }}</td>
-                                                    <td>
-                                                        {{ formatDateTime(appointment.appointment_date, appointment.appointment_time) }}
-                                                    </td>
+                                                    <td>{{ appointment.appointment_date }}</td>
+                                                    <td>{{ formatTimeSlot(appointment.appointment_time) }}</td>
                                                     <td>
                                                         <span class="badge" :class="getStatusClass(appointment.status)">
                                                             {{ capitalizeStatus(appointment.status) }}
@@ -1672,132 +1636,48 @@
                 <div class="col-md-10">
                     <div class="card">
                         <div class="card-header d-flex justify-content-between align-items-center">
-                            <h5 class="mb-0">
-                                <i class="bi bi-clock-history"></i> Appointment History Details
-                            </h5>
+                            <h5 class="mb-0">Appointment History Details</h5>
                             <button class="btn btn-outline-secondary" @click="goBackToAppointments()">
-                                <i class="bi bi-arrow-left"></i> Back to Appointments
+                                Back to Appointments
                             </button>
                         </div>
                         <div class="card-body">
                             <div v-if="selectedAppointmentHistory">
-                                <!-- Basic Appointment Information -->
-                                <div class="row mb-4">
-                                    <div class="col-12">
-                                        <div class="card bg-light">
-                                            <div class="card-header">
-                                                <h6 class="mb-0 text-primary"><i class="bi bi-calendar-check"></i> Appointment Information</h6>
-                                            </div>
-                                            <div class="card-body">
-                                                <div class="row">
-                                                    <div class="col-md-6">
-                                                        <strong>Doctor:</strong> {{ selectedAppointmentHistory.doctor ? 'Dr. ' + selectedAppointmentHistory.doctor.name : 'N/A' }}
-                                                    </div>
-                                                    <div class="col-md-6">
-                                                        <strong>Department:</strong> {{ selectedAppointmentHistory.department || (selectedAppointmentHistory.doctor ? selectedAppointmentHistory.doctor.specialization : 'N/A') }}
-                                                    </div>
-                                                </div>
-                                                <div class="row mt-2">
-                                                    <div class="col-md-6">
-                                                        <strong>Date & Time:</strong> {{ formatDateTime(selectedAppointmentHistory.appointment_date, selectedAppointmentHistory.appointment_time) }}
-                                                    </div>
-                                                    <div class="col-md-6">
-                                                        <strong>Status:</strong> 
-                                                        <span class="badge" :class="getStatusClass(selectedAppointmentHistory.status)">
-                                                            {{ capitalizeStatus(selectedAppointmentHistory.status) }}
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                                <div class="row mt-2" v-if="selectedAppointmentHistory.notes">
-                                                    <div class="col-12">
-                                                        <strong>Appointment Notes:</strong> {{ selectedAppointmentHistory.notes }}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
+                                <!-- Appointment Information -->
+                                <div class="mb-4">
+                                    <h6>Appointment Information</h6>
+                                    <p><strong>Doctor:</strong> {{ selectedAppointmentHistory.doctor ? 'Dr. ' + selectedAppointmentHistory.doctor.name : 'N/A' }}</p>
+                                    <p><strong>Department:</strong> {{ selectedAppointmentHistory.department || (selectedAppointmentHistory.doctor ? selectedAppointmentHistory.doctor.specialization : 'N/A') }}</p>
+                                    <p><strong>Date:</strong> {{ selectedAppointmentHistory.appointment_date }}</p>
+                                    <p><strong>Time:</strong> {{ selectedAppointmentHistory.appointment_time }}</p>
+                                    <p><strong>Status:</strong> {{ selectedAppointmentHistory.status }}</p>
+                                    <p v-if="selectedAppointmentHistory.notes"><strong>Notes:</strong> {{ selectedAppointmentHistory.notes }}</p>
                                 </div>
                                 
-                                <!-- Treatment Details (if available) -->
-                                <div v-if="selectedAppointmentHistory.treatment" class="row mb-4">
-                                    <div class="col-12">
-                                        <div class="card">
-                                            <div class="card-header">
-                                                <h6 class="mb-0 text-success"><i class="bi bi-file-medical"></i> Treatment Details</h6>
-                                            </div>
-                                            <div class="card-body">
-                                                <div class="row mb-3" v-if="selectedAppointmentHistory.treatment.symptoms">
-                                                    <div class="col-12">
-                                                        <h6 class="text-primary">Symptoms:</h6>
-                                                        <div class="bg-light p-3 rounded">
-                                                            {{ selectedAppointmentHistory.treatment.symptoms }}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <div class="row mb-3" v-if="selectedAppointmentHistory.treatment.diagnosis">
-                                                    <div class="col-12">
-                                                        <h6 class="text-primary">Diagnosis:</h6>
-                                                        <div class="bg-light p-3 rounded">
-                                                            {{ selectedAppointmentHistory.treatment.diagnosis }}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <div class="row mb-3" v-if="selectedAppointmentHistory.treatment.prescription">
-                                                    <div class="col-12">
-                                                        <h6 class="text-primary">Prescription:</h6>
-                                                        <div class="bg-light p-3 rounded">
-                                                            {{ selectedAppointmentHistory.treatment.prescription }}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <div class="row mb-3" v-if="selectedAppointmentHistory.treatment.treatment_notes">
-                                                    <div class="col-12">
-                                                        <h6 class="text-primary">Treatment Notes:</h6>
-                                                        <div class="bg-light p-3 rounded">
-                                                            {{ selectedAppointmentHistory.treatment.treatment_notes }}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <div class="row" v-if="selectedAppointmentHistory.treatment.visit_type">
-                                                    <div class="col-12">
-                                                        <h6 class="text-primary">Visit Type:</h6>
-                                                        <div class="bg-light p-3 rounded">
-                                                            {{ selectedAppointmentHistory.treatment.visit_type }}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
+                                <!-- Treatment Details -->
+                                <div v-if="selectedAppointmentHistory.treatment" class="mb-4">
+                                    <h6>Treatment Details</h6>
+                                    <p v-if="selectedAppointmentHistory.treatment.visit_type"><strong>Visit Type:</strong> {{ selectedAppointmentHistory.treatment.visit_type }}</p>
+                                    <p v-if="selectedAppointmentHistory.treatment.symptoms"><strong>Symptoms:</strong> {{ selectedAppointmentHistory.treatment.symptoms }}</p>
+                                    <p v-if="selectedAppointmentHistory.treatment.diagnosis"><strong>Diagnosis:</strong> {{ selectedAppointmentHistory.treatment.diagnosis }}</p>
+                                    <p v-if="selectedAppointmentHistory.treatment.prescription"><strong>Prescription:</strong> {{ selectedAppointmentHistory.treatment.prescription }}</p>
+                                    <p v-if="selectedAppointmentHistory.treatment.treatment_notes"><strong>Treatment Notes:</strong> {{ selectedAppointmentHistory.treatment.treatment_notes }}</p>
                                 </div>
                                 
-                                <!-- Cancellation Details (if cancelled) -->
-                                <div v-if="selectedAppointmentHistory.status === 'cancelled' && selectedAppointmentHistory.cancellation_reason" class="row mb-4">
-                                    <div class="col-12">
-                                        <div class="card border-warning">
-                                            <div class="card-header bg-warning text-dark">
-                                                <h6 class="mb-0"><i class="bi bi-exclamation-triangle"></i> Cancellation Information</h6>
-                                            </div>
-                                            <div class="card-body">
-                                                <strong>Cancellation Reason:</strong>
-                                                <div class="bg-light p-3 rounded mt-2">
-                                                    {{ selectedAppointmentHistory.cancellation_reason }}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
+                                <div v-else class="mb-4">
+                                    <h6>Treatment Details</h6>
+                                    <p>No treatment details available.</p>
+                                </div>
+                                
+                                <!-- Cancellation Details -->
+                                <div v-if="selectedAppointmentHistory.status === 'cancelled' && selectedAppointmentHistory.cancellation_reason" class="mb-4">
+                                    <h6>Cancellation Information</h6>
+                                    <p><strong>Reason:</strong> {{ selectedAppointmentHistory.cancellation_reason }}</p>
                                 </div>
                                 
                                 <!-- Action Buttons -->
-                                <div class="row">
-                                    <div class="col-12 text-center">
-                                        <button class="btn btn-secondary me-2" @click="goBackToAppointments()">
-                                            <i class="bi bi-arrow-left"></i> Back to Appointments
-                                        </button>
-                                        <button class="btn btn-primary" @click="exportHistory()">
-                                            <i class="bi bi-download"></i> Export Details
-                                        </button>
-                                    </div>
+                                <div class="text-center">
+                                    <button class="btn btn-primary" @click="exportHistory()">Export Details</button>
                                 </div>
                             </div>
                         </div>

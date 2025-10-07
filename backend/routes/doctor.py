@@ -569,3 +569,71 @@ def set_availability_slots():
             'date_range': date_range_string
         }
     })
+
+# =============================================================================
+# DOCTOR PROFILE UPDATE SECTION
+# =============================================================================
+
+@doctor_bp.route('/profile', methods=['PUT'])
+@doctor_required
+def update_doctor_profile():
+    """Update doctor's own profile"""
+    try:
+        # Get current doctor
+        current_user_id = session.get('user_id')
+        current_doctor = Doctor.query.filter_by(user_id=current_user_id).first()
+        
+        if not current_doctor:
+            return jsonify({
+                'success': False,
+                'message': 'Doctor profile not found',
+                'errors': ['Profile not found']
+            }), 404
+        
+        # Get data from request
+        data = request.get_json()
+        if not data:
+            return jsonify({
+                'success': False,
+                'message': 'No data provided',
+                'errors': ['Missing data']
+            }), 400
+        
+        # Update doctor fields
+        if 'name' in data:
+            current_doctor.name = data['name']
+        if 'specialization' in data:
+            current_doctor.specialization = data['specialization']
+        if 'department_id' in data:
+            current_doctor.department_id = data['department_id']
+        if 'experience' in data:
+            current_doctor.experience = data['experience']
+        if 'qualification' in data:
+            current_doctor.qualification = data['qualification']
+        if 'phone' in data:
+            current_doctor.phone = data['phone']
+        if 'consultation_fee' in data:
+            current_doctor.consultation_fee = data['consultation_fee']
+        
+        # Update user fields if provided
+        if 'email' in data:
+            current_doctor.user.email = data['email']
+        
+        # Save changes
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Profile updated successfully',
+            'data': {
+                'doctor': current_doctor.to_dict()
+            }
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({
+            'success': False,
+            'message': 'Failed to update profile',
+            'errors': [str(e)]
+        }), 500

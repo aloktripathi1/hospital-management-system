@@ -57,3 +57,23 @@ def patient_required(f):
         
         return f(*args, **kwargs)
     return check_patient
+
+# ----------- Patient or Admin Required Decorator -----------
+def patient_or_admin_required(f):
+    @wraps(f)
+    def check_patient_or_admin(*args, **kwargs):
+        if not session.get('is_authenticated'):
+            return jsonify({
+                'success': False,
+                'message': 'Please login first'
+            }), 401
+        
+        user_role = session.get('role')
+        if user_role not in ['patient', 'admin']:
+            return jsonify({
+                'success': False,
+                'message': 'Patient or admin access only'
+            }), 403
+        
+        return f(*args, **kwargs)
+    return check_patient_or_admin
