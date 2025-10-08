@@ -22,20 +22,101 @@ This system manages three types of users:
 - **Background Tasks**: Celery (For notifications)
 - **Authentication**: Simple session-based login
 
-## 📁 Project Structure
+## 📁 Complete Project Structure
 
 ```
 hospital-management-system/
-├── backend/                    # Python Flask application
-│   ├── app.py                 # Main application file
-│   ├── models/                # Database models
-│   ├── routes/                # API endpoints
-│   └── requirements.txt       # Python dependencies
-├── frontend/                   # Web interface
-│   ├── index.html             # Main HTML file
-│   └── assets/                # CSS and JavaScript files
-└── docs/                      # Project documentation
+├── backend/                           # Python Flask Backend
+│   ├── app.py                        # Main Flask application entry point
+│   ├── config.py                     # Application configuration settings
+│   ├── database.py                   # Database connection and setup
+│   ├── decorators.py                 # Custom decorators for authentication
+│   ├── init_db.py                    # Database initialization script
+│   ├── requirements.txt              # Python package dependencies
+│   │
+│   ├── instance/                     # Instance-specific files
+│   │   └── hospital-management.db    # SQLite database file
+│   │
+│   ├── models/                       # Database Models (SQLAlchemy)
+│   │   ├── __init__.py              # Models package initialization
+│   │   ├── user.py                  # User authentication model
+│   │   ├── patient.py               # Patient information model
+│   │   ├── doctor.py                # Doctor profile model
+│   │   ├── department.py            # Medical departments model
+│   │   ├── appointment.py           # Appointment scheduling model
+│   │   └── treatment.py             # Treatment records model
+│   │
+│   ├── routes/                      # API Route Handlers
+│   │   ├── __init__.py              # Routes package initialization
+│   │   ├── auth.py                  # Authentication endpoints
+│   │   ├── admin.py                 # Admin dashboard APIs
+│   │   ├── doctor.py                # Doctor functionality APIs
+│   │   └── patient.py               # Patient functionality APIs
+│   │
+│   ├── services/                    # Business Logic Services
+│   │   ├── __init__.py              # Services package initialization
+│   │   ├── auth_service.py          # Authentication logic
+│   │   └── appointment_service.py   # Appointment management logic
+│   │
+│   └── tasks/                       # Background Task Processing
+│       ├── __init__.py              # Tasks package initialization
+│       └── celery_tasks.py          # Celery background jobs
+│
+├── frontend/                         # Web User Interface
+│   ├── index.html                   # Main HTML application file
+│   │
+│   └── assets/                      # Static Assets
+│       ├── css/                     # Stylesheets
+│       │   └── custom.css           # Custom CSS styles
+│       │
+│       └── js/                      # JavaScript Files
+│           ├── app.js               # Main Vue.js application
+│           │
+│           ├── modules/             # JavaScript Modules
+│           │   ├── admin.js         # Admin dashboard functionality
+│           │   ├── doctor.js        # Doctor interface logic
+│           │   ├── patient.js       # Patient interface logic
+│           │   └── utils.js         # Utility functions
+│           │
+│           └── services/            # API Service Layer
+│               └── api.js           # HTTP API communication
+│
+├── tests/                           # Test Files
+│   └── api/                         # API Integration Tests
+│       ├── test_patient_booking.py  # Patient booking test scenarios
+│       └── test_slots.py            # Appointment slot testing
+│
+├── docs/                            # Documentation
+│   ├── README.md                    # Main project documentation (this file)
+│   ├── FUNCTIONALITY_ASSESSMENT.md  # Feature assessment document
+│   └── SIMPLE_STUDENT_IMPLEMENTATION.md  # Implementation notes
+│
+├── .gitignore                       # Git ignore rules
+└── .gitattributes                   # Git attributes configuration
 ```
+
+### 📂 Directory Explanations
+
+**Backend Structure:**
+- `app.py` - Main Flask server that starts the application
+- `models/` - Database table definitions using SQLAlchemy ORM
+- `routes/` - API endpoints organized by user role (admin, doctor, patient)
+- `services/` - Business logic separated from route handlers
+- `tasks/` - Background jobs for notifications and reports
+- `instance/` - Contains the SQLite database file
+
+**Frontend Structure:**
+- `index.html` - Single-page application with all HTML templates
+- `assets/js/app.js` - Main Vue.js application with components
+- `assets/js/modules/` - Separate JavaScript files for each user role
+- `assets/js/services/api.js` - Handles all HTTP requests to backend
+- `assets/css/custom.css` - Custom styling on top of Bootstrap
+
+**Supporting Files:**
+- `tests/api/` - Python scripts to test API functionality
+- `docs/` - Project documentation and development notes
+- `requirements.txt` - Lists all Python packages needed
+- `.gitignore` - Tells Git which files to ignore (like database files)
 
 ## 🚀 How to Run the Project
 
