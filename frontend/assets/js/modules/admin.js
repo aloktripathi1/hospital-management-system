@@ -144,7 +144,7 @@
 
   async function loadPatientHistory(ctx, patientId) {
     try {
-      const response = await window.ApiService.getPatientHistory(patientId)
+      const response = await window.ApiService.getAdminPatientHistory(patientId)
       if (response.success) {
         ctx.patientHistory = response.data.appointments || []
       }

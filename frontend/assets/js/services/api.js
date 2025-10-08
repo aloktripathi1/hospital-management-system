@@ -187,6 +187,10 @@ class ApiService {
     return this.get(`/doctor/patient-history/${patientId}`)
   }
 
+  static async getDoctorAvailableSlots() {
+    return this.get("/doctor/available-slots")
+  }
+
   // Patient endpoints
   static async getPatientDashboard() {
     return this.get("/patient/dashboard")
@@ -270,7 +274,7 @@ class ApiService {
     return this.put(`/admin/patients/${patientId}/blacklist`)
   }
 
-  static async getPatientHistory(patientId) {
+  static async getAdminPatientHistory(patientId) {
     return this.get(`/admin/patients/${patientId}/history`)
   }
 

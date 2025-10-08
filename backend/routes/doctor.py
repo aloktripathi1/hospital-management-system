@@ -66,7 +66,7 @@ def get_patient_history_details(patient_id):
     current_doctor_user_id = session.get('user_id')
     
     # Find the doctor profile using user ID
-    current_doctor = Doctor.query.get(current_doctor_user_id)
+    current_doctor = Doctor.query.filter_by(user_id=current_doctor_user_id).first()
     
     # Check if doctor exists
     if current_doctor is None:
@@ -79,11 +79,11 @@ def get_patient_history_details(patient_id):
     if selected_patient is None:
         return jsonify({"error": "Patient not found"}), 404
     
-    # Get all appointments between this patient and doctor (newest first)
+    # Get ALL appointments for this patient (from all doctors) for complete medical history
+    # This allows doctors to see full treatment history for better patient care
     patient_appointments_list = Appointment.query.filter_by(
-        patient_id=patient_id,
-        doctor_id=current_doctor.id
-    ).order_by(Appointment.appointment_date.desc()).all()
+        patient_id=patient_id
+    ).filter(Appointment.status.in_(['booked', 'completed', 'cancelled', 'canceled'])).order_by(Appointment.appointment_date.desc()).all()
     
     # Build appointment history with treatment details
     appointment_history_list = []
@@ -92,15 +92,25 @@ def get_patient_history_details(patient_id):
         formatted_date = single_appointment.appointment_date.strftime('%Y-%m-%d')
         formatted_time = single_appointment.appointment_time.strftime('%H:%M')
         
-        # Get treatment information if available
+        # Get treatment information if available (get the latest treatment for this appointment)
         treatment_info = None
-        if single_appointment.treatment:
+        if single_appointment.treatments:
+            latest_treatment = single_appointment.treatments[-1]  # Get the most recent treatment
             treatment_info = {
-                'id': single_appointment.treatment.id,
-                'diagnosis': single_appointment.treatment.diagnosis,
-                'prescription': single_appointment.treatment.prescription,
-                'notes': single_appointment.treatment.notes
+                'id': latest_treatment.id,
+                'visit_type': latest_treatment.visit_type,
+                'symptoms': latest_treatment.symptoms,
+                'diagnosis': latest_treatment.diagnosis,
+                'prescription': latest_treatment.prescription,
+                'notes': latest_treatment.treatment_notes
             }
+        
+        # Get doctor information for this appointment
+        appointment_doctor = single_appointment.doctor if single_appointment.doctor else None
+        doctor_info = {
+            'name': appointment_doctor.name if appointment_doctor else 'Unknown',
+            'specialization': appointment_doctor.specialization if appointment_doctor else 'Unknown'
+        }
         
         # Build appointment record
         appointment_record = {
@@ -108,18 +118,22 @@ def get_patient_history_details(patient_id):
             'appointment_date': formatted_date,
             'appointment_time': formatted_time,
             'status': single_appointment.status,
+            'doctor': doctor_info,
             'treatment': treatment_info
         }
         appointment_history_list.append(appointment_record)
     
     # Build complete patient data with history
+    # Get email from related user if available
+    patient_email = selected_patient.user.email if selected_patient.user else 'Not available'
+    
     patient_complete_data = {
         'id': selected_patient.id,
         'name': selected_patient.name,
-        'email': selected_patient.email,
+        'email': patient_email,
         'phone': selected_patient.phone,
         'address': selected_patient.address,
-        'date_of_birth': selected_patient.date_of_birth.strftime('%Y-%m-%d') if selected_patient.date_of_birth else None,
+        'age': selected_patient.age,
         'gender': selected_patient.gender,
         'medical_history': selected_patient.medical_history,
         'appointments': appointment_history_list
@@ -154,17 +168,23 @@ def get_appointments():
     # Start with appointments for this doctor
     appointments_query = Appointment.query.filter_by(doctor_id=current_doctor.id)
     
-    # Apply time-based filters
+    # Apply time-based filters - Only show actual appointments (not available slots)
+    # Filter to exclude 'available' slots and only show booked/canceled/completed appointments
+    appointments_query = appointments_query.filter(Appointment.status.in_(['booked', 'canceled', 'cancelled', 'completed']))
+    
     if time_filter_value == 'today':
         appointments_query = appointments_query.filter_by(appointment_date=date.today())
     elif time_filter_value == 'upcoming':
         appointments_query = appointments_query.filter(Appointment.appointment_date >= date.today())
-        appointments_query = appointments_query.filter(Appointment.status.in_(['booked', 'available']))
+        appointments_query = appointments_query.filter(Appointment.status.in_(['booked']))
     elif time_filter_value == 'completed':
         appointments_query = appointments_query.filter(Appointment.status == 'completed')
     else:
-        # Default: show today's and upcoming appointments
-        appointments_query = appointments_query.filter(Appointment.appointment_date >= date.today())
+        # Default: show recent appointments (last 30 days) and future appointments
+        # This allows doctors to see recent completed/cancelled appointments as well as upcoming ones
+        from datetime import timedelta
+        thirty_days_ago = date.today() - timedelta(days=30)
+        appointments_query = appointments_query.filter(Appointment.appointment_date >= thirty_days_ago)
     
     # Apply date filter if provided
     if date_filter_value:
@@ -635,5 +655,61 @@ def update_doctor_profile():
         return jsonify({
             'success': False,
             'message': 'Failed to update profile',
+            'errors': [str(e)]
+        }), 500
+
+# =================== AVAILABLE SLOTS SECTION ===================
+
+@doctor_bp.route('/available-slots', methods=['GET'])
+@doctor_required
+def get_available_slots():
+    # Get the current doctor's user ID from session
+    current_user_id = session.get('user_id')
+    
+    # Find the doctor profile for this user
+    current_doctor = Doctor.query.filter_by(user_id=current_user_id).first()
+    
+    # Check if doctor profile exists
+    if current_doctor is None:
+        return jsonify({
+            'success': False,
+            'message': 'Doctor profile not found',
+            'errors': ['Profile not found']
+        }), 404
+    
+    try:
+        # Get all available slots for this doctor (future dates only)
+        from datetime import date
+        available_slots = Appointment.query.filter_by(
+            doctor_id=current_doctor.id,
+            status='available'
+        ).filter(Appointment.appointment_date >= date.today()).order_by(
+            Appointment.appointment_date.asc(),
+            Appointment.appointment_time.asc()
+        ).all()
+        
+        # Format the slots for frontend display
+        slots_data = []
+        for slot in available_slots:
+            slots_data.append({
+                'id': slot.id,
+                'date': slot.appointment_date.strftime('%Y-%m-%d'),
+                'time': slot.appointment_time.strftime('%H:%M'),
+                'formatted_display': f"{slot.appointment_date.strftime('%Y-%m-%d')} {slot.appointment_time.strftime('%H:%M')}"
+            })
+        
+        return jsonify({
+            'success': True,
+            'message': 'Available slots retrieved successfully',
+            'data': {
+                'slots': slots_data,
+                'total_count': len(slots_data)
+            }
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': 'Failed to retrieve available slots',
             'errors': [str(e)]
         }), 500

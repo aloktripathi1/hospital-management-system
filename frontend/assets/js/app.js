@@ -71,7 +71,8 @@ const App = {
       // Doctor data
       doctorAppointments: [],
       doctorPatients: [],
-      appointmentFilter: 'upcoming',
+      doctorAvailableSlots: [],
+      appointmentFilter: 'all',
       selectedPatientHistory: null,
       treatmentForm: {
         appointment_id: '',
@@ -88,6 +89,7 @@ const App = {
         treatment_notes: ''
       },
       selectedAppointmentForTreatment: null,
+      selectedPatientForHistory: null,
       availabilityForm: {
         start_date: '',
         end_date: '',
@@ -223,7 +225,6 @@ const App = {
         await window.ApiService.logout()
         this.currentUser = null
         this.currentView = "home"
-        this.success = "Logged out successfully"
         this.error = null
         this.stats = {}
         this.clearAllData()
@@ -660,6 +661,35 @@ const App = {
       }
     },
 
+    // Doctor Treatment Management Methods
+    openTreatmentPage(appointment) {
+      window.DoctorModule.openTreatmentPage(this, appointment)
+    },
+
+    async submitTreatment() {
+      await window.DoctorModule.submitTreatment(this)
+    },
+
+    async markAsCompleted() {
+      await window.DoctorModule.markAsCompleted(this)
+    },
+
+    isFormComplete() {
+      return window.DoctorModule.isFormComplete(this)
+    },
+
+    backToDoctorAppointments() {
+      window.DoctorModule.backToDoctorAppointments(this)
+    },
+
+    viewPatientTreatmentHistory(patient) {
+      window.DoctorModule.viewPatientTreatmentHistory(this, patient)
+    },
+
+    backToAssignedPatients() {
+      window.DoctorModule.backToAssignedPatients(this)
+    },
+
     // Patient methods
     async loadDoctorsByDepartment() { await window.PatientModule.loadDoctorsByDepartment(this) },
 
@@ -886,6 +916,22 @@ const App = {
     getPatientPrefix() {
       // Return empty string to display patient names without any prefix
       return ''
+    },
+
+    formatTimeSlot(appointmentTime) {
+      if (!appointmentTime) return 'N/A'
+      
+      // Convert "09:00:00" to "9:00-11:00" format (assuming 2-hour slots)
+      const time = appointmentTime.toString().substring(0, 5) // Get "09:00" from "09:00:00"
+      const [hours, minutes] = time.split(':')
+      const startHour = parseInt(hours)
+      const endHour = startHour + 2 // Assuming 2-hour appointment slots
+      
+      const formatHour = (hour) => {
+        return hour.toString().padStart(2, '0')
+      }
+      
+      return `${formatHour(startHour)}:${minutes}-${formatHour(endHour)}:${minutes}`
     },
 
     // Admin methods
