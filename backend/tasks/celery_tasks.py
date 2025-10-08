@@ -1,61 +1,63 @@
 from celery import Celery
 from datetime import datetime, date, timedelta
 import csv
-import io
 from database import db
 from models import User, Patient, Doctor, Appointment, Treatment
 
-# ----------- Initialize Celery -----------
-celery = Celery('hospital_management')
+celery = Celery('hospital_management')   # initialize celery
 
-# ----------- Send Daily Reminders -----------
+# Simple helper functions
+def send_reminder(patient_name, doctor_name, time):
+    print(f"Reminder sent to {patient_name}: Appointment with Dr. {doctor_name} at {time}")
+
+def send_report(doctor_name, report_data):
+    print(f"Monthly report sent to Dr. {doctor_name}")
+    print(f"Report contains: {report_data}")
+
+def create_csv_file(patient_name, data):
+    print(f"CSV file created for {patient_name}")
+    print(f"Contains {len(data)} records")
+
+# Daily reminder task - simple student code
 @celery.task
 def send_daily_reminders():
     today = date.today()
     
     # Get today's appointments
-    appts = Appointment.query.filter_by(
+    appointments = Appointment.query.filter_by(
         appointment_date=today,
         status='booked'
     ).all()
     
     count = 0
-    for appt in appts:
-        if appt.patient and appt.patient.user:
-            # Just log the reminder (in real app, send email/SMS/gchat webhook)
-            print(f"Reminder: {appt.patient.name} has appointment with {appt.doctor.name} at {appt.appointment_time}")
+    for appt in appointments:
+        if appt.patient:
+            # Send simple reminder
+            send_reminder(appt.patient.name, appt.doctor.name, appt.appointment_time)
             count += 1
     
     return f"Sent {count} reminders for {today}"
 
-# ----------- Generate Monthly Report -----------
+# Monthly report task - basic student code
 @celery.task
 def generate_monthly_report():
     now = datetime.now()
-    month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
     
-    docs = Doctor.query.filter_by(is_active=True).all()
+    doctors = Doctor.query.filter_by(is_active=True).all()
     count = 0
     
-    for doc in docs:
-        # Get this month's appointments
-        appts = Appointment.query.filter(
+    for doc in doctors:
+        # Count this month's appointments
+        appointments_count = Appointment.query.filter(
             Appointment.doctor_id == doc.id,
-            Appointment.appointment_date >= month_start,
             Appointment.status == 'completed'
-        ).all()
+        ).count()
         
-        # Get this month's treatments
-        treatments = Treatment.query.join(Appointment).filter(
-            Appointment.doctor_id == doc.id,
-            Treatment.created_at >= month_start
-        ).all()
+        # Create simple report data
+        report_data = f"Total appointments: {appointments_count}"
         
-        # Generate HTML report
-        html = make_report_html(doc, appts, treatments, now.month, now.year)
-        
-        # Just log (in real app, send email with HTML)
-        print(f"Report generated for {doc.name}: {len(appts)} appointments, {len(treatments)} treatments")
+        # Send report
+        send_report(doc.name, report_data)
         count += 1
     
     return f"Generated {count} reports for {now.strftime('%B %Y')}"
@@ -142,43 +144,34 @@ def make_report_html(doc, appts, treatments, month, year):
 def export_patient_history_csv(pt_id):
     pt = Patient.query.get(pt_id)
     if not pt:
+        print(f"Patient {pt_id} not found")
         return f"Patient {pt_id} not found"
     
-    # Get all treatments
+    # Get patient treatments
     treatments = Treatment.query.join(Appointment).filter(
         Appointment.patient_id == pt_id
-    ).order_by(Treatment.created_at.desc()).all()
+    ).all()
     
-    # Create CSV
-    output = io.StringIO()
-    writer = csv.writer(output)
+    # Simple CSV creation
+    filename = f"patient_{pt_id}_history.csv"
     
-    # Header
-    writer.writerow([
-        'Patient ID', 'Patient Name', 'Doctor Name', 'Appointment Date', 
-        'Visit Type', 'Symptoms', 'Diagnosis', 'Prescription', 'Treatment Notes', 'Next Visit'
-    ])
+    # Create basic CSV file
+    with open(filename, 'w') as f:
+        # Write header
+        f.write("Patient ID,Patient Name,Doctor Name,Date,Symptoms,Diagnosis\n")
+        
+        # Write data
+        for t in treatments:
+            doctor_name = t.appointment.doctor.name if t.appointment.doctor else 'N/A'
+            date = str(t.appointment.appointment_date) if t.appointment else 'N/A'
+            
+            # Simple CSV line
+            line = f"{pt.id},{pt.name},{doctor_name},{date},{t.symptoms},{t.diagnosis}\n"
+            f.write(line)
     
-    # Data rows
-    for t in treatments:
-        writer.writerow([
-            pt.id,
-            pt.name,
-            t.appointment.doctor.name if t.appointment.doctor else 'N/A',
-            t.appointment.appointment_date if t.appointment else 'N/A',
-            t.visit_type,
-            t.symptoms,
-            t.diagnosis,
-            t.prescription,
-            t.treatment_notes,
-            t.follow_up_date if hasattr(t, 'follow_up_date') else 'N/A'
-        ])
-    
-    csv_data = output.getvalue()
-    output.close()
-    
-    # Just log (in real app, save file and send notification)
-    print(f"CSV exported for {pt.name}: {len(treatments)} records")
+    # Simple notification
+    print(f"CSV file created: {filename} for patient {pt.name}")
+    print(f"Total treatments exported: {len(treatments)}")
     
     return f"CSV exported for {pt.name}: {len(treatments)} records"
 

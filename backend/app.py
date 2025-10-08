@@ -3,6 +3,8 @@ from flask_cors import CORS
 from werkzeug.security import generate_password_hash
 from celery import Celery
 from database import db
+import time
+from datetime import datetime, timedelta
 
 # ----------- Flask App Setup -----------
 app = Flask(__name__, static_folder='../frontend/assets', static_url_path='/static')
@@ -13,6 +15,9 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///hospital-management.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['CELERY_BROKER_URL'] = 'redis://localhost:6379/0'
 app.config['CELERY_RESULT_BACKEND'] = 'redis://localhost:6379/0'
+
+# Simple cache for student project - just a dictionary
+cache = {}
 
 # ----------- Initialize Extensions -----------
 db.init_app(app)
@@ -46,6 +51,11 @@ app.register_blueprint(auth_bp, url_prefix='/api/auth')
 app.register_blueprint(admin_bp, url_prefix='/api/admin')
 app.register_blueprint(doctor_bp, url_prefix='/api/doctor')
 app.register_blueprint(patient_bp, url_prefix='/api/patient')
+
+# Simple download route for student project
+@app.route('/download/<filename>')  
+def download_file(filename):
+    return send_from_directory('.', filename)
 
 # ----------- Main Route -----------
 @app.route('/')

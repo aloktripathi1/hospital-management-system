@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, current_app
 from database import db
 from models import User, Patient, Doctor, Appointment, Treatment, Department
 from werkzeug.security import generate_password_hash
@@ -15,6 +15,17 @@ admin_bp = Blueprint('admin', __name__)
 @admin_bp.route('/dashboard-stats', methods=['GET'])
 @admin_required
 def dashboard_stats():
+    # Simple cache check - basic student code
+    from app import cache
+    cache_key = f"stats_{date.today()}"
+    
+    if cache_key in cache:
+        return jsonify({
+            'success': True,
+            'message': 'Dashboard stats retrieved',
+            'data': cache[cache_key]
+        })
+    
     # Count total doctors in system
     total_doctors_count = Doctor.query.count()
     
@@ -28,16 +39,22 @@ def dashboard_stats():
     todays_date = date.today()
     today_appointments_count = Appointment.query.filter_by(appointment_date=todays_date).count()
     
+    # Prepare stats data
+    stats_data = {
+        'total_doctors': total_doctors_count,
+        'active_doctors': active_doctors_count,
+        'total_patients': total_patients_count,
+        'today_appointments': today_appointments_count
+    }
+    
+    # Save to cache - simple student approach
+    cache[cache_key] = stats_data
+    
     # Return dashboard statistics
     return jsonify({
         'success': True,
         'message': 'Dashboard stats retrieved',
-        'data': {
-            'total_doctors': total_doctors_count,
-            'active_doctors': active_doctors_count,
-            'total_patients': total_patients_count,
-            'today_appointments': today_appointments_count
-        }
+        'data': stats_data
     })
 
 # =============================================================================
