@@ -1,22 +1,18 @@
 import os
 from datetime import timedelta
 
-# ----------- Basic Config -----------
 class Config:
     SECRET_KEY = 'hospital-secret-key-123'
     SQLALCHEMY_DATABASE_URI = 'sqlite:///database.db'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
-    # Redis for background tasks
     REDIS_URL = 'redis://localhost:6379/0'
     CELERY_BROKER_URL = REDIS_URL
     CELERY_RESULT_BACKEND = REDIS_URL
 
-# ----------- Development Config -----------
-class LocalDevelopmentConfig(Config):
+class DevConfig(Config):
     DEBUG = True
 
-# ----------- Celery Config -----------
 class CeleryConfig:
     broker_url = 'redis://localhost:6379/0'
     result_backend = 'redis://localhost:6379/0'
@@ -24,14 +20,12 @@ class CeleryConfig:
     accept_content = ['json']
     result_serializer = 'json'
     
-    # Task queues
     task_routes = {
         'backend.tasks.celery_tasks.send_appointment_reminder': {'queue': 'reminders'},
         'backend.tasks.celery_tasks.export_patient_history': {'queue': 'exports'},
     }
 
-# ----------- Config Dictionary -----------
 config = {
-    'development': LocalDevelopmentConfig,
-    'default': LocalDevelopmentConfig
+    'development': DevConfig,
+    'default': DevConfig
 }

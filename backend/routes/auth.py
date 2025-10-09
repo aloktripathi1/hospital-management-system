@@ -5,8 +5,6 @@ from models import User, Patient, Doctor
 
 auth_bp = Blueprint('auth', __name__)
 
-# ============= LOGIN =================== #
-
 @auth_bp.route('/login', methods=['POST'])
 def login():
     data = request.get_json()
@@ -14,8 +12,7 @@ def login():
     password = data.get('password')
 
     if not username or not password:
-        return jsonify({
-            'success': False,
+        return jsonify({'success': False,
             'message': 'Username and password are required',
             'errors': ['Missing credentials']
         }), 400
@@ -54,14 +51,11 @@ def login():
             'message': 'Invalid credentials',
             'errors': ['Invalid username or password']
         }), 401
-    
-# ============= REGISTER =================== #
 
 @auth_bp.route('/register', methods=['POST'])
 def register():
     data = request.get_json()
     
-    # check if all required fields are provided
     username = data.get('username')
     email = data.get('email')
     password = data.get('password')
@@ -95,16 +89,14 @@ def register():
             'errors': ['Missing name']
         }), 400
     
-    # Check if username already exists
-    existing_user = User.query.filter_by(username=username).first()
-    if existing_user:
+    existing = User.query.filter_by(username=username).first()
+    if existing:
         return jsonify({
             'success': False,
             'message': 'Username already exists',
             'errors': ['Username taken']
         }), 400
     
-    # Check if email already exists
     existing_email = User.query.filter_by(email=email).first()
     if existing_email:
         return jsonify({
@@ -113,19 +105,17 @@ def register():
             'errors': ['Email taken']
         }), 400
     
-    # Create new user account
-    new_user = User(
+    user = User(
         username=username,
         email=email,
         password_hash=generate_password_hash(password),
         role='patient'
     )
-    db.session.add(new_user)
+    db.session.add(user)
     db.session.flush()
     
-    # Create patient profile
-    new_patient = Patient(
-        user_id=new_user.id,
+    patient = Patient(
+        user_id=user.id,
         name=name,
         phone=data.get('phone', ''),
         address=data.get('address', ''),
@@ -133,31 +123,27 @@ def register():
         gender=data.get('gender', ''),
         emergency_contact=data.get('emergency_contact', '')
     )
-    db.session.add(new_patient)
+    db.session.add(patient)
     db.session.commit()
     
     return jsonify({
         'success': True,
         'message': 'Registration successful! Please login to complete your profile with additional information.',
         'data': {
-            'user': new_user.to_dict()
+            'user': user.to_dict()
         }
     })
 
-# ================= GET CURRENT USER =================== #
-
 @auth_bp.route('/me', methods=['GET'])
 def get_current_user():
-    # Check if user is logged in
-    is_authenticated = session.get('is_authenticated')
-    if not is_authenticated:
+    is_auth = session.get('is_authenticated')
+    if not is_auth:
         return jsonify({
             'success': False,
             'message': 'Not authenticated',
             'errors': ['Not logged in']
         }), 401
     
-    # Get user from database
     user_id = session.get('user_id')
     user = User.query.get(user_id)
     
@@ -169,27 +155,24 @@ def get_current_user():
             'errors': ['User not found']
         }), 404
     
-    # Get user data and add name
-    user_data = user.to_dict()
+    data = user.to_dict()
     
     if user.role == 'patient' and user.patient:
-        user_data['name'] = user.patient.name
+        data['name'] = user.patient.name
     elif user.role == 'doctor' and user.doctor:
-        user_data['name'] = user.doctor.name
+        data['name'] = user.doctor.name
     elif user.role == 'admin':
-        user_data['name'] = 'Administrator'
+        data['name'] = 'Administrator'
     else:
-        user_data['name'] = user.username
+        data['name'] = user.username
     
     return jsonify({
         'success': True,
         'message': 'User retrieved successfully',
         'data': {
-            'user': user_data
+            'user': data
         }
     })
-
-# ============= LOGOUT =================== # 
 
 @auth_bp.route('/logout', methods=['POST'])
 def logout():

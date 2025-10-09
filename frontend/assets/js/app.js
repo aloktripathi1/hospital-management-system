@@ -77,7 +77,6 @@ const App = {
       treatmentForm: {
         appointment_id: '',
         visit_type: '',
-        symptoms: '',
         diagnosis: '',
         prescription: '',
         treatment_notes: ''
@@ -302,7 +301,6 @@ const App = {
         const treatmentData = {
           appointment_id: this.selectedAppointmentForTreatment.id,
           visit_type: 'consultation',
-          symptoms: '', // Optional for completion
           diagnosis: this.completeTreatmentForm.diagnosis,
           prescription: this.completeTreatmentForm.prescription,
           treatment_notes: this.completeTreatmentForm.treatment_notes
@@ -645,7 +643,6 @@ const App = {
           this.treatmentForm = {
             appointment_id: '',
             visit_type: '',
-            symptoms: '',
             diagnosis: '',
             prescription: '',
             treatment_notes: ''

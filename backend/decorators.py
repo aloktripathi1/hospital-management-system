@@ -1,19 +1,17 @@
 from functools import wraps
 from flask import session, jsonify
 
-# ----------- Login Required Decorator -----------
 def login_required(f):
     @wraps(f)
-    def check_login(*args, **kwargs):
+    def wrapper(*args, **kwargs):
         if not session.get('is_authenticated'):
             return jsonify({'success': False, 'message': 'Please login first'}), 401
         return f(*args, **kwargs)
-    return check_login
+    return wrapper
 
-# ----------- Admin Required Decorator -----------
 def admin_required(f):
     @wraps(f)
-    def check_admin(*args, **kwargs):
+    def wrapper(*args, **kwargs):
         if not session.get('is_authenticated'):
             return jsonify({'success': False, 'message': 'Please login first'}), 401
         
@@ -21,12 +19,11 @@ def admin_required(f):
             return jsonify({'success': False, 'message': 'Admin access only'}), 403
         
         return f(*args, **kwargs)
-    return check_admin
+    return wrapper
 
-# ----------- Doctor Required Decorator -----------
 def doctor_required(f):
     @wraps(f)
-    def check_doctor(*args, **kwargs):
+    def wrapper(*args, **kwargs):
         if not session.get('is_authenticated'):
             return jsonify({'success': False,'message': 'Please login first'}), 401
         
@@ -37,12 +34,11 @@ def doctor_required(f):
             }), 403
         
         return f(*args, **kwargs)
-    return check_doctor
+    return wrapper
 
-# ----------- Patient Required Decorator -----------
 def patient_required(f):
     @wraps(f)
-    def check_patient(*args, **kwargs):
+    def wrapper(*args, **kwargs):
         if not session.get('is_authenticated'):
             return jsonify({
                 'success': False,
@@ -56,24 +52,23 @@ def patient_required(f):
             }), 403
         
         return f(*args, **kwargs)
-    return check_patient
+    return wrapper
 
-# ----------- Patient or Admin Required Decorator -----------
 def patient_or_admin_required(f):
     @wraps(f)
-    def check_patient_or_admin(*args, **kwargs):
+    def wrapper(*args, **kwargs):
         if not session.get('is_authenticated'):
             return jsonify({
                 'success': False,
                 'message': 'Please login first'
             }), 401
         
-        user_role = session.get('role')
-        if user_role not in ['patient', 'admin']:
+        role = session.get('role')
+        if role not in ['patient', 'admin']:
             return jsonify({
                 'success': False,
                 'message': 'Patient or admin access only'
             }), 403
         
         return f(*args, **kwargs)
-    return check_patient_or_admin
+    return wrapper

@@ -102,7 +102,7 @@
       const response = await window.ApiService.updatePatientHistory(ctx.treatmentForm)
       if (response.success) {
         ctx.success = 'Treatment record added successfully'
-        ctx.treatmentForm = { appointment_id:'', visit_type:'', symptoms:'', diagnosis:'', prescription:'', treatment_notes:'' }
+        ctx.treatmentForm = { appointment_id:'', visit_type:'', diagnosis:'', prescription:'', treatment_notes:'' }
         await loadDoctorData(ctx)
       } else { ctx.error = response.message || 'Failed to add treatment record' }
     } catch (e) { ctx.error = e.message || 'Failed to add treatment record' } finally { ctx.loading=false }
@@ -173,7 +173,6 @@
     ctx.treatmentForm = {
       appointment_id: appointment.id,
       visit_type: appointment.treatment?.visit_type || '',
-      symptoms: appointment.treatment?.symptoms || '',
       diagnosis: appointment.treatment?.diagnosis || '',
       prescription: appointment.treatment?.prescription || '',
       treatment_notes: appointment.treatment?.notes || ''
@@ -191,7 +190,6 @@
         // Refresh appointment data
         ctx.selectedAppointmentForTreatment.treatment = {
           visit_type: ctx.treatmentForm.visit_type,
-          symptoms: ctx.treatmentForm.symptoms,
           diagnosis: ctx.treatmentForm.diagnosis,
           prescription: ctx.treatmentForm.prescription,
           notes: ctx.treatmentForm.treatment_notes
@@ -246,7 +244,6 @@
   function isFormComplete(ctx) {
     const form = ctx.treatmentForm
     return form.visit_type && 
-           form.symptoms && 
            form.diagnosis && 
            form.prescription && 
            form.treatment_notes
@@ -258,7 +255,6 @@
     ctx.treatmentForm = {
       appointment_id: '',
       visit_type: '',
-      symptoms: '',
       diagnosis: '',
       prescription: '',
       treatment_notes: ''

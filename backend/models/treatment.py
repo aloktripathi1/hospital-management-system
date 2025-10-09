@@ -20,7 +20,6 @@ class Treatment(db.Model):
             'diagnosis': self.diagnosis,
             'prescription': self.prescription,
             'visit_type': self.visit_type,
-            'symptoms': self.symptoms,
             'treatment_notes': self.treatment_notes,
             'created_at': self.created_at.isoformat() if self.created_at else None
         }

@@ -6,241 +6,197 @@ from decorators import patient_required, patient_or_admin_required
 
 patient_bp = Blueprint('patient', __name__)
 
-# =============================================================================
-# PATIENT DASHBOARD SECTION
-# =============================================================================
-
 @patient_bp.route('/dashboard', methods=['GET'])
 @patient_required
 def get_dashboard():
-    # Get current patient information
-    current_user_id = session.get('user_id')
-    current_patient = Patient.query.filter_by(user_id=current_user_id).first()
+    user_id = session.get('user_id')
+    patient = Patient.query.filter_by(user_id=user_id).first()
     
-    # Check if patient exists
-    if current_patient is None:
+    if patient is None:
         return jsonify({
             'success': False,
             'message': 'Patient profile not found',
             'errors': ['Profile not found']
         }), 404
     
-    # Count upcoming appointments for patient
-    upcoming_appointment_count = Appointment.query.filter(
-        Appointment.patient_id == current_patient.id,
+    upcoming = Appointment.query.filter(
+        Appointment.patient_id == patient.id,
         Appointment.appointment_date >= date.today(),
         Appointment.status == 'booked'
     ).count()
     
-    # Count total appointments for patient
-    total_appointment_count = Appointment.query.filter_by(patient_id=current_patient.id).count()
+    total = Appointment.query.filter_by(patient_id=patient.id).count()
     
-    # Count unique doctors patient has visited
-    unique_doctors_count = db.session.query(Appointment.doctor_id).filter_by(
-        patient_id=current_patient.id
+    doctors = db.session.query(Appointment.doctor_id).filter_by(
+        patient_id=patient.id
     ).distinct().count()
     
-    # Return dashboard data
     return jsonify({
         'success': True,
         'message': 'Dashboard data retrieved',
         'data': {
-            'patient': current_patient.to_dict(),
-            'upcoming_appointments': upcoming_appointment_count,
-            'total_appointments': total_appointment_count,
-            'doctors_visited': unique_doctors_count
+            'patient': patient.to_dict(),
+            'upcoming_appointments': upcoming,
+            'total_appointments': total,
+            'doctors_visited': doctors
         }
     })
-
-# =============================================================================
-# DEPARTMENTS SECTION
-# =============================================================================
 
 @patient_bp.route('/departments', methods=['GET'])
 @patient_or_admin_required
 def get_departments():
     from models import Department
     
-    # Get all active departments from database
-    all_active_departments = Department.query.filter_by(is_active=True).all()
+    departments = Department.query.filter_by(is_active=True).all()
     
-    # Prepare list to store department information
-    departments_with_doctors = []
+    data = []
     
-    # Loop through each department
-    for single_department in all_active_departments:
-        # Get all active doctors in this department
-        doctors_in_this_department = Doctor.query.filter_by(
-            department_id=single_department.id, 
+    for dept in departments:
+        doctors = Doctor.query.filter_by(
+            department_id=dept.id, 
             is_active=True
         ).all()
         
-        # Prepare list to store doctor information
-        doctors_info_list = []
+        docs = []
         
-        # Loop through each doctor in department
-        for single_doctor in doctors_in_this_department:
-            doctor_info = {
-                'id': single_doctor.id,
-                'name': single_doctor.name,
-                'department': single_department.name
+        for doc in doctors:
+            info = {
+                'id': doc.id,
+                'name': doc.name,
+                'department': dept.name
             }
-            doctors_info_list.append(doctor_info)
+            docs.append(info)
         
-        # Prepare department information with doctors
-        department_info = {
-            'id': single_department.id,
-            'name': single_department.name,
-            'description': single_department.description,
-            'doctor_count': len(doctors_info_list),
-            'doctors': doctors_info_list
+        dept_info = {
+            'id': dept.id,
+            'name': dept.name,
+            'description': dept.description,
+            'doctor_count': len(docs),
+            'doctors': docs
         }
-        departments_with_doctors.append(department_info)
+        data.append(dept_info)
     
-    # Return departments data
     return jsonify({
         'success': True,
         'message': 'Departments retrieved successfully',
         'data': {
-            'departments': departments_with_doctors
+            'departments': data
         }
     })
-
-# =============================================================================
-# APPOINTMENT SLOTS SECTION
-# =============================================================================
 
 @patient_bp.route('/available-slots', methods=['GET'])
 @patient_required
 def get_available_slots():
-    # Get parameters from request
-    requested_doctor_id = request.args.get('doctor_id')
-    requested_appointment_date = request.args.get('date')
+    doctor_id = request.args.get('doctor_id')
+    date_str = request.args.get('date')
     
-    # Check if doctor ID is provided
-    if not requested_doctor_id:
+    if not doctor_id:
         return jsonify({
             'success': False,
             'message': 'Doctor ID is required',
             'errors': ['Missing doctor_id']
         }), 400
     
-    # Check if date is provided
-    if not requested_appointment_date:
+    if not date_str:
         return jsonify({
             'success': False,
             'message': 'Date is required',
             'errors': ['Missing date']
         }), 400
     
-    # Convert date string to proper date format
-    selected_appointment_date = datetime.strptime(requested_appointment_date, '%Y-%m-%d').date()
+    apt_date = datetime.strptime(date_str, '%Y-%m-%d').date()
     
-    # Find available time slots for selected doctor and date
-    available_time_slots = Appointment.query.filter_by(
-        doctor_id=requested_doctor_id,
-        appointment_date=selected_appointment_date,
+    available = Appointment.query.filter_by(
+        doctor_id=doctor_id,
+        appointment_date=apt_date,
         status='available'
     ).order_by(Appointment.appointment_time.asc()).all()
     
-    # Find booked time slots for selected doctor and date
-    booked_time_slots = Appointment.query.filter_by(
-        doctor_id=requested_doctor_id,
-        appointment_date=selected_appointment_date,
+    booked = Appointment.query.filter_by(
+        doctor_id=doctor_id,
+        appointment_date=apt_date,
         status='booked'
     ).order_by(Appointment.appointment_time.asc()).all()
     
-    # Check if we need to create new time slots
-    total_existing_slots = len(available_time_slots) + len(booked_time_slots)
-    if total_existing_slots == 0:
-        # Find doctor availability for this day of week
-        selected_day_of_week = selected_appointment_date.weekday()
-        doctor_availability = DoctorAvailability.query.filter_by(
-            doctor_id=requested_doctor_id,
-            day_of_week=selected_day_of_week,
+    total = len(available) + len(booked)
+    if total == 0:
+        day = apt_date.weekday()
+        avail = DoctorAvailability.query.filter_by(
+            doctor_id=doctor_id,
+            day_of_week=day,
             is_available=True
         ).first()
         
-        # Set working hours for slot creation
-        if doctor_availability:
-            working_start_time = doctor_availability.start_time
-            working_end_time = doctor_availability.end_time
+        if avail:
+            start = avail.start_time
+            end = avail.end_time
         else:
-            working_start_time = time(9, 0)  # Default 9 AM
-            working_end_time = time(17, 0)   # Default 5 PM
+            start = time(9, 0)
+            end = time(17, 0)
         
-        # Create time slots every 2 hours
-        current_slot_time = working_start_time
-        while current_slot_time < working_end_time:
-            # Create new appointment slot
-            new_appointment_slot = Appointment(
-                doctor_id=requested_doctor_id,
+        slot_time = start
+        while slot_time < end:
+            slot = Appointment(
+                doctor_id=doctor_id,
                 patient_id=None,
-                appointment_date=selected_appointment_date,
-                appointment_time=current_slot_time,
+                appointment_date=apt_date,
+                appointment_time=slot_time,
                 status='available',
                 notes=''
             )
-            db.session.add(new_appointment_slot)
+            db.session.add(slot)
             
-            # Calculate next slot time (2 hours later)
-            current_slot_datetime = datetime.combine(selected_appointment_date, current_slot_time)
-            next_slot_datetime = current_slot_datetime + timedelta(hours=2)
-            current_slot_time = next_slot_datetime.time()
+            slot_dt = datetime.combine(apt_date, slot_time)
+            next_dt = slot_dt + timedelta(hours=2)
+            slot_time = next_dt.time()
         
-        # Save new slots to database
         db.session.commit()
         
-        # Get the newly created available slots
-        available_time_slots = Appointment.query.filter_by(
-            doctor_id=requested_doctor_id,
-            appointment_date=selected_appointment_date,
+        available = Appointment.query.filter_by(
+            doctor_id=doctor_id,
+            appointment_date=apt_date,
             status='available'
         ).order_by(Appointment.appointment_time.asc()).all()
 
-    # Prepare list for all time slot information
-    all_time_slots_info = []
+    slots = []
     
-    # Process available time slots
-    for available_slot in available_time_slots:
-        slot_start_datetime = datetime.combine(selected_appointment_date, available_slot.appointment_time)
-        slot_end_datetime = slot_start_datetime + timedelta(hours=2)
-        slot_end_time = slot_end_datetime.time()
+    for slot in available:
+        start_dt = datetime.combine(apt_date, slot.appointment_time)
+        end_dt = start_dt + timedelta(hours=2)
+        end_time = end_dt.time()
         
-        slot_info = {
-            'id': available_slot.id,
-            'time': f"{available_slot.appointment_time.strftime('%H:%M')}-{slot_end_time.strftime('%H:%M')}",
-            'start_time': available_slot.appointment_time.strftime('%H:%M'),
-            'end_time': slot_end_time.strftime('%H:%M'),
+        info = {
+            'id': slot.id,
+            'time': f"{slot.appointment_time.strftime('%H:%M')}-{end_time.strftime('%H:%M')}",
+            'start_time': slot.appointment_time.strftime('%H:%M'),
+            'end_time': end_time.strftime('%H:%M'),
             'status': 'available',
             'patient_id': None
         }
-        all_time_slots_info.append(slot_info)
+        slots.append(info)
     
-    # Process booked time slots
-    for booked_slot in booked_time_slots:
-        slot_start_datetime = datetime.combine(selected_appointment_date, booked_slot.appointment_time)
-        slot_end_datetime = slot_start_datetime + timedelta(hours=2)
-        slot_end_time = slot_end_datetime.time()
+    for slot in booked:
+        start_dt = datetime.combine(apt_date, slot.appointment_time)
+        end_dt = start_dt + timedelta(hours=2)
+        end_time = end_dt.time()
         
-        slot_info = {
-            'id': booked_slot.id,
-            'time': f"{booked_slot.appointment_time.strftime('%H:%M')}-{slot_end_time.strftime('%H:%M')}",
-            'start_time': booked_slot.appointment_time.strftime('%H:%M'),
-            'end_time': slot_end_time.strftime('%H:%M'),
+        info = {
+            'id': slot.id,
+            'time': f"{slot.appointment_time.strftime('%H:%M')}-{end_time.strftime('%H:%M')}",
+            'start_time': slot.appointment_time.strftime('%H:%M'),
+            'end_time': end_time.strftime('%H:%M'),
             'status': 'booked',
-            'patient_id': booked_slot.patient_id
+            'patient_id': slot.patient_id
         }
-        all_time_slots_info.append(slot_info)
+        slots.append(info)
     
-    # Return time slots information
     return jsonify({
         'success': True,
         'message': 'Available slots retrieved successfully',
         'data': {
-            'slots': all_time_slots_info,
-            'date': selected_appointment_date.isoformat(),
-            'doctor_id': requested_doctor_id
+            'slots': slots,
+            'date': apt_date.isoformat(),
+            'doctor_id': doctor_id
         }
     })
 
@@ -248,14 +204,13 @@ def get_available_slots():
 @patient_required
 def get_doctors():
     try:
-        department_name = request.args.get('department')
+        dept = request.args.get('department')
         
         query = Doctor.query.filter_by(is_active=True)
         
-        if department_name:
-            # Join with Department table to filter by department name
+        if dept:
             from models import Department
-            query = query.join(Department).filter(Department.name == department_name)
+            query = query.join(Department).filter(Department.name == dept)
         
         doctors = query.all()
         
@@ -263,7 +218,7 @@ def get_doctors():
             'success': True,
             'message': 'Doctors retrieved successfully',
             'data': {
-                'doctors': [doctor.to_dict() for doctor in doctors]
+                'doctors': [doc.to_dict() for doc in doctors]
             }
         })
         
@@ -274,287 +229,226 @@ def get_doctors():
             'errors': [str(e)]
         }), 500
 
-# =============================================================================
-# APPOINTMENTS SECTION  
-# =============================================================================
-
 @patient_bp.route('/appointments', methods=['GET'])
 @patient_required
 def get_appointments():
-    # Get current patient information
-    current_user_id = session.get('user_id')
-    current_patient = Patient.query.filter_by(user_id=current_user_id).first()
+    user_id = session.get('user_id')
+    patient = Patient.query.filter_by(user_id=user_id).first()
     
-    # Check if patient exists
-    if current_patient is None:
+    if patient is None:
         return jsonify({
             'success': False,
             'message': 'Patient profile not found',
             'errors': ['Profile not found']
         }), 404
     
-    # Get status filter from request if provided
-    appointment_status_filter = request.args.get('status')
+    status = request.args.get('status')
     
-    # Start building query to get patient appointments
-    patient_appointments_query = Appointment.query.filter_by(patient_id=current_patient.id)
+    query = Appointment.query.filter_by(patient_id=patient.id)
     
-    # Apply status filter if user provided one
-    if appointment_status_filter:
-        patient_appointments_query = patient_appointments_query.filter_by(status=appointment_status_filter)
+    if status:
+        query = query.filter_by(status=status)
     
-    # Get appointments sorted by date and time (newest first)
-    patient_appointments_list = patient_appointments_query.order_by(
+    appointments = query.order_by(
         Appointment.appointment_date.desc(),
         Appointment.appointment_time.desc()
     ).all()
     
-    # Return appointments data
     return jsonify({
         'success': True,
         'message': 'Appointments retrieved successfully',
         'data': {
-            'appointments': [single_appointment.to_dict() for single_appointment in patient_appointments_list]
+            'appointments': [apt.to_dict() for apt in appointments]
         }
     })
-
-# =============================================================================
-# BOOK APPOINTMENT SECTION
-# =============================================================================
 
 @patient_bp.route('/appointments', methods=['POST'])
 @patient_required
 def book_appointment():
-    # Get current patient information
-    current_user_id = session.get('user_id')
-    current_patient = Patient.query.filter_by(user_id=current_user_id).first()
+    user_id = session.get('user_id')
+    patient = Patient.query.filter_by(user_id=user_id).first()
     
-    # Check if patient exists
-    if current_patient is None:
+    if patient is None:
         return jsonify({
             'success': False,
             'message': 'Patient profile not found',
             'errors': ['Profile not found']
         }), 404
     
-    # Get booking information from request
-    booking_data = request.get_json()
+    data = request.get_json()
     
-    # Check if doctor ID is provided
-    if not booking_data.get('doctor_id'):
+    if not data.get('doctor_id'):
         return jsonify({
             'success': False,
             'message': 'Doctor ID is required',
             'errors': ['Missing doctor_id']
         }), 400
     
-    # Check if appointment date is provided
-    if not booking_data.get('appointment_date'):
+    if not data.get('appointment_date'):
         return jsonify({
             'success': False,
             'message': 'Appointment date is required',
             'errors': ['Missing appointment_date']
         }), 400
     
-    # Check if appointment time is provided
-    if not booking_data.get('appointment_time'):
+    if not data.get('appointment_time'):
         return jsonify({
             'success': False,
             'message': 'Appointment time is required',
             'errors': ['Missing appointment_time']
         }), 400
     
-    # Check if selected doctor exists and is active
-    selected_doctor = Doctor.query.get(booking_data['doctor_id'])
-    if selected_doctor is None or not selected_doctor.is_active:
+    doctor = Doctor.query.get(data['doctor_id'])
+    if doctor is None or not doctor.is_active:
         return jsonify({
             'success': False,
             'message': 'Doctor not found or inactive',
             'errors': ['Invalid doctor']
         }), 404
     
-    # Convert date string to date format
-    requested_appointment_date = datetime.strptime(booking_data['appointment_date'], '%Y-%m-%d').date()
+    apt_date = datetime.strptime(data['appointment_date'], '%Y-%m-%d').date()
     
-    # Convert time string to time format (handle both range and simple formats)
-    requested_time_string = booking_data['appointment_time']
-    if '-' in requested_time_string:
-        # If time is in range format like "09:00-11:00", take start time
-        start_time_part = requested_time_string.split('-')[0].strip()
-        requested_appointment_time = datetime.strptime(start_time_part, '%H:%M').time()
+    time_str = data['appointment_time']
+    if '-' in time_str:
+        start = time_str.split('-')[0].strip()
+        apt_time = datetime.strptime(start, '%H:%M').time()
     else:
-        # If time is simple format like "09:00"
-        requested_appointment_time = datetime.strptime(requested_time_string, '%H:%M').time()
+        apt_time = datetime.strptime(time_str, '%H:%M').time()
     
-    # Find available time slot for booking
-    available_time_slot = Appointment.query.filter_by(
-        doctor_id=booking_data['doctor_id'],
-        appointment_date=requested_appointment_date,
-        appointment_time=requested_appointment_time,
+    slot = Appointment.query.filter_by(
+        doctor_id=data['doctor_id'],
+        appointment_date=apt_date,
+        appointment_time=apt_time,
         status='available'
     ).first()
     
-    # Check if time slot is available
-    if available_time_slot is None:
+    if slot is None:
         return jsonify({
             'success': False,
             'message': 'Time slot not available',
             'errors': ['This time slot is not available for booking']
         }), 400
     
-    # Check if patient already has appointment at same time
-    patient_existing_appointment = Appointment.query.filter_by(
-        patient_id=current_patient.id,
-        appointment_date=requested_appointment_date,
-        appointment_time=requested_appointment_time,
+    existing = Appointment.query.filter_by(
+        patient_id=patient.id,
+        appointment_date=apt_date,
+        appointment_time=apt_time,
         status='booked'
     ).first()
     
-    # If patient already has appointment at this time, show error
-    if patient_existing_appointment:
+    if existing:
         return jsonify({
             'success': False,
             'message': 'You already have an appointment at this time',
             'errors': ['Time slot already booked']
         }), 400
     
-    # Book the appointment by updating slot information
-    available_time_slot.patient_id = current_patient.id
-    available_time_slot.status = 'booked'
-    available_time_slot.notes = booking_data.get('notes', '')
-    available_time_slot.updated_at = datetime.utcnow()
+    slot.patient_id = patient.id
+    slot.status = 'booked'
+    slot.notes = data.get('notes', '')
+    slot.updated_at = datetime.utcnow()
     
-    # Save changes to database
     db.session.commit()
     
-    # Return success response
     return jsonify({
         'success': True,
         'message': 'Appointment booked successfully',
         'data': {
-            'appointment': available_time_slot.to_dict()
+            'appointment': slot.to_dict()
         }
     })
-
-# =============================================================================
-# CANCEL APPOINTMENT SECTION
-# =============================================================================
 
 @patient_bp.route('/appointments/<int:appointment_id>', methods=['DELETE'])
 @patient_required
 def cancel_appointment(appointment_id):
-    # Get current patient information
-    current_user_id = session.get('user_id')
-    current_patient = Patient.query.filter_by(user_id=current_user_id).first()
+    user_id = session.get('user_id')
+    patient = Patient.query.filter_by(user_id=user_id).first()
     
-    # Check if patient exists
-    if current_patient is None:
+    if patient is None:
         return jsonify({
             'success': False,
             'message': 'Patient profile not found',
             'errors': ['Profile not found']
         }), 404
     
-    # Find appointment belonging to this patient
-    patient_appointment = Appointment.query.filter_by(
+    appointment = Appointment.query.filter_by(
         id=appointment_id,
-        patient_id=current_patient.id
+        patient_id=patient.id
     ).first()
     
-    # Check if appointment exists and belongs to patient
-    if patient_appointment is None:
+    if appointment is None:
         return jsonify({
             'success': False,
             'message': 'Appointment not found',
             'errors': ['Appointment not found']
         }), 404
     
-    # Check if appointment can be cancelled (only booked appointments)
-    if patient_appointment.status != 'booked':
+    if appointment.status != 'booked':
         return jsonify({
             'success': False,
             'message': 'Cannot cancel this appointment',
             'errors': ['Invalid status']
         }), 400
     
-    # Cancel the appointment
-    patient_appointment.status = 'cancelled'
-    patient_appointment.updated_at = datetime.utcnow()
+    appointment.status = 'cancelled'
+    appointment.updated_at = datetime.utcnow()
     
-    # Save changes to database
     db.session.commit()
     
-    # Return success response
     return jsonify({
         'success': True,
         'message': 'Appointment cancelled successfully',
         'data': {}
     })
 
-# =============================================================================
-# PATIENT HISTORY SECTION
-# =============================================================================
-
 @patient_bp.route('/history', methods=['GET'])
 @patient_required
 def get_history():
-    # Get current patient information
-    current_user_id = session.get('user_id')
-    current_patient = Patient.query.filter_by(user_id=current_user_id).first()
+    user_id = session.get('user_id')
+    patient = Patient.query.filter_by(user_id=user_id).first()
     
-    # Check if patient exists
-    if current_patient is None:
+    if patient is None:
         return jsonify({
             'success': False,
             'message': 'Patient profile not found',
             'errors': ['Profile not found']
         }), 404
     
-    # Get all treatments for this patient (joined with appointments)
-    patient_treatment_history = db.session.query(Treatment).join(Appointment).filter(
-        Appointment.patient_id == current_patient.id
+    treatments = db.session.query(Treatment).join(Appointment).filter(
+        Appointment.patient_id == patient.id
     ).order_by(Treatment.created_at.desc()).all()
     
-    # Return treatment history
     return jsonify({
         'success': True,
         'message': 'Patient history retrieved successfully',
         'data': {
-            'treatments': [single_treatment.to_dict() for single_treatment in patient_treatment_history]
+            'treatments': [t.to_dict() for t in treatments]
         }
     })
-
-# =============================================================================
-# DOCTOR AVAILABILITY SECTION
-# =============================================================================
 
 @patient_bp.route('/doctor/availability/<int:doctor_id>', methods=['GET'])
 @patient_required
 def get_doctor_availability(doctor_id):
-    # Find doctor by ID
-    selected_doctor = Doctor.query.get(doctor_id)
+    doctor = Doctor.query.get(doctor_id)
     
-    # Check if doctor exists and is active
-    if selected_doctor is None or not selected_doctor.is_active:
+    if doctor is None or not doctor.is_active:
         return jsonify({
             'success': False,
             'message': 'Doctor not found or inactive',
             'errors': ['Invalid doctor']
         }), 404
     
-    # Get doctor availability schedule
-    doctor_availability_schedule = DoctorAvailability.query.filter_by(
+    availability = DoctorAvailability.query.filter_by(
         doctor_id=doctor_id,
         is_available=True
     ).all()
     
-    # Return doctor and availability information
     return jsonify({
         'success': True,
         'message': 'Doctor availability retrieved successfully',
         'data': {
-            'doctor': selected_doctor.to_dict(),
-            'availability': [single_availability.to_dict() for single_availability in doctor_availability_schedule]
+            'doctor': doctor.to_dict(),
+            'availability': [avail.to_dict() for avail in availability]
         }
     })
 
@@ -572,7 +466,6 @@ def export_patient_history():
                 'errors': ['Profile not found']
             }), 404
         
-        # Import and trigger the Celery task
         from tasks.celery_tasks import export_patient_history_csv
         task = export_patient_history_csv.delay(patient.id)
         
@@ -591,27 +484,20 @@ def export_patient_history():
             'errors': [str(e)]
         }), 500
 
-# =============================================================================
-# PATIENT PROFILE UPDATE SECTION
-# =============================================================================
-
 @patient_bp.route('/profile', methods=['PUT'])
 @patient_required
 def update_patient_profile():
-    """Update patient's own profile"""
     try:
-        # Get current patient
-        current_user_id = session.get('user_id')
-        current_patient = Patient.query.filter_by(user_id=current_user_id).first()
+        user_id = session.get('user_id')
+        patient = Patient.query.filter_by(user_id=user_id).first()
         
-        if not current_patient:
+        if not patient:
             return jsonify({
                 'success': False,
                 'message': 'Patient profile not found',
                 'errors': ['Profile not found']
             }), 404
         
-        # Get data from request
         data = request.get_json()
         if not data:
             return jsonify({
@@ -620,34 +506,31 @@ def update_patient_profile():
                 'errors': ['Missing data']
             }), 400
         
-        # Update patient fields
         if 'name' in data:
-            current_patient.name = data['name']
+            patient.name = data['name']
         if 'phone' in data:
-            current_patient.phone = data['phone']
+            patient.phone = data['phone']
         if 'address' in data:
-            current_patient.address = data['address']
+            patient.address = data['address']
         if 'age' in data:
-            current_patient.age = data['age']
+            patient.age = data['age']
         if 'gender' in data:
-            current_patient.gender = data['gender']
+            patient.gender = data['gender']
         if 'medical_history' in data:
-            current_patient.medical_history = data['medical_history']
+            patient.medical_history = data['medical_history']
         if 'emergency_contact' in data:
-            current_patient.emergency_contact = data['emergency_contact']
+            patient.emergency_contact = data['emergency_contact']
         
-        # Update user fields if provided
         if 'email' in data:
-            current_patient.user.email = data['email']
+            patient.user.email = data['email']
         
-        # Save changes
         db.session.commit()
         
         return jsonify({
             'success': True,
             'message': 'Profile updated successfully',
             'data': {
-                'patient': current_patient.to_dict()
+                'patient': patient.to_dict()
             }
         })
         
