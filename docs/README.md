@@ -266,6 +266,43 @@ This project demonstrates:
 - ✅ Background task processing
 - ✅ Responsive web design
 
+## 🐛 Development Log & Issues Resolved
+
+### Issue #001: Vue.js Template Flashing (FIXED)
+**Date**: October 10, 2025  
+**Problem**: Template expressions `{{ error }}` and `{{ success }}` were briefly visible during page load before Vue.js initialized, causing a flash of unrendered content.
+
+**Root Cause**: The `v-cloak` CSS directive was moved to the bottom of the HTML file, causing it to load after the HTML content was already visible.
+
+**Solution**: 
+- Moved critical `[v-cloak] { display: none !important; }` CSS back to the `<head>` section
+- Kept non-critical CSS (opacity transitions, loading overlays) at the bottom for performance
+- This ensures immediate hiding of Vue templates while maintaining optimized loading
+
+**Files Modified**:
+- `frontend/index.html` - Separated critical and non-critical CSS placement
+
+**Lesson Learned**: Critical CSS that prevents visual issues must load immediately in the `<head>`, while performance optimizations can be deferred.
+
+---
+
+### Issue #002: Missing Doctor Details in Department Listing (FIXED)
+**Date**: October 10, 2025  
+**Problem**: Doctor qualification and experience were not displaying in the patient dashboard departments section, showing only names.
+
+**Root Cause**: Backend API `/api/patient/departments` was only returning doctor `id`, `name`, and `department` fields, missing `qualification` and `experience`.
+
+**Solution**: 
+- Updated the backend route to include `qualification` and `experience` in the doctor info dictionary
+- Frontend template now properly displays: "Dr. [Name], [Qualification], [Experience] years"
+
+**Files Modified**:
+- `backend/routes/patient.py` - Enhanced doctor info in departments endpoint
+
+**Lesson Learned**: Always ensure backend API responses include all data required by frontend templates.
+
+---
+
 ## 🎓 Academic Compliance
 
 This project is designed for educational purposes and demonstrates:

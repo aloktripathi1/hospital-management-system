@@ -63,7 +63,9 @@ def get_departments():
             info = {
                 'id': doc.id,
                 'name': doc.name,
-                'department': dept.name
+                'department': dept.name,
+                'qualification': doc.qualification,
+                'experience': doc.experience
             }
             docs.append(info)
         
