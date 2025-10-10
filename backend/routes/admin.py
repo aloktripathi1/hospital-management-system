@@ -8,7 +8,7 @@ from decorators import admin_required
 
 admin_bp = Blueprint('admin', __name__)
 
-# -------- Dashboard Stats ----------
+# ---------- Dashboard Stats ------------
 
 @admin_bp.route('/dashboard-stats', methods=['GET'])
 @admin_required
@@ -29,13 +29,13 @@ def dashboard_stats():
     total_appointments = Appointment.query.filter(
         Appointment.status.in_(['booked', 'cancelled', 'completed'])
     ).count()
-    total_departments = Department.query.count()
+    active_doctors = Doctor.query.filter_by(is_active=True).count()
     
     stats = {
         'total_doctors': total_doctors,
         'total_patients': total_patients,
         'total_appointments': total_appointments,
-        'total_departments': total_departments
+        'active_doctors': active_doctors
     }
     
     cache[key] = stats
@@ -46,7 +46,7 @@ def dashboard_stats():
         'data': stats
     })
 
-# --------- Doctor CRUD ---------- 
+# ----------- Doctor CRUD ------------
 
 @admin_bp.route('/doctors', methods=['GET'])
 @admin_required
@@ -226,7 +226,7 @@ def get_patients():
         }
     })
 
-""" commenting out add_patient, update_patient routes for later use... 
+# will comment out add_patient, update_patient routes later if not required in project statement... 
 
 @admin_bp.route('/patients', methods=['POST'])
 @admin_required
@@ -342,8 +342,6 @@ def update_patient(patient_id):
             'patient': patient.to_dict()
         }
     })
-
-"""
 
 # -------- Appointments - Manage and View ----------
 

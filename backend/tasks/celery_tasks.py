@@ -1,64 +1,77 @@
 from celery import Celery
 from datetime import datetime, date, timedelta
-import csv
 from database import db
 from models import User, Patient, Doctor, Appointment, Treatment
 
 celery = Celery('hospital_management')
 
-def send_reminder(patient, doctor, time):
-    print(f"Reminder sent to {patient}: Appointment with Dr. {doctor} at {time}")
-
-def send_report(doctor, data):
-    print(f"Monthly report sent to Dr. {doctor}")
-    print(f"Report contains: {data}")
-
-def create_csv(patient, data):
-    print(f"CSV file created for {patient}")
-    print(f"Contains {len(data)} records")
+# ==================== DAILY REMINDERS ====================
 
 @celery.task
 def send_daily_reminders():
     today = date.today()
     
-    appointments = Appointment.query.filter_by(
-        appointment_date=today,
-        status='booked'
-    ).all()
+    # Get all booked appointments for today
+    appts = Appointment.query.filter_by(appointment_date=today, status='booked').all()
     
     count = 0
-    for appt in appointments:
-        if appt.patient:
-            send_reminder(appt.patient.name, appt.doctor.name, appt.appointment_time)
+    for appt in appts:
+        if appt.patient and appt.doctor:
+            # Send reminder (print for demo - can be email/SMS/webhook in production)
+            msg = f"Reminder: Hi {appt.patient.name}, you have an appointment today at {appt.appointment_time} with Dr. {appt.doctor.name}. Please be on time!"
+            print(msg)
             count += 1
     
     return f"Sent {count} reminders for {today}"
+
+# ==================== MONTHLY REPORTS ====================
 
 @celery.task
 def generate_monthly_report():
     now = datetime.now()
     
-    doctors = Doctor.query.filter_by(is_active=True).all()
+    # Get start of current month
+    month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    
+    docs = Doctor.query.filter_by(is_active=True).all()
     count = 0
     
-    for doc in doctors:
-        appt_count = Appointment.query.filter(
+    for doc in docs:
+        # Get THIS MONTH's completed appointments
+        appts = Appointment.query.filter(
             Appointment.doctor_id == doc.id,
+            Appointment.appointment_date >= month_start,
             Appointment.status == 'completed'
-        ).count()
+        ).all()
         
-        data = f"Total appointments: {appt_count}"
+        # Get THIS MONTH's treatments
+        treatments = Treatment.query.join(Appointment).filter(
+            Appointment.doctor_id == doc.id,
+            Treatment.created_at >= month_start
+        ).all()
         
-        send_report(doc.name, data)
+        # Generate HTML report
+        html = make_html_report(doc, appts, treatments, now.month, now.year)
+        
+        # Send report (print for demo - can be emailed in production)
+        print(f"\n{'='*60}")
+        print(f"Monthly Report for Dr. {doc.name}")
+        print(f"{'='*60}")
+        print(html)
+        print(f"{'='*60}\n")
+        
         count += 1
     
     return f"Generated {count} reports for {now.strftime('%B %Y')}"
 
-def make_report_html(doc, appts, treatments, month, year):
+def make_html_report(doc, appts, treatments, month, year):
+    # Calculate unique patients
+    unique_patients = len(set([a.patient_id for a in appts if a.patient_id]))
+    
     html = f"""
     <html>
     <head>
-        <title>Monthly Report - {doc.name}</title>
+        <title>Monthly Report - Dr. {doc.name}</title>
         <style>
             body {{ font-family: Arial; margin: 20px; }}
             h1 {{ color: #007bff; }}
@@ -75,9 +88,9 @@ def make_report_html(doc, appts, treatments, month, year):
         <h3>Summary</h3>
         <p>Total Appointments: {len(appts)}</p>
         <p>Total Treatments: {len(treatments)}</p>
-        <p>Unique Patients: {len(set([a.patient_id for a in appts]))}</p>
+        <p>Unique Patients: {unique_patients}</p>
         
-        <h3>Recent Appointments</h3>
+        <h3>Appointments This Month</h3>
         <table>
             <tr>
                 <th>Date</th>
@@ -87,11 +100,13 @@ def make_report_html(doc, appts, treatments, month, year):
             </tr>
     """
     
+    # Add appointment rows (show last 10)
     for a in appts[:10]:
+        patient_name = a.patient.name if a.patient else 'N/A'
         html += f"""
             <tr>
                 <td>{a.appointment_date}</td>
-                <td>{a.patient.name if a.patient else 'N/A'}</td>
+                <td>{patient_name}</td>
                 <td>{a.appointment_time}</td>
                 <td>{a.status}</td>
             </tr>
@@ -100,23 +115,33 @@ def make_report_html(doc, appts, treatments, month, year):
     html += """
         </table>
         
-        <h3>Recent Treatments</h3>
+        <h3>Treatments Provided</h3>
         <table>
             <tr>
                 <th>Date</th>
                 <th>Patient</th>
                 <th>Visit Type</th>
                 <th>Diagnosis</th>
+                <th>Treatment</th>
             </tr>
     """
     
+    # Add treatment rows (show last 10)
     for t in treatments[:10]:
+        patient_name = 'N/A'
+        if t.appointment and t.appointment.patient:
+            patient_name = t.appointment.patient.name
+        
+        diagnosis = t.diagnosis[:50] if t.diagnosis else 'N/A'
+        treatment = t.treatment_notes[:50] if t.treatment_notes else 'N/A'
+        
         html += f"""
             <tr>
                 <td>{t.created_at.strftime('%Y-%m-%d')}</td>
-                <td>{t.appointment.patient.name if t.appointment and t.appointment.patient else 'N/A'}</td>
-                <td>{t.visit_type}</td>
-                <td>{t.diagnosis[:50] if t.diagnosis else 'N/A'}...</td>
+                <td>{patient_name}</td>
+                <td>{t.visit_type or 'N/A'}</td>
+                <td>{diagnosis}</td>
+                <td>{treatment}</td>
             </tr>
         """
     
@@ -128,43 +153,86 @@ def make_report_html(doc, appts, treatments, month, year):
     
     return html
 
+# ==================== CSV EXPORT ====================
+
 @celery.task
 def export_patient_history_csv(patient_id):
     patient = Patient.query.get(patient_id)
     if not patient:
-        print(f"Patient {patient_id} not found")
         return f"Patient {patient_id} not found"
     
+    # Get all treatments for this patient
     treatments = Treatment.query.join(Appointment).filter(
         Appointment.patient_id == patient_id
-    ).all()
+    ).order_by(Treatment.created_at.desc()).all()
     
+    # Create CSV filename
     filename = f"patient_{patient_id}_history.csv"
     
-    with open(filename, 'w') as f:
-        f.write("Patient ID,Patient Name,Doctor Name,Date,Diagnosis,Prescription,Notes\n")
+    # Write CSV file
+    with open(filename, 'w', newline='', encoding='utf-8') as f:
+        # Write header with all required fields
+        f.write("Patient ID,Patient Name,Doctor Name,Appointment Date,Visit Type,Symptoms,Diagnosis,Treatment Given,Prescription,Notes,Next Visit\n")
         
+        # Write data rows
         for t in treatments:
-            doctor = t.appointment.doctor.name if t.appointment.doctor else 'N/A'
-            date = str(t.appointment.appointment_date) if t.appointment else 'N/A'
+            # Get doctor name
+            if t.appointment and t.appointment.doctor:
+                doctor = t.appointment.doctor.name
+            else:
+                doctor = 'N/A'
             
-            line = f"{patient.id},{patient.name},{doctor},{date},{t.diagnosis},{t.prescription},{t.treatment_notes}\n"
-            f.write(line)
+            # Get appointment date
+            if t.appointment:
+                appt_date = str(t.appointment.appointment_date)
+            else:
+                appt_date = 'N/A'
+            
+            # Get fields (handle None values)
+            visit_type = t.visit_type or 'N/A'
+            symptoms = t.symptoms or 'N/A'
+            diagnosis = t.diagnosis or 'N/A'
+            treatment = t.treatment_notes or 'N/A'
+            prescription = t.prescription or 'N/A'
+            notes = t.treatment_notes or 'N/A'
+            
+            # Next visit - can add this field to Treatment model if needed
+            next_visit = 'N/A'  # Default value
+            
+            # Clean data (remove commas and newlines)
+            symptoms = symptoms.replace(',', ';').replace('\n', ' ')
+            diagnosis = diagnosis.replace(',', ';').replace('\n', ' ')
+            treatment = treatment.replace(',', ';').replace('\n', ' ')
+            prescription = prescription.replace(',', ';').replace('\n', ' ')
+            notes = notes.replace(',', ';').replace('\n', ' ')
+            
+            # Write row
+            row = f"{patient.id},{patient.name},{doctor},{appt_date},{visit_type},{symptoms},{diagnosis},{treatment},{prescription},{notes},{next_visit}\n"
+            f.write(row)
     
-    print(f"CSV file created: {filename} for patient {patient.name}")
-    print(f"Total treatments exported: {len(treatments)}")
+    # Print confirmation (in production, send notification to patient)
+    print(f"\n{'='*60}")
+    print(f"CSV Export Complete!")
+    print(f"Patient: {patient.name}")
+    print(f"File: {filename}")
+    print(f"Total Records: {len(treatments)}")
+    print(f"{'='*60}\n")
     
     return f"CSV exported for {patient.name}: {len(treatments)} records"
+
+# ==================== CELERY SCHEDULE ====================
 
 from celery.schedules import crontab
 
 celery.conf.beat_schedule = {
-    'daily-reminders': {
+    # Run daily at 8 AM
+    'send-daily-reminders': {
         'task': 'tasks.celery_tasks.send_daily_reminders',
         'schedule': crontab(hour=8, minute=0),
     },
-    'monthly-reports': {
+    # Run on 1st of every month at midnight
+    'generate-monthly-reports': {
         'task': 'tasks.celery_tasks.generate_monthly_report',
-        'schedule': crontab(0, 0, day_of_month=1),
+        'schedule': crontab(hour=0, minute=0, day_of_month=1),
     },
 }

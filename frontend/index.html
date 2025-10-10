@@ -333,7 +333,7 @@
                 <div class="container">
                     <!-- Welcome Message - Only show on main dashboard -->
                     <div v-if="adminView === 'dashboard'" class="mb-4">
-                        <h3 class="text-primary mb-2">Welcome, {{ currentUser.name }}!</h3>
+                        <h3 class="text-primary mb-2">Welcome, {{ currentUser.name || currentUser.username }}!</h3>
                         <p class="text-muted fs-5">Manage doctors, patients, and appointments efficiently.</p>
                     </div>
 
@@ -378,96 +378,13 @@
                         <div class="col-md-3">
                             <div class="card bg-warning text-white">
                                 <div class="card-body text-center">
-                                    <h4>{{ stats.total_departments || 0 }}</h4>
-                                    <p class="mb-0">Total Departments</p>
+                                    <h4>{{ stats.active_doctors || 0 }}</h4>
+                                    <p class="mb-0">Active Doctors</p>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Search Section -->
-<!--
-                    <div class="card mb-4">
-                        <div class="card-header">
-                            <h5 class="mb-0"><i class="bi bi-search"></i> Search</h5>
-                        </div>
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="input-group">
-                                        <input type="text" class="form-control" v-model="searchQuery" placeholder="Search doctors or patients...">
-                                        <button class="btn btn-outline-primary" @click="searchDoctors">
-                                            <i class="bi bi-search"></i> Search Doctors
-                                        </button>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="input-group">
-                                        <input type="text" class="form-control" v-model="searchQuery" placeholder="Search patients...">
-                                        <button class="btn btn-outline-success" @click="searchPatients">
-                                            <i class="bi bi-search"></i> Search Patients
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
--->
-                            
-                            <!-- Search Results -->
-<!--
-                            <div v-if="searchResults.doctors.length > 0" class="mt-3">
-                                <h6>Doctor Search Results:</h6>
-                                <div class="table-responsive mb-3">
-                                    <table class="table table-striped table-hover">
-                                        <thead class="table-dark">
-                                            <tr>
-                                                <th>Name</th>
-                                                <th>Department</th>
-                                                <th>Experience</th>
-                                                <th>Status</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <tr v-for="doctor in searchResults.doctors" :key="doctor.id">
-                                                <td>Dr. {{ doctor.name }}</td>
-                                                <td>{{ doctor.department }}</td>
-                                                <td>{{ doctor.experience }} years</td>
-                                                <td>
-                                                    <span class="badge" :class="doctor.is_active ? 'bg-success' : 'bg-danger'">
-                                                        {{ doctor.is_active ? 'Active' : 'Inactive' }}
-                                                    </span>
-                                                </td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                            
-                            <div v-if="searchResults.patients.length > 0" class="mt-3">
-                                <h6>Patient Search Results:</h6>
-                                <div class="table-responsive">
-                                    <table class="table table-sm">
-                                        <thead>
-                                            <tr>
-                                                <th>Name</th>
-                                                <th>Email</th>
-                                                <th>Phone</th>
-                                                <th>Age</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <tr v-for="patient in searchResults.patients" :key="patient.id">
-                                                <td>{{ patient.name }}</td>
-                                                <td>{{ patient.user ? patient.user.email : 'N/A' }}</td>
-                                                <td>{{ patient.phone }}</td>
-                                                <td>{{ patient.age }}</td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
--->
 
                     <!-- Tabs -->
                     <ul class="nav nav-tabs mb-3" id="adminTabs" role="tablist">
@@ -562,9 +479,9 @@
                             <div class="card mb-4">
                                 <div class="card-header d-flex justify-content-between align-items-center">
                                     <h5 class="mb-0">Manage Patients</h5>
-                                    <!-- <button class="btn btn-outline-primary" @click="showAddPatientForm">
+                                    <button class="btn btn-outline-primary" @click="showAddPatientForm">
                                         <i class="bi bi-plus"></i> Add Patient
-                                    </button> -->
+                                    </button>
                                 </div>
                                 <div class="card-body">
                                     <!-- Search Form -->
@@ -604,9 +521,9 @@
                                                     <td>{{ patient.age }}</td>
                                                     <td>{{ patient.gender }}</td>
                                                     <td>
-                                                        <!-- <button class="btn btn-sm btn-outline-info me-1" @click="openAdminPatientEdit(patient)" title="Edit Patient Details">
+                                                        <button class="btn btn-sm btn-outline-info me-1" @click="openAdminPatientEdit(patient)" title="Edit Patient Details">
                                                             <i class="bi bi-pencil"></i>
-                                                        </button> -->
+                                                        </button>
                                                         <button class="btn btn-sm me-1" :class="patient.is_blacklisted ? 'btn-outline-success' : 'btn-outline-warning'" @click="togglePatientBlacklist(patient)" title="Blacklist/Unblacklist Patient">
                                                             <i class="bi" :class="patient.is_blacklisted ? 'bi-check-circle' : 'bi-ban'"></i>
                                                         </button>
@@ -847,7 +764,7 @@
                         </div>
                     </div>
 
-                    <!-- Edit Patient View 
+                    <!-- Edit Patient View -->
                     <div v-if="adminView === 'edit-patient'" class="card">
                         <div class="card-header">
                             <h5 class="mb-0">Edit Patient Details</h5>
@@ -904,7 +821,7 @@
                                 </button>
                             </form>
                         </div>
-                    </div>      # edited patient edit functinality for later... -->
+                    </div>
 
                     <!-- Patient History View -->
                     <div v-if="adminView === 'patient-history'" class="card">
@@ -953,7 +870,7 @@
                         </div>
                     </div>
 
-                    <!-- Add Patient View 
+                    <!-- Add Patient View -->
                     <div v-if="adminView === 'add-patient'" class="card">
                         <div class="card-header">
                             <h5 class="mb-0">Add New Patient</h5>
@@ -1027,7 +944,7 @@
                         </div>
                     </div>
                 </div>
-            </div>  # commented out add patient functionality for later..  -->
+            </div>
 
             <!-- Add Department Page -->
             <div v-if="adminView === 'add-department'" class="card">
@@ -1054,14 +971,12 @@
 
             <!-- Edit Department Page -->
             <div v-if="adminView === 'edit-department'" class="card">
-                        <div class="card-header">
-                            <h5 class="mb-12">Edit Department: {{ editingDepartment.name }}</h5>
-                        </div>
-                        <div class="card-body">
-                            <form @submit.prevent="updateDepartment">
-                                <div class="mb-12">
-                                    <div class="col-md-6">
-                                        <div class="mb-3">
+                <div class="card-header">
+                    <h5 class="mb-0">Edit Department: {{ editingDepartment.name }}</h5>
+                </div>
+                <div class="card-body">
+                    <form @submit.prevent="updateDepartment">
+                        <div class="mb-3">
                             <label for="edit_dept_name" class="form-label">Department Name</label>
                             <input type="text" class="form-control" id="edit_dept_name" v-model="editingDepartment.name" required>
                         </div>
@@ -1082,7 +997,7 @@
                 <div class="container">
                     <!-- Welcome Message -->
                     <div class="mb-4">
-                        <h3 class="text-primary mb-2">Welcome, Dr. {{ currentUser.name }}!</h3>
+                        <h3 class="text-primary mb-2">Welcome, Dr. {{ currentUser.name || currentUser.username }}!</h3>
                         <p class="text-muted fs-5">Here are your appointments for today.</p>
                     </div>
                     
@@ -1305,9 +1220,9 @@
                     <div class="card">
                         <div class="card-header d-flex justify-content-between align-items-center">
                             <h5 class="mb-0">Manage Treatment - {{ selectedAppointmentForTreatment?.patient?.name }}</h5>
-                            <button class="btn btn-outline-secondary" @click="backToDoctorAppointments()">
-                                Back to Appointments
-                            </button>
+                            <button class="btn btn-outline-secondary mb-2" @click="backToDoctorAppointments()">
+                                <i class="bi bi-arrow-left"></i> Back to Dashboard
+                            </button> 
                         </div>
                         <div class="card-body">
                             <div v-if="selectedAppointmentForTreatment">
@@ -1329,6 +1244,12 @@
                                                 <option value="emergency">Emergency</option>
                                             </select>
                                         </div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label">Symptoms <span class="text-danger">*</span></label>
+                                        <textarea class="form-control" rows="3" v-model="treatmentForm.symptoms" 
+                                                  placeholder="Describe the patient's symptoms" required></textarea>
                                     </div>
                                     
                                     <div class="mb-3">
@@ -1373,9 +1294,9 @@
                     <div class="card">
                         <div class="card-header d-flex justify-content-between align-items-center">
                             <h5 class="mb-0">Treatment History - {{ selectedPatientForHistory?.name }}</h5>
-                            <button class="btn btn-outline-secondary" @click="backToAssignedPatients()">
-                                Back to Patients
-                            </button>
+                            <button class="btn btn-outline-secondary mb-2" @click="backToAssignedPatients()">
+                                <i class="bi bi-arrow-left"></i> Back to Patients
+                            </button> 
                         </div>
                         <div class="card-body">
                             <div v-if="selectedPatientForHistory">
@@ -1407,6 +1328,7 @@
                                                 <th>Doctor</th>
                                                 <th>Status</th>
                                                 <th>Visit Type</th>
+                                                <th>Symptoms</th>
                                                 <th>Diagnosis</th>
                                                 <th>Prescription</th>
                                                 <th>Notes</th>
@@ -1423,6 +1345,7 @@
                                                     </span>
                                                 </td>
                                                 <td>{{ appointment.treatment ? appointment.treatment.visit_type : '-' }}</td>
+                                                <td>{{ appointment.treatment ? appointment.treatment.symptoms : '-' }}</td>
                                                 <td>{{ appointment.treatment ? appointment.treatment.diagnosis : '-' }}</td>
                                                 <td>{{ appointment.treatment ? appointment.treatment.prescription : '-' }}</td>
                                                 <td>{{ appointment.treatment ? appointment.treatment.notes : '-' }}</td>
@@ -1446,7 +1369,7 @@
                 <div class="container">
                     <!-- Welcome Message - Simplified -->
                     <div class="mb-4">
-                        <h3 class="text-primary mb-2">Welcome, {{ currentUser.name }}!</h3>
+                        <h3 class="text-primary mb-2">Welcome, {{ currentUser.name || currentUser.username }}!</h3>
                         <p class="text-muted fs-5">Here are your upcoming appointments.</p>
                     </div>
                     
@@ -1724,6 +1647,7 @@
                                 <div v-if="selectedAppointmentHistory.treatment" class="mb-4">
                                     <h6>Treatment Details</h6>
                                     <p v-if="selectedAppointmentHistory.treatment.visit_type"><strong>Visit Type:</strong> {{ selectedAppointmentHistory.treatment.visit_type }}</p>
+                                    <p v-if="selectedAppointmentHistory.treatment.symptoms"><strong>Symptoms:</strong> {{ selectedAppointmentHistory.treatment.symptoms }}</p>
                                     <p v-if="selectedAppointmentHistory.treatment.diagnosis"><strong>Diagnosis:</strong> {{ selectedAppointmentHistory.treatment.diagnosis }}</p>
                                     <p v-if="selectedAppointmentHistory.treatment.prescription"><strong>Prescription:</strong> {{ selectedAppointmentHistory.treatment.prescription }}</p>
                                     <p v-if="selectedAppointmentHistory.treatment.treatment_notes"><strong>Treatment Notes:</strong> {{ selectedAppointmentHistory.treatment.treatment_notes }}</p>

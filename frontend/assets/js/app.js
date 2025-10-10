@@ -158,6 +158,8 @@ const App = {
         const response = await window.ApiService.getCurrentUser()
         if (response && response.success) {
           this.currentUser = response.data.user
+          this.currentView = 'dashboard' // Set current view to show dashboard
+          this.appView = 'dashboard' // Ensure app view is dashboard
           await this.loadDashboardData()
         } else {
           // Clear any existing session data
@@ -183,6 +185,8 @@ const App = {
         if (response.success) {
           this.currentUser = response.data.user
           this.success = `Welcome back, ${this.currentUser.username}!`
+          this.currentView = 'dashboard' // Set current view to show dashboard
+          this.appView = 'dashboard' // Ensure app view is dashboard
           await this.loadDashboardData()
         } else {
           this.error = response.message || 'Login failed'
@@ -402,46 +406,7 @@ const App = {
 
     async loadPatientData() {
       try {
-        // Load dashboard data
-        const dashboardResponse = await window.ApiService.getPatientDashboard()
-        if (dashboardResponse.success) {
-          this.stats = dashboardResponse.data
-          this.patientInfo = dashboardResponse.data.patient
-          
-          // Populate profile form with patient info
-          if (this.patientInfo) {
-            this.profileForm = {
-              name: this.patientInfo.name || '',
-              email: this.patientInfo.user ? this.patientInfo.user.email : '',
-              phone: this.patientInfo.phone || '',
-              age: this.patientInfo.age || '',
-              gender: this.patientInfo.gender || '',
-              address: this.patientInfo.address || ''
-            };
-          }
-        }
-        
-        // Load departments
-        const departmentsResponse = await window.ApiService.getDepartments()
-        if (departmentsResponse.success) {
-          this.departments = departmentsResponse.data.departments
-        }
-        
-        // Load appointments
-        const appointmentsResponse = await window.ApiService.getPatientAppointments()
-        if (appointmentsResponse.success) {
-          this.patientAppointments = appointmentsResponse.data.appointments
-        }
-        
-        // Load medical history
-        const historyResponse = await window.ApiService.getPatientHistoryForPatient()
-        if (historyResponse.success) {
-          this.treatments = historyResponse.data.treatments
-        }
-        
-        // Merge appointments and treatments into unified list
-        this.mergeAppointmentsAndTreatments()
-        
+        await window.PatientModule.loadPatientData(this)
       } catch (error) {
         console.error("Failed to load patient data:", error)
       }
