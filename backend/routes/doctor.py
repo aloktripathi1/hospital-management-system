@@ -19,20 +19,27 @@ def get_dashboard():
             'errors': ['Profile not found']
         }), 404
     
+    # Get total appointments for this doctor (excluding available slots)
+    total_appointments = Appointment.query.filter(
+        Appointment.doctor_id == doctor.id,
+        Appointment.status.in_(['booked', 'cancelled', 'completed'])
+    ).count()
+
+    total_patients = db.session.query(Appointment.patient_id).filter_by(
+        doctor_id=doctor.id
+    ).distinct().count()
+
     today_appointments = Appointment.query.filter_by(
         doctor_id=doctor.id,
         appointment_date=date.today()
     ).count()
     
-    upcoming_appointments = Appointment.query.filter(
-        Appointment.doctor_id == doctor.id,
-        Appointment.appointment_date >= date.today(),
-        Appointment.status == 'booked'
-    ).count()
-    
-    total_patients = db.session.query(Appointment.patient_id).filter_by(
-        doctor_id=doctor.id
-    ).distinct().count()
+    # # Get upcoming appointments for this doctor (booked appointments from today onwards)
+    # upcoming_appointments = Appointment.query.filter(
+    #     Appointment.doctor_id == doctor.id,
+    #     Appointment.appointment_date >= date.today(),
+    #     Appointment.status == 'booked'
+    # ).count()
     
     return jsonify({
         'success': True,
@@ -40,7 +47,7 @@ def get_dashboard():
         'data': {
             'doctor': doctor.to_dict(),
             'today_appointments': today_appointments,
-            'upcoming_appointments': upcoming_appointments,
+            'total_appointments': total_appointments,
             'total_patients': total_patients
         }
     })

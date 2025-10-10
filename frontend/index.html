@@ -1004,26 +1004,28 @@
                     <!-- Stats Cards -->
                     <div class="row mb-4">
                         <div class="col-md-4">
-                            <div class="card bg-primary text-white">
-                                <div class="card-body text-center">
-                                    <h4>{{ stats.today_appointments || 0 }}</h4>
-                                    <p class="mb-0">Today's Appointments</p>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
                             <div class="card bg-success text-white">
                                 <div class="card-body text-center">
-                                    <h4>{{ stats.upcoming_appointments || 0 }}</h4>
-                                    <p class="mb-0">Upcoming Appointments</p>
+                                    <h4>{{ stats.total_appointments || 0 }}</h4>
+                                    <p class="mb-0">Total Appointments</p>
                                 </div>
                             </div>
                         </div>
+
                         <div class="col-md-4">
                             <div class="card bg-info text-white">
                                 <div class="card-body text-center">
                                     <h4>{{ stats.total_patients || 0 }}</h4>
                                     <p class="mb-0">Total Patients</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-4">
+                            <div class="card bg-primary text-white">
+                                <div class="card-body text-center">
+                                    <h4>{{ stats.today_appointments || 0 }}</h4>
+                                    <p class="mb-0">Today's Appointments</p>
                                 </div>
                             </div>
                         </div>
@@ -1033,7 +1035,7 @@
                     <ul class="nav nav-tabs mb-3" id="doctorTabs" role="tablist">
                         <li class="nav-item" role="presentation">
                             <button class="nav-link active" id="appointments-tab" data-bs-toggle="tab" data-bs-target="#doctor-appointments" type="button" role="tab">
-                                <i class="bi bi-calendar"></i> Upcoming Appointments
+                                <i class="bi bi-calendar"></i> Appointments
                             </button>
                         </li>
                         <li class="nav-item" role="presentation">
