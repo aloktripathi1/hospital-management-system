@@ -108,9 +108,10 @@ const App = {
       departments: [],
       availableDoctors: [],
       patientAppointments: [],
-      treatments: [],
-      allPatientAppointments: [], // Unified appointments (both current and past)
-      selectedAppointmentHistory: null, // For appointment history modal
+  treatments: [],
+  allPatientAppointments: [], // Unified appointments (both current and past)
+  selectedAppointmentHistory: null, // For appointment history modal
+  selectedTreatment: null, // For treatment details modal
       selectedDepartment: null,
       selectedDoctor: null,
       availableSlots: [],
@@ -142,6 +143,25 @@ const App = {
   },
 
   methods: {
+    // Get doctor name from treatment
+    getTreatmentDoctor(treatment) {
+        // Try to get doctor from treatment data directly
+        if (treatment.doctor && treatment.doctor.name) {
+            return 'Dr. ' + treatment.doctor.name
+        }
+        // Try to get doctor from appointment
+        if (treatment.appointment && treatment.appointment.doctor) {
+            return 'Dr. ' + treatment.appointment.doctor.name
+        }
+        return 'N/A'
+    },
+
+  // Truncate text for table display
+  truncateText(text, maxLength = 50) {
+    if (!text) return 'N/A'
+    if (text.length <= maxLength) return text
+    return text.substring(0, maxLength) + '...'
+  },
     openProfilePage() {
       this.appView = 'profile'
     },

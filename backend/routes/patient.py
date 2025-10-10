@@ -418,11 +418,39 @@ def get_history():
         Appointment.patient_id == patient.id
     ).order_by(Treatment.created_at.desc()).all()
     
+    # Include appointment and doctor information with each treatment
+    treatment_data = []
+    for treatment in treatments:
+        treatment_dict = treatment.to_dict()
+        
+        # Get the appointment details
+        appointment = Appointment.query.get(treatment.appointment_id)
+        if appointment:
+            treatment_dict['appointment'] = {
+                'id': appointment.id,
+                'appointment_date': appointment.appointment_date.isoformat() if appointment.appointment_date else None,
+                'appointment_time': str(appointment.appointment_time) if appointment.appointment_time else None,
+                'status': appointment.status
+            }
+            
+            # Get doctor information
+            if appointment.doctor:
+                treatment_dict['doctor'] = {
+                    'id': appointment.doctor.id,
+                    'name': appointment.doctor.name,
+                    'specialization': appointment.doctor.specialization,
+                    'department': appointment.doctor.department.name if appointment.doctor.department else None
+                }
+            else:
+                treatment_dict['doctor'] = None
+        
+        treatment_data.append(treatment_dict)
+    
     return jsonify({
         'success': True,
         'message': 'Patient history retrieved successfully',
         'data': {
-            'treatments': [t.to_dict() for t in treatments]
+            'treatments': treatment_data
         }
     })
 

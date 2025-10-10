@@ -27,7 +27,13 @@
       if (appointmentsResponse.success) ctx.patientAppointments = appointmentsResponse.data.appointments
 
       const historyResponse = await window.ApiService.getPatientHistoryForPatient()
-      if (historyResponse.success) ctx.treatments = historyResponse.data.treatments
+      if (historyResponse.success) {
+        ctx.treatments = historyResponse.data.treatments
+        console.log('Loaded treatments:', ctx.treatments.length)
+      }
+
+      // Merge appointments and treatments for unified display
+      ctx.mergeAppointmentsAndTreatments()
     } catch (e) { console.error('Failed to load patient data', e) }
   }
 
