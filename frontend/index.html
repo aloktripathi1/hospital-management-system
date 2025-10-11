@@ -55,7 +55,7 @@
                             <div class="col-lg-8 col-md-10 text-center">
                                 <!-- Hospital Logo/Name -->
                                 <div class="mb-4">
-                                    <i class="bi bi-hospital icon-5x mb-3"></i>
+                                    <i class="bi bi-hospital icon-4x mb-3"></i>
                                     <h1 class="display-3 fw-bold mb-0">MediHub</h1>
                                 </div>
                                 
@@ -84,6 +84,98 @@
                     </div>
                 </div>
             </div>
+
+<!-- <style>
+/* Hero Section Background Gradient */
+.bg-gradient {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+/* Background Pattern (Subtle) */
+.hero-pattern {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    opacity: 0.1;
+    background-image: 
+        radial-gradient(circle at 20% 50%, white 1px, transparent 1px),
+        radial-gradient(circle at 80% 80%, white 1px, transparent 1px);
+    background-size: 50px 50px;
+}
+
+/* Title Underline */
+.title-underline {
+    width: 80px;
+    height: 4px;
+    background: white;
+    border-radius: 2px;
+}
+
+/* Hospital Icon Wrapper */
+.hospital-icon-wrapper {
+    animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+    0%, 100% {
+        transform: translateY(0px);
+    }
+    50% {
+        transform: translateY(-10px);
+    }
+}
+
+/* Hero Content Fade In */
+.hero-content {
+    animation: fadeInUp 0.8s ease-out;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Feature Cards Hover */
+.feature-card {
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+}
+
+.feature-card:hover {
+    background-color: rgba(255, 255, 255, 0.2) !important;
+    transform: translateY(-5px);
+}
+
+/* Button Hover Effect */
+.hover-lift {
+    transition: all 0.3s ease;
+}
+
+.hover-lift:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .display-2 {
+        font-size: 3rem;
+    }
+    
+    .hero-content {
+        margin-bottom: 2rem;
+    }
+}
+</style> -->
+
 
             <!-- Profile Page (Global) -->
             <div v-if="currentUser && appView === 'profile'" class="container my-4">
