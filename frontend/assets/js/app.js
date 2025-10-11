@@ -1,12 +1,12 @@
 const { createApp } = Vue
 
-// Main Vue Application
+// Hospital app
 const App = {
   data() {
     return {
       currentUser: null,
       currentView: "home",
-      appView: "dashboard", // 'dashboard' | 'profile'
+      appView: "dashboard",
       loading: false,
       error: null,
       success: null,
@@ -170,94 +170,67 @@ const App = {
     },
     async checkAuth() {
       if (this.authCheckInProgress) {
-        return // Prevent multiple concurrent auth checks
+        return
       }
       
       this.authCheckInProgress = true
-      try {
-        const response = await window.ApiService.getCurrentUser()
-        if (response && response.success) {
-          this.currentUser = response.data.user
-          this.currentView = 'dashboard' // Set current view to show dashboard
-          this.appView = 'dashboard' // Ensure app view is dashboard
-          await this.loadDashboardData()
-        } else {
-          // Clear any existing session data
-          this.currentUser = null
-          this.currentView = "home"
-        }
-      } catch (error) {
-        console.error("Auth check failed:", error)
-        // User is not authenticated, clear session data
+      const response = await window.ApiService.getCurrentUser()
+      if (response && response.success) {
+        this.currentUser = response.data.user
+        this.currentView = 'dashboard'
+        this.appView = 'dashboard'
+        await this.loadDashboardData()
+      } else {
         this.currentUser = null
         this.currentView = "home"
-      } finally {
-        this.authCheckInProgress = false
       }
+      this.authCheckInProgress = false
     },
 
     async handleLogin() {
       this.loading = true
       this.error = null
 
-      try {
-        const response = await window.ApiService.login(this.loginForm)
-        if (response.success) {
-          this.currentUser = response.data.user
-          this.success = `Welcome back, ${this.currentUser.username}!`
-          this.currentView = 'dashboard' // Set current view to show dashboard
-          this.appView = 'dashboard' // Ensure app view is dashboard
-          await this.loadDashboardData()
-        } else {
-          this.error = response.message || 'Login failed'
-        }
-      } catch (error) {
-        this.error = error.message || 'Login failed. Please try again.'
-      } finally {
-        this.loading = false
+      const response = await window.ApiService.login(this.loginForm)
+      if (response.success) {
+        this.currentUser = response.data.user
+        this.success = 'Welcome back, ' + this.currentUser.username + '!'
+        this.currentView = 'dashboard'
+        this.appView = 'dashboard'
+        await this.loadDashboardData()
+      } else {
+        this.error = response.message || 'Login failed'
       }
+      this.loading = false
     },
 
     async handleRegister() {
       this.loading = true
       this.error = null
 
-      try {
-        const response = await window.ApiService.register(this.registerForm)
-        if (response.success) {
-          this.success = 'Registration successful! Please login to continue.'
-          this.currentView = 'login'
-          this.registerForm = {
-            username: '',
-            email: '',
-            password: '',
-            name: ''
-          }
-        } else {
-          this.error = response.message || 'Registration failed'
+      const response = await window.ApiService.register(this.registerForm)
+      if (response.success) {
+        this.success = 'Registration successful! Please login to continue.'
+        this.currentView = 'login'
+        this.registerForm = {
+          username: '',
+          email: '',
+          password: '',
+          name: ''
         }
-      } catch (error) {
-        this.error = error.message || 'Registration failed. Please try again.'
-      } finally {
-        this.loading = false
+      } else {
+        this.error = response.message || 'Registration failed'
       }
+      this.loading = false
     },
 
     async logout() {
-      try {
-        await window.ApiService.logout()
-        this.currentUser = null
-        this.currentView = "home"
-        this.error = null
-        this.stats = {}
-        this.clearAllData()
-      } catch (error) {
-        console.error("Logout failed:", error)
-        this.currentUser = null
-        this.currentView = "home"
-        this.stats = {}
-        this.clearAllData()
-      }
+      await window.ApiService.logout()
+      this.currentUser = null
+      this.currentView = "home"
+      this.error = null
+      this.stats = {}
+      this.clearAllData()
     },
 
     clearAllData() {
@@ -278,17 +251,12 @@ const App = {
     async loadDashboardData() {
       if (!this.currentUser) return
 
-      try {
-        if (this.currentUser.role === 'admin') {
-          await this.loadAdminData()
-        } else if (this.currentUser.role === 'doctor') {
-          await this.loadDoctorData()
-        } else if (this.currentUser.role === 'patient') {
-          await this.loadPatientData()
-        }
-      } catch (error) {
-        console.error("Failed to load dashboard data:", error)
-        this.error = "Failed to load dashboard data"
+      if (this.currentUser.role === 'admin') {
+        await this.loadAdminData()
+      } else if (this.currentUser.role === 'doctor') {
+        await this.loadDoctorData()
+      } else if (this.currentUser.role === 'patient') {
+        await this.loadPatientData()
       }
     },
 
@@ -370,109 +338,96 @@ const App = {
     },
 
     async loadAdminData() {
-      try {
-        // Load stats
-        const statsResponse = await window.ApiService.getAdminStats()
-        if (statsResponse.success) {
-          this.stats = statsResponse.data
+      const stats = await window.ApiService.getAdminStats()
+      if (stats.success) {
+        this.stats = stats.data
+      }
+      
+      const doctors = await window.ApiService.getDoctors()
+      if (doctors.success) {
+        this.doctors = doctors.data.doctors
+        this.filteredDoctors = this.doctors.slice()
+        this.doctorDepartments = []
+        for (let i = 0; i < this.doctors.length; i++) {
+          if (this.doctorDepartments.indexOf(this.doctors[i].department) === -1) {
+            this.doctorDepartments.push(this.doctors[i].department)
+          }
         }
-        
-        // Load doctors
-        const doctorsResponse = await window.ApiService.getDoctors()
-        if (doctorsResponse.success) {
-          this.doctors = doctorsResponse.data.doctors
-          this.filteredDoctors = [...this.doctors]
-          // Extract unique departments
-          this.doctorDepartments = [...new Set(this.doctors.map(d => d.department))]
-        }
+      }
 
-        // Load departments for forms
-        const allDepartmentsResponse = await window.ApiService.getDepartments()
-        if (allDepartmentsResponse.success) {
-          this.allDepartments = allDepartmentsResponse.data.departments
-        }
-        
-        // Load patients
-        const patientsResponse = await window.ApiService.getPatients()
-        if (patientsResponse.success) {
-          this.patients = patientsResponse.data.patients
-          this.filteredPatients = [...this.patients]
-        }
-        
-        // Load appointments
-        const appointmentsResponse = await window.ApiService.getAppointments()
-        if (appointmentsResponse.success) {
-          this.appointments = appointmentsResponse.data.appointments
-          this.filterAppointments() // Initialize filtered appointments
-        }
-        
-        // Load admin departments
-        const adminDepartmentsResponse = await window.ApiService.getAdminDepartments()
-        if (adminDepartmentsResponse.success) {
-          this.adminDepartments = adminDepartmentsResponse.data.departments
-        }
-      } catch (error) {
-        console.error("Failed to load admin data:", error)
+      const allDeps = await window.ApiService.getDepartments()
+      if (allDeps.success) {
+        this.allDepartments = allDeps.data.departments
+      }
+      
+      const patients = await window.ApiService.getPatients()
+      if (patients.success) {
+        this.patients = patients.data.patients
+        this.filteredPatients = this.patients.slice()
+      }
+      
+      const appointments = await window.ApiService.getAppointments()
+      if (appointments.success) {
+        this.appointments = appointments.data.appointments
+        this.filterAppointments()
+      }
+      
+      const adminDeps = await window.ApiService.getAdminDepartments()
+      if (adminDeps.success) {
+        this.adminDepartments = adminDeps.data.departments
       }
     },
 
     async loadDoctorData() {
-      try {
-        await window.DoctorModule.loadDoctorData(this)
-      } catch (error) {
-        console.error("Failed to load doctor data:", error)
-      }
+      await window.DoctorModule.loadDoctorData(this)
     },
 
     async loadPatientData() {
-      try {
-        await window.PatientModule.loadPatientData(this)
-      } catch (error) {
-        console.error("Failed to load patient data:", error)
-      }
+      await window.PatientModule.loadPatientData(this)
     },
 
-    // Merge appointments and treatments into unified list
     mergeAppointmentsAndTreatments() {
-      const allAppointments = []
+      const allAppts = []
       
-      // Add current appointments (booked, cancelled, etc.)
       if (this.patientAppointments && this.patientAppointments.length > 0) {
-        this.patientAppointments.forEach(appointment => {
-          allAppointments.push({
-            ...appointment,
+        for (let i = 0; i < this.patientAppointments.length; i++) {
+          const apt = this.patientAppointments[i]
+          allAppts.push({
+            id: apt.id,
+            appointment_date: apt.appointment_date,
+            appointment_time: apt.appointment_time,
+            doctor: apt.doctor,
+            department: apt.department || (apt.doctor ? apt.doctor.specialization : 'N/A'),
+            status: apt.status,
             type: 'appointment',
-            // Ensure we have a department field
-            department: appointment.department || (appointment.doctor ? appointment.doctor.specialization : 'N/A')
+            treatment: apt.treatment
           })
-        })
+        }
       }
       
-      // Add completed appointments from treatments
       if (this.treatments && this.treatments.length > 0) {
-        this.treatments.forEach(treatment => {
-          // Create appointment-like object from treatment
-          allAppointments.push({
-            id: `treatment_${treatment.id}`,
-            appointment_date: treatment.created_at ? treatment.created_at.split('T')[0] : '',
-            appointment_time: treatment.created_at ? treatment.created_at.split('T')[1]?.split('.')[0] || '00:00' : '00:00',
-            doctor: treatment.doctor || null,
-            department: treatment.doctor ? treatment.doctor.specialization : 'N/A',
+        for (let i = 0; i < this.treatments.length; i++) {
+          const treat = this.treatments[i]
+          allAppts.push({
+            id: 'treatment_' + treat.id,
+            appointment_date: treat.created_at ? treat.created_at.split('T')[0] : '',
+            appointment_time: treat.created_at ? treat.created_at.split('T')[1].split('.')[0] : '00:00',
+            doctor: treat.doctor || null,
+            department: treat.doctor ? treat.doctor.specialization : 'N/A',
             status: 'completed',
             type: 'treatment',
-            treatment: treatment // Store full treatment data for history view
+            treatment: treat
           })
-        })
+        }
       }
       
-      // Sort by date (newest first)
-      allAppointments.sort((a, b) => {
-        const dateTimeA = new Date(`${a.appointment_date}T${a.appointment_time}`)
-        const dateTimeB = new Date(`${b.appointment_date}T${b.appointment_time}`)
-        return dateTimeB - dateTimeA
+      allAppts.sort(function(a, b) {
+        const dateA = new Date(a.appointment_date + 'T' + a.appointment_time)
+        const dateB = new Date(b.appointment_date + 'T' + b.appointment_time)
+        return dateB - dateA
       })
       
-      this.allPatientAppointments = allAppointments
+      this.allPatientAppointments = allAppts
     },
 
     // Show appointment history on separate page
@@ -489,30 +444,22 @@ const App = {
       this.appView = 'dashboard'
     },
 
-    // Format date and time for display
     formatDateTime(date, time) {
       if (!date) return 'N/A'
       
-      try {
-        const dateObj = new Date(date)
-        const formattedDate = dateObj.toLocaleDateString('en-US', {
-          year: 'numeric',
-          month: 'short',
-          day: 'numeric'
-        })
-        
-        if (time && time !== '00:00') {
-          // Format time from 24hr to 12hr
-          const [hours, minutes] = time.split(':')
-          const hour12 = parseInt(hours) % 12 || 12
-          const ampm = parseInt(hours) >= 12 ? 'PM' : 'AM'
-          return `${formattedDate} at ${hour12}:${minutes} ${ampm}`
-        } else {
-          return formattedDate
-        }
-      } catch (error) {
-        console.error('Error formatting date:', error)
-        return `${date} ${time || ''}`
+      const dateObj = new Date(date)
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+      const formattedDate = months[dateObj.getMonth()] + ' ' + dateObj.getDate() + ', ' + dateObj.getFullYear()
+      
+      if (time && time !== '00:00') {
+        const parts = time.split(':')
+        const hours = parseInt(parts[0])
+        const minutes = parts[1]
+        const hour12 = hours % 12 || 12
+        const ampm = hours >= 12 ? 'PM' : 'AM'
+        return formattedDate + ' at ' + hour12 + ':' + minutes + ' ' + ampm
+      } else {
+        return formattedDate
       }
     },
 
@@ -853,28 +800,35 @@ const App = {
 
     searchDoctors() {
       if (!this.doctorSearchQuery.trim()) {
-        this.filteredDoctors = [...this.doctors]
+        this.filteredDoctors = this.doctors.slice()
       } else {
         const query = this.doctorSearchQuery.toLowerCase()
-        this.filteredDoctors = this.doctors.filter(doctor => 
-          doctor.name.toLowerCase().includes(query) || 
-          doctor.department.toLowerCase().includes(query)
-        )
+        this.filteredDoctors = []
+        for (let i = 0; i < this.doctors.length; i++) {
+          const doctor = this.doctors[i]
+          if (doctor.name.toLowerCase().indexOf(query) !== -1 || 
+              doctor.department.toLowerCase().indexOf(query) !== -1) {
+            this.filteredDoctors.push(doctor)
+          }
+        }
       }
     },
 
     clearDoctorSearch() {
       this.doctorSearchQuery = ''
-      this.filteredDoctors = [...this.doctors]
+      this.filteredDoctors = this.doctors.slice()
     },
 
     filterDoctorsByDepartment() {
       if (!this.doctorDepartmentFilter) {
-        this.filteredDoctors = [...this.doctors]
+        this.filteredDoctors = this.doctors.slice()
       } else {
-        this.filteredDoctors = this.doctors.filter(doctor => 
-          doctor.department === this.doctorDepartmentFilter
-        )
+        this.filteredDoctors = []
+        for (let i = 0; i < this.doctors.length; i++) {
+          if (this.doctors[i].department === this.doctorDepartmentFilter) {
+            this.filteredDoctors.push(this.doctors[i])
+          }
+        }
       }
     },
 

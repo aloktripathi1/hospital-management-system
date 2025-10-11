@@ -1,231 +1,232 @@
-// Admin-specific logic for Vue CDN app
-// Expose as window.AdminModule with pure functions expecting `ctx` (Vue instance)
+// Admin functions for the app
 
-(function() {
-  async function loadAdminData(ctx) {
-    try {
-      const statsResponse = await window.ApiService.getAdminStats()
-      if (statsResponse.success) ctx.stats = statsResponse.data
+async function loadAdminData(app) {
+  const stats = await window.ApiService.getAdminStats()
+  if (stats.success) app.stats = stats.data
 
-      const doctorsResponse = await window.ApiService.getDoctors()
-      if (doctorsResponse.success) {
-        ctx.doctors = doctorsResponse.data.doctors
-        ctx.filteredDoctors = [...ctx.doctors]
-        ctx.doctorSpecializations = [...new Set(ctx.doctors.map(d => d.specialization))]
+  const doctors = await window.ApiService.getDoctors()
+  if (doctors.success) {
+    app.doctors = doctors.data.doctors
+    app.filteredDoctors = app.doctors.slice()
+    app.doctorSpecializations = []
+    for (let i = 0; i < app.doctors.length; i++) {
+      if (app.doctorSpecializations.indexOf(app.doctors[i].specialization) === -1) {
+        app.doctorSpecializations.push(app.doctors[i].specialization)
       }
-
-      const patientsResponse = await window.ApiService.getPatients()
-      if (patientsResponse.success) {
-        ctx.patients = patientsResponse.data.patients
-        ctx.filteredPatients = [...ctx.patients]
-      }
-
-      const appointmentsResponse = await window.ApiService.getAppointments()
-      if (appointmentsResponse.success) ctx.appointments = appointmentsResponse.data.appointments
-    } catch (e) {
-      console.error('Admin load failed', e)
     }
   }
 
-  function searchDoctors(ctx) {
-    if (!ctx.doctorSearchQuery.trim()) {
-      ctx.filteredDoctors = [...ctx.doctors]
+  const patients = await window.ApiService.getPatients()
+  if (patients.success) {
+    app.patients = patients.data.patients
+    app.filteredPatients = app.patients.slice()
+  }
+
+  const appointments = await window.ApiService.getAppointments()
+  if (appointments.success) app.appointments = appointments.data.appointments
+}
+
+function searchDoctors(app) {
+  if (!app.doctorSearchQuery.trim()) {
+    app.filteredDoctors = app.doctors.slice()
+  } else {
+    const query = app.doctorSearchQuery.toLowerCase()
+    app.filteredDoctors = []
+    for (let i = 0; i < app.doctors.length; i++) {
+      const doctor = app.doctors[i]
+      if (doctor.name.toLowerCase().indexOf(query) !== -1 || 
+          doctor.specialization.toLowerCase().indexOf(query) !== -1) {
+        app.filteredDoctors.push(doctor)
+      }
+    }
+  }
+}
+
+function clearDoctorSearch(app) {
+  app.doctorSearchQuery = ''
+  app.filteredDoctors = app.doctors.slice()
+}
+
+function filterDoctorsBySpecialization(app) {
+  if (!app.doctorSpecializationFilter) {
+    app.filteredDoctors = app.doctors.slice()
+  } else {
+    app.filteredDoctors = []
+    for (let i = 0; i < app.doctors.length; i++) {
+      if (app.doctors[i].specialization === app.doctorSpecializationFilter) {
+        app.filteredDoctors.push(app.doctors[i])
+      }
+    }
+  }
+}
+
+async function toggleDoctorStatus(app, doctor) {
+  const action = doctor.is_active ? 'blacklist' : 'activate'
+  if (confirm('Are you sure you want to ' + action + ' Dr. ' + doctor.name + '?')) {
+    const resp = await window.ApiService.updateDoctor(doctor.id, { is_active: !doctor.is_active })
+    if (resp.success) {
+      app.success = 'Doctor ' + action + 'ed successfully'
+      await loadAdminData(app)
     } else {
-      const q = ctx.doctorSearchQuery.toLowerCase()
-      ctx.filteredDoctors = ctx.doctors.filter(d => d.name.toLowerCase().includes(q) || d.specialization.toLowerCase().includes(q))
+      app.error = 'Failed to ' + action + ' doctor'
     }
   }
+}
 
-  function clearDoctorSearch(ctx) {
-    ctx.doctorSearchQuery = ''
-    ctx.filteredDoctors = [...ctx.doctors]
+function showAddDoctorForm(app) { 
+  app.adminView = 'add-doctor' 
+}
+
+function editDoctor(app, doctor) { 
+  app.editingDoctor = {}
+  for (let key in doctor) {
+    app.editingDoctor[key] = doctor[key]
   }
+  app.adminView = 'edit-doctor'
+}
 
-  function filterDoctorsBySpecialization(ctx) {
-    if (!ctx.doctorSpecializationFilter) {
-      ctx.filteredDoctors = [...ctx.doctors]
+async function addDoctor(app) {
+  app.loading = true
+  const resp = await window.ApiService.addDoctor(app.newDoctor)
+  if (resp.success) {
+    app.success = 'Doctor account created successfully!'
+    app.newDoctor = { name:'', email:'', specialization:'', experience:'', phone:'', qualification:'', consultation_fee:'' }
+    app.adminView = 'dashboard'
+    await loadAdminData(app)
+  } else {
+    app.error = resp.message || 'Failed to add doctor'
+  }
+  app.loading = false
+}
+
+async function updateDoctor(app) {
+  app.loading = true
+  const resp = await window.ApiService.updateDoctor(app.editingDoctor.id, app.editingDoctor)
+  if (resp.success) { 
+    app.success = 'Doctor updated successfully!'
+    app.adminView = 'dashboard'
+    await loadAdminData(app) 
+  } else {
+    app.error = resp.message || 'Failed to update doctor'
+  }
+  app.loading = false
+}
+
+function searchPatients(app) {
+  if (!app.patientSearchQuery.trim()) {
+    app.filteredPatients = app.patients.slice()
+  } else {
+    const query = app.patientSearchQuery.toLowerCase()
+    app.filteredPatients = []
+    for (let i = 0; i < app.patients.length; i++) {
+      const patient = app.patients[i]
+      if (patient.name.toLowerCase().indexOf(query) !== -1 || 
+          (patient.user && patient.user.email.toLowerCase().indexOf(query) !== -1)) {
+        app.filteredPatients.push(patient)
+      }
+    }
+  }
+}
+
+function clearPatientSearch(app) {
+  app.patientSearchQuery = ''
+  app.filteredPatients = app.patients.slice()
+}
+
+async function togglePatientBlacklist(app, patient) {
+  const action = patient.is_blacklisted ? 'unblacklist' : 'blacklist'
+  if (confirm('Are you sure you want to ' + action + ' ' + patient.name + '?')) {
+    const resp = await window.ApiService.togglePatientBlacklist(patient.id)
+    if (resp.success) {
+      app.success = 'Patient ' + action + 'ed successfully'
+      await loadAdminData(app)
     } else {
-      ctx.filteredDoctors = ctx.doctors.filter(d => d.specialization === ctx.doctorSpecializationFilter)
+      app.error = resp.message || 'Failed to ' + action + ' patient'
     }
   }
+}
 
-  async function toggleDoctorStatus(ctx, doctor) {
-    const actionText = doctor.is_active ? 'blacklist' : 'activate'
-    if (confirm(`Are you sure you want to ${actionText} Dr. ${doctor.name}?`)) {
-      try {
-        const response = await window.ApiService.updateDoctor(doctor.id, { is_active: !doctor.is_active })
-        if (response.success) {
-          ctx.success = `Doctor ${actionText}ed successfully`
-          await loadAdminData(ctx)
-        }
-      } catch (e) {
-        ctx.error = `Failed to ${actionText} doctor`
-      }
+function openAdminPatientEdit(app, patient) {
+  app.editingPatient = {}
+  for (let key in patient) {
+    app.editingPatient[key] = patient[key]
+  }
+  app.adminView = 'edit-patient'
+}
+
+function openAdminPatientHistory(app, patient) {
+  app.selectedPatient = patient
+  app.adminView = 'patient-history'
+  loadPatientHistory(app, patient.id)
+}
+
+async function loadPatientHistory(app, patientId) {
+  const resp = await window.ApiService.getAdminPatientHistory(patientId)
+  if (resp.success) {
+    app.patientHistory = resp.data.appointments || []
+  } else {
+    app.patientHistory = []
+  }
+}
+
+async function updatePatient(app) {
+  app.loading = true
+  const resp = await window.ApiService.updatePatient(app.editingPatient.id, app.editingPatient)
+  if (resp.success) {
+    app.success = 'Patient updated successfully!'
+    app.adminView = 'dashboard'
+    await loadAdminData(app)
+  } else {
+    app.error = resp.message || 'Failed to update patient'
+  }
+  app.loading = false
+}
+
+function showAddPatientForm(app) {
+  app.adminView = 'add-patient'
+}
+
+async function addPatient(app) {
+  app.loading = true
+  const resp = await window.ApiService.addPatient(app.newPatient)
+  if (resp.success) {
+    app.success = 'Patient account created successfully!'
+    app.newPatient = {
+      name: '',
+      email: '',
+      phone: '',
+      age: '',
+      gender: '',
+      address: '',
+      medical_history: '',
+      emergency_contact: ''
     }
+    app.adminView = 'dashboard'
+    await loadAdminData(app)
+  } else {
+    app.error = resp.message || 'Failed to create patient account'
   }
+  app.loading = false
+}
 
-  function showAddDoctorForm(ctx) { ctx.adminView = 'add-doctor' }
-  function editDoctor(ctx, doctor) { ctx.editingDoctor = { ...doctor }; ctx.adminView = 'edit-doctor' }
-
-  async function addDoctor(ctx) {
-    ctx.loading = true
-    try {
-      const response = await window.ApiService.addDoctor(ctx.newDoctor)
-      if (response.success) {
-        ctx.success = 'Doctor account created successfully!'
-        
-        // Reset form
-        ctx.newDoctor = { name:'', email:'', specialization:'', experience:'', phone:'', qualification:'', consultation_fee:'' }
-        
-        ctx.adminView = 'dashboard'
-        await loadAdminData(ctx)
-      } else {
-        ctx.error = response.message || 'Failed to add doctor'
-      }
-    } catch (e) {
-      ctx.error = 'Error adding doctor'
-    } finally { ctx.loading = false }
-  }
-
-  async function updateDoctor(ctx) {
-    ctx.loading = true
-    try {
-      const response = await window.ApiService.updateDoctor(ctx.editingDoctor.id, ctx.editingDoctor)
-      if (response.success) { ctx.success='Doctor updated successfully!'; ctx.adminView='dashboard'; await loadAdminData(ctx) }
-      else ctx.error = response.message || 'Failed to update doctor'
-    } catch(e) { ctx.error = 'Error updating doctor' } finally { ctx.loading=false }
-  }
-
-  function searchPatients(ctx) {
-    if (!ctx.patientSearchQuery.trim()) {
-      ctx.filteredPatients = [...ctx.patients]
-    } else {
-      const q = ctx.patientSearchQuery.toLowerCase()
-      ctx.filteredPatients = ctx.patients.filter(p => 
-        p.name.toLowerCase().includes(q) || 
-        (p.user && p.user.email.toLowerCase().includes(q))
-      )
-    }
-  }
-
-  function clearPatientSearch(ctx) {
-    ctx.patientSearchQuery = ''
-    ctx.filteredPatients = [...ctx.patients]
-  }
-
-  async function togglePatientBlacklist(ctx, patient) {
-    const action = patient.is_blacklisted ? 'unblacklist' : 'blacklist'
-    if (confirm(`Are you sure you want to ${action} ${patient.name}?`)) {
-      try {
-        const response = await window.ApiService.togglePatientBlacklist(patient.id)
-        if (response.success) {
-          ctx.success = `Patient ${action}ed successfully`
-          await loadAdminData(ctx)
-        } else {
-          ctx.error = response.message || `Failed to ${action} patient`
-        }
-      } catch (e) {
-        ctx.error = `Failed to ${action} patient`
-      }
-    }
-  }
-
-  function openAdminPatientEdit(ctx, patient) {
-    ctx.editingPatient = { ...patient }
-    ctx.adminView = 'edit-patient'
-  }
-
-  function openAdminPatientHistory(ctx, patient) {
-    ctx.selectedPatient = patient
-    ctx.adminView = 'patient-history'
-    // Load patient history
-    loadPatientHistory(ctx, patient.id)
-  }
-
-  async function loadPatientHistory(ctx, patientId) {
-    try {
-      const response = await window.ApiService.getAdminPatientHistory(patientId)
-      if (response.success) {
-        ctx.patientHistory = response.data.appointments || []
-      }
-    } catch (e) {
-      console.error('Error loading patient history:', e)
-      ctx.patientHistory = []
-    }
-  }
-
-  async function updatePatient(ctx) {
-    ctx.loading = true
-    try {
-      const response = await window.ApiService.updatePatient(ctx.editingPatient.id, ctx.editingPatient)
-      if (response.success) {
-        ctx.success = 'Patient updated successfully!'
-        ctx.adminView = 'dashboard'
-        await loadAdminData(ctx)
-      } else {
-        ctx.error = response.message || 'Failed to update patient'
-      }
-    } catch (e) {
-      ctx.error = 'Error updating patient'
-    } finally {
-      ctx.loading = false
-    }
-  }
-
-  function showAddPatientForm(ctx) {
-    ctx.adminView = 'add-patient'
-  }
-
-  async function addPatient(ctx) {
-    ctx.loading = true
-    try {
-      const response = await window.ApiService.addPatient(ctx.newPatient)
-      if (response.success) {
-        ctx.success = 'Patient account created successfully!'
-        
-        // Reset form
-        ctx.newPatient = {
-          name: '',
-          email: '',
-          phone: '',
-          age: '',
-          gender: '',
-          address: '',
-          medical_history: '',
-          emergency_contact: ''
-        }
-        
-        ctx.adminView = 'dashboard'
-        await loadAdminData(ctx)
-      } else {
-        ctx.error = response.message || 'Failed to create patient account'
-      }
-    } catch (e) {
-      ctx.error = 'Error creating patient account'
-    } finally {
-      ctx.loading = false
-    }
-  }
-
-  window.AdminModule = {
-    loadAdminData,
-    searchDoctors,
-    clearDoctorSearch,
-    filterDoctorsBySpecialization,
-    toggleDoctorStatus,
-    showAddDoctorForm,
-    editDoctor,
-    addDoctor,
-    updateDoctor,
-    searchPatients,
-    clearPatientSearch,
-    togglePatientBlacklist,
-    openAdminPatientEdit,
-    openAdminPatientHistory,
-    loadPatientHistory,
-    updatePatient,
-    showAddPatientForm,
-    addPatient,
-  }
-})();
+window.AdminModule = {
+  loadAdminData: loadAdminData,
+  searchDoctors: searchDoctors,
+  clearDoctorSearch: clearDoctorSearch,
+  filterDoctorsBySpecialization: filterDoctorsBySpecialization,
+  toggleDoctorStatus: toggleDoctorStatus,
+  showAddDoctorForm: showAddDoctorForm,
+  editDoctor: editDoctor,
+  addDoctor: addDoctor,
+  updateDoctor: updateDoctor,
+  searchPatients: searchPatients,
+  clearPatientSearch: clearPatientSearch,
+  togglePatientBlacklist: togglePatientBlacklist,
+  openAdminPatientEdit: openAdminPatientEdit,
+  openAdminPatientHistory: openAdminPatientHistory,
+  loadPatientHistory: loadPatientHistory,
+  updatePatient: updatePatient,
+  showAddPatientForm: showAddPatientForm,
+  addPatient: addPatient
+}
 

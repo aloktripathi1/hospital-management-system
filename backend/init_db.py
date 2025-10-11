@@ -4,6 +4,21 @@ from models import User, Doctor, Patient, DoctorAvailability, Department
 from werkzeug.security import generate_password_hash
 from datetime import time
 
+# =================== ADMIN USER CREATION SECTION ===================
+
+def create_admin_user():
+    existing_admin = User.query.filter_by(username='admin').first()
+    if existing_admin is None:
+        admin_user = User(
+            username='admin',
+            email='admin@medihub.in',
+            password_hash=generate_password_hash('Admin@123'),
+            role='admin'
+        )
+        db.session.add(admin_user)
+        db.session.commit()
+        print("Admin user created successfully")
+
 # =================== SAMPLE DEPARTMENTS CREATION SECTION ===================
 
 def create_sample_departments():
@@ -223,6 +238,7 @@ if __name__ == '__main__':
         db.create_all()
         print("✅ Database tables created successfully!")
         
+        create_admin_user()
         create_sample_departments()
         create_sample_doctors()
         create_sample_availability()

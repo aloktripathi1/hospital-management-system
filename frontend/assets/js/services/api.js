@@ -1,321 +1,290 @@
-// API Service for Hospital Management System
-class ApiService {
-  static baseURL = "/api"
+// API functions for hospital app
+const API_URL = "/api"
 
-  static getAuthHeaders() {
-    return {
-      "Content-Type": "application/json",
+async function callAPI(url, method, data) {
+  const options = {
+    method: method || 'GET',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include'
+  }
+  
+  if (data) {
+    options.body = JSON.stringify(data)
+  }
+  
+  const response = await fetch(API_URL + url, options)
+  const responseText = await response.text()
+  
+  if (responseText) {
+    const result = JSON.parse(responseText)
+    if (!response.ok) {
+      return { success: false, message: result.message || 'Request failed' }
     }
-  }
-
-  static async request(endpoint, options = {}) {
-    const url = `${this.baseURL}${endpoint}`
-    const config = {
-      headers: this.getAuthHeaders(),
-      credentials: 'include', // Include cookies for session handling
-      ...options,
-    }
-
-    try {
-      const response = await fetch(url, config)
-      
-      // Check if response has content
-      const contentType = response.headers.get('content-type')
-      let data = {}
-      
-      if (contentType && contentType.includes('application/json')) {
-        const responseText = await response.text()
-        
-        if (responseText && responseText.trim()) {
-          try {
-            data = JSON.parse(responseText)
-          } catch (parseError) {
-            console.error("Failed to parse JSON:", {
-              endpoint,
-              status: response.status,
-              contentType,
-              responseText,
-              parseError: parseError.message
-            })
-            throw new Error(`JSON parsing failed for ${endpoint}: ${parseError.message}`)
-          }
-        } else {
-          console.warn("Empty JSON response from", endpoint)
-          data = { success: false, message: "Empty response" }
-        }
-      } else {
-        const responseText = await response.text()
-        console.error("Non-JSON response:", {
-          endpoint,
-          status: response.status,
-          contentType,
-          responseText
-        })
-        throw new Error(`Server returned non-JSON response from ${endpoint}: ${response.status}`)
-      }
-
-      if (!response.ok) {
-        throw new Error(data.message || `Request failed with status ${response.status}`)
-      }
-
-      return data
-    } catch (error) {
-      console.error("API Request failed:", {
-        endpoint,
-        error: error.message,
-        stack: error.stack
-      })
-      throw error
-    }
-  }
-
-  static async get(endpoint) {
-    return this.request(endpoint, { method: "GET" })
-  }
-
-  static async post(endpoint, data) {
-    return this.request(endpoint, {
-      method: "POST",
-      body: JSON.stringify(data),
-    })
-  }
-
-  static async put(endpoint, data) {
-    return this.request(endpoint, {
-      method: "PUT",
-      body: JSON.stringify(data),
-    })
-  }
-
-  static async delete(endpoint) {
-    return this.request(endpoint, { method: "DELETE" })
-  }
-
-  // Authentication endpoints
-  static async login(credentials) {
-    return this.post("/auth/login", credentials)
-  }
-
-  static async register(userData) {
-    return this.post("/auth/register", userData)
-  }
-
-  static async getCurrentUser() {
-    return this.get("/auth/me")
-  }
-
-  static async logout() {
-    const result = await this.post("/auth/logout")
-    localStorage.removeItem("token")
     return result
-  }
-
-  // Admin endpoints
-  static async getAdminStats() {
-    return this.get("/admin/dashboard-stats")
-  }
-
-  static async getDoctors() {
-    return this.get("/admin/doctors")
-  }
-
-  static async createDoctor(doctorData) {
-    return this.post("/admin/doctors", doctorData)
-  }
-
-  static async updateDoctorProfile(doctorData) {
-    // For self-profile updates, use doctor endpoint
-    return this.put(`/doctor/profile`, doctorData)
-  }
-
-  static async deleteDoctor(id) {
-    return this.delete(`/admin/doctors/${id}`)
-  }
-
-  static async getPatients() {
-    return this.get("/admin/patients")
-  }
-
-  static async updatePatientProfile(patientData) {
-    // For self-profile updates, use patient endpoint
-    return this.put(`/patient/profile`, patientData)
-  }
-
-  static async getAppointments() {
-    return this.get("/admin/appointments")
-  }
-
-  static async updateAppointment(id, appointmentData) {
-    return this.put(`/admin/appointments/${id}`, appointmentData)
-  }
-
-  static async searchRecords(type, query) {
-    return this.get(`/admin/search?type=${type}&query=${encodeURIComponent(query)}`)
-  }
-
-  // Doctor endpoints
-  static async getDoctorDashboard() {
-    return this.get("/doctor/dashboard")
-  }
-
-  static async getDoctorAppointments(params = '') {
-    const url = params ? `/doctor/appointments?${params}` : "/doctor/appointments"
-    return this.get(url)
-  }
-
-  static async updateAppointmentStatus(appointmentId, status) {
-    return this.put(`/doctor/appointments/${appointmentId}/status`, { status })
-  }
-
-  static async getDoctorPatients() {
-    return this.get("/doctor/patients")
-  }
-
-  static async updatePatientHistory(historyData) {
-    return this.post("/doctor/patient-history", historyData)
-  }
-
-  static async updateDoctorAvailability(availabilityData) {
-    return this.put("/doctor/availability", availabilityData)
-  }
-
-  static async setAvailabilitySlots(slotData) {
-    return this.post("/doctor/set-slots", slotData)
-  }
-
-  static async getPatientHistory(patientId) {
-    return this.get(`/doctor/patient-history/${patientId}`)
-  }
-
-  static async getDoctorAvailableSlots() {
-    return this.get("/doctor/available-slots")
-  }
-
-  // Patient endpoints
-  static async getPatientDashboard() {
-    return this.get("/patient/dashboard")
-  }
-
-  static async getDepartments() {
-    // Use patient endpoint for department fetching with doctor information
-    return this.get("/patient/departments")
-  }
-
-  static async updateDepartment(id, data) {
-    return this.put(`/admin/departments/${id}`, data)
-  }
-
-  static async getDoctorsByDepartment(department) {
-    return this.get(`/patient/doctors?department=${encodeURIComponent(department)}`)
-  }
-
-  static async getPatientAppointments() {
-    return this.get("/patient/appointments")
-  }
-
-  static async bookAppointment(appointmentData) {
-    return this.post("/patient/appointments", appointmentData)
-  }
-
-  static async cancelAppointment(id) {
-    return this.delete(`/patient/appointments/${id}`)
-  }
-
-  static async getPatientHistoryForPatient() {
-    return this.get("/patient/history")
-  }
-
-  static async getDoctorAvailability(doctorId) {
-    return this.get(`/doctor/availability/${doctorId}`)
-  }
-
-  static async exportPatientHistory() {
-    return this.post("/patient/export-history")
-  }
-
-  static async getAvailableSlots(doctorId, date) {
-    return this.get(`/patient/available-slots?doctor_id=${doctorId}&date=${date}`)
-  }
-
-  // Search endpoints
-  static async searchDoctors(query, specialization = '') {
-    const params = new URLSearchParams()
-    if (query) params.append('q', query)
-    if (specialization) params.append('specialization', specialization)
-    return this.get(`/admin/search/doctors?${params.toString()}`)
-  }
-
-  static async searchPatients(query) {
-    return this.get(`/admin/search/patients?q=${encodeURIComponent(query)}`)
-  }
-
-  // Admin methods
-  static async addDoctor(doctorData) {
-    return this.post("/admin/doctors", doctorData)
-  }
-
-  static async updateDoctor(doctorId, doctorData) {
-    return this.put(`/admin/doctors/${doctorId}`, doctorData)
-  }
-
-  static async deactivateDoctor(doctorId) {
-    return this.delete(`/admin/doctors/${doctorId}`)
-  }
-
-  static async generateMonthlyReport() {
-    return this.post("/admin/reports/monthly")
-  }
-
-  static async generateUserReport() {
-    return this.post("/admin/reports/users")
-  }
-
-  static async togglePatientBlacklist(patientId) {
-    return this.put(`/admin/patients/${patientId}/blacklist`)
-  }
-
-  static async getAdminPatientHistory(patientId) {
-    return this.get(`/admin/patients/${patientId}/history`)
-  }
-
-  static async updatePatient(patientId, patientData) {
-    return this.put(`/admin/patients/${patientId}`, patientData)
-  }
-
-  static async addPatient(patientData) {
-    return this.post("/admin/patients", patientData)
-  }
-
-  // Department management methods
-  static async getAdminDepartments() {
-    return this.get("/admin/departments")
-  }
-
-  static async addDepartment(departmentData) {
-    return this.post("/admin/departments", departmentData)
-  }
-
-  static async updateDepartment(departmentId, departmentData) {
-    return this.put(`/admin/departments/${departmentId}`, departmentData)
-  }
-
-  static async deleteDepartment(departmentId) {
-    return this.delete(`/admin/departments/${departmentId}`)
-  }
-
-  // Doctor methods
-  static async updatePatientHistory(historyData) {
-    return this.post("/doctor/patient-history", historyData)
-  }
-
-  static async downloadMonthlyReport() {
-    return this.post("/doctor/reports/monthly")
-  }
-
-  // Patient methods
-  static async getDoctorsByDepartment(departmentId) {
-    return this.get(`/patient/doctors?department_id=${departmentId}`)
+  } else {
+    return { success: false, message: "Empty response" }
   }
 }
 
-window.ApiService = ApiService
+// Auth functions
+async function login(credentials) {
+  return await callAPI("/auth/login", "POST", credentials)
+}
+
+async function register(userData) {
+  return await callAPI("/auth/register", "POST", userData)
+}
+
+async function getCurrentUser() {
+  return await callAPI("/auth/me", "GET")
+}
+
+async function logout() {
+  const result = await callAPI("/auth/logout", "POST")
+  localStorage.removeItem("token")
+  return result
+}
+
+// Admin functions
+async function getAdminStats() {
+  return await callAPI("/admin/dashboard-stats", "GET")
+}
+
+async function getDoctors() {
+  return await callAPI("/admin/doctors", "GET")
+}
+
+async function createDoctor(doctorData) {
+  return await callAPI("/admin/doctors", "POST", doctorData)
+}
+
+async function updateDoctorProfile(doctorData) {
+  return await callAPI("/doctor/profile", "PUT", doctorData)
+}
+
+async function deleteDoctor(id) {
+  return await callAPI("/admin/doctors/" + id, "DELETE")
+}
+
+async function getPatients() {
+  return await callAPI("/admin/patients", "GET")
+}
+
+async function updatePatientProfile(patientData) {
+  return await callAPI("/patient/profile", "PUT", patientData)
+}
+
+async function getAppointments() {
+  return await callAPI("/admin/appointments", "GET")
+}
+
+async function updateAppointment(id, appointmentData) {
+  return await callAPI("/admin/appointments/" + id, "PUT", appointmentData)
+}
+
+async function searchRecords(type, query) {
+  return await callAPI("/admin/search?type=" + type + "&query=" + encodeURIComponent(query), "GET")
+}
+
+// Doctor functions
+async function getDoctorDashboard() {
+  return await callAPI("/doctor/dashboard", "GET")
+}
+
+async function getDoctorAppointments(params) {
+  const url = params ? "/doctor/appointments?" + params : "/doctor/appointments"
+  return await callAPI(url, "GET")
+}
+
+async function updateAppointmentStatus(appointmentId, status) {
+  return await callAPI("/doctor/appointments/" + appointmentId + "/status", "PUT", { status: status })
+}
+
+async function getDoctorPatients() {
+  return await callAPI("/doctor/patients", "GET")
+}
+
+async function updatePatientHistory(historyData) {
+  return await callAPI("/doctor/patient-history", "POST", historyData)
+}
+
+async function updateDoctorAvailability(availabilityData) {
+  return await callAPI("/doctor/availability", "PUT", availabilityData)
+}
+
+async function setAvailabilitySlots(slotData) {
+  return await callAPI("/doctor/set-slots", "POST", slotData)
+}
+
+async function getPatientHistory(patientId) {
+  return await callAPI("/doctor/patient-history/" + patientId, "GET")
+}
+
+async function getDoctorAvailableSlots() {
+  return await callAPI("/doctor/available-slots", "GET")
+}
+
+// Patient functions
+async function getPatientDashboard() {
+  return await callAPI("/patient/dashboard", "GET")
+}
+
+async function getDepartments() {
+  return await callAPI("/patient/departments", "GET")
+}
+
+async function updateDepartment(id, data) {
+  return await callAPI("/admin/departments/" + id, "PUT", data)
+}
+
+async function getDoctorsByDepartment(department) {
+  return await callAPI("/patient/doctors?department=" + encodeURIComponent(department), "GET")
+}
+
+async function getPatientAppointments() {
+  return await callAPI("/patient/appointments", "GET")
+}
+
+async function bookAppointment(appointmentData) {
+  return await callAPI("/patient/appointments", "POST", appointmentData)
+}
+
+async function cancelAppointment(id) {
+  return await callAPI("/patient/appointments/" + id, "DELETE")
+}
+
+async function getPatientHistoryForPatient() {
+  return await callAPI("/patient/history", "GET")
+}
+
+async function getDoctorAvailability(doctorId) {
+  return await callAPI("/doctor/availability/" + doctorId, "GET")
+}
+
+async function exportPatientHistory() {
+  return await callAPI("/patient/export-history", "POST")
+}
+
+async function getAvailableSlots(doctorId, date) {
+  return await callAPI("/patient/available-slots?doctor_id=" + doctorId + "&date=" + date, "GET")
+}
+
+// Search functions
+async function searchDoctors(query, specialization) {
+  specialization = specialization || ''
+  let url = "/admin/search/doctors?"
+  if (query) url += "q=" + encodeURIComponent(query)
+  if (specialization) url += "&specialization=" + encodeURIComponent(specialization)
+  return await callAPI(url, "GET")
+}
+
+async function searchPatients(query) {
+  return await callAPI("/admin/search/patients?q=" + encodeURIComponent(query), "GET")
+}
+
+// More admin functions
+async function addDoctor(doctorData) {
+  return await callAPI("/admin/doctors", "POST", doctorData)
+}
+
+async function updateDoctor(doctorId, doctorData) {
+  return await callAPI("/admin/doctors/" + doctorId, "PUT", doctorData)
+}
+
+async function deactivateDoctor(doctorId) {
+  return await callAPI("/admin/doctors/" + doctorId, "DELETE")
+}
+
+async function generateMonthlyReport() {
+  return await callAPI("/admin/reports/monthly", "POST")
+}
+
+async function generateUserReport() {
+  return await callAPI("/admin/reports/users", "POST")
+}
+
+async function togglePatientBlacklist(patientId) {
+  return await callAPI("/admin/patients/" + patientId + "/blacklist", "PUT")
+}
+
+async function getAdminPatientHistory(patientId) {
+  return await callAPI("/admin/patients/" + patientId + "/history", "GET")
+}
+
+async function updatePatient(patientId, patientData) {
+  return await callAPI("/admin/patients/" + patientId, "PUT", patientData)
+}
+
+async function addPatient(patientData) {
+  return await callAPI("/admin/patients", "POST", patientData)
+}
+
+// Department functions
+async function getAdminDepartments() {
+  return await callAPI("/admin/departments", "GET")
+}
+
+async function addDepartment(departmentData) {
+  return await callAPI("/admin/departments", "POST", departmentData)
+}
+
+async function deleteDepartment(departmentId) {
+  return await callAPI("/admin/departments/" + departmentId, "DELETE")
+}
+
+async function downloadMonthlyReport() {
+  return await callAPI("/doctor/reports/monthly", "POST")
+}
+
+// Keep the same interface for the app
+window.ApiService = {
+  login: login,
+  register: register,
+  getCurrentUser: getCurrentUser,
+  logout: logout,
+  getAdminStats: getAdminStats,
+  getDoctors: getDoctors,
+  createDoctor: createDoctor,
+  updateDoctorProfile: updateDoctorProfile,
+  deleteDoctor: deleteDoctor,
+  getPatients: getPatients,
+  updatePatientProfile: updatePatientProfile,
+  getAppointments: getAppointments,
+  updateAppointment: updateAppointment,
+  searchRecords: searchRecords,
+  getDoctorDashboard: getDoctorDashboard,
+  getDoctorAppointments: getDoctorAppointments,
+  updateAppointmentStatus: updateAppointmentStatus,
+  getDoctorPatients: getDoctorPatients,
+  updatePatientHistory: updatePatientHistory,
+  updateDoctorAvailability: updateDoctorAvailability,
+  setAvailabilitySlots: setAvailabilitySlots,
+  getPatientHistory: getPatientHistory,
+  getDoctorAvailableSlots: getDoctorAvailableSlots,
+  getPatientDashboard: getPatientDashboard,
+  getDepartments: getDepartments,
+  updateDepartment: updateDepartment,
+  getDoctorsByDepartment: getDoctorsByDepartment,
+  getPatientAppointments: getPatientAppointments,
+  bookAppointment: bookAppointment,
+  cancelAppointment: cancelAppointment,
+  getPatientHistoryForPatient: getPatientHistoryForPatient,
+  getDoctorAvailability: getDoctorAvailability,
+  exportPatientHistory: exportPatientHistory,
+  getAvailableSlots: getAvailableSlots,
+  searchDoctors: searchDoctors,
+  searchPatients: searchPatients,
+  addDoctor: addDoctor,
+  updateDoctor: updateDoctor,
+  deactivateDoctor: deactivateDoctor,
+  generateMonthlyReport: generateMonthlyReport,
+  generateUserReport: generateUserReport,
+  togglePatientBlacklist: togglePatientBlacklist,
+  getAdminPatientHistory: getAdminPatientHistory,
+  updatePatient: updatePatient,
+  addPatient: addPatient,
+  getAdminDepartments: getAdminDepartments,
+  addDepartment: addDepartment,
+  deleteDepartment: deleteDepartment,
+  downloadMonthlyReport: downloadMonthlyReport
+}

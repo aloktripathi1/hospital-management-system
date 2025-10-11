@@ -1,99 +1,136 @@
-// Patient-specific logic (Vue CDN)
-// Expose as window.PatientModule with functions that accept ctx (Vue instance)
+// Patient functions for the app
 
-(function() {
-  async function loadPatientData(ctx) {
-    try {
-      const dashboardResponse = await window.ApiService.getPatientDashboard()
-      if (dashboardResponse.success) {
-        ctx.stats = dashboardResponse.data
-        ctx.patientInfo = dashboardResponse.data.patient
-        if (ctx.patientInfo) {
-          ctx.profileForm = {
-            name: ctx.patientInfo.name || '',
-            email: ctx.patientInfo.user ? ctx.patientInfo.user.email : '',
-            phone: ctx.patientInfo.phone || '',
-            age: ctx.patientInfo.age || '',
-            gender: ctx.patientInfo.gender || '',
-            address: ctx.patientInfo.address || ''
-          }
-        }
+// Patient functions for the app
+
+async function loadPatientData(app) {
+  const dashboard = await window.ApiService.getPatientDashboard()
+  if (dashboard.success) {
+    app.stats = dashboard.data
+    app.patientInfo = dashboard.data.patient
+    if (app.patientInfo) {
+      app.profileForm = {
+        name: app.patientInfo.name || '',
+        email: app.patientInfo.user ? app.patientInfo.user.email : '',
+        phone: app.patientInfo.phone || '',
+        age: app.patientInfo.age || '',
+        gender: app.patientInfo.gender || '',
+        address: app.patientInfo.address || ''
       }
-
-      const departmentsResponse = await window.ApiService.getDepartments()
-      if (departmentsResponse.success) ctx.departments = departmentsResponse.data.departments
-
-      const appointmentsResponse = await window.ApiService.getPatientAppointments()
-      if (appointmentsResponse.success) ctx.patientAppointments = appointmentsResponse.data.appointments
-
-      const historyResponse = await window.ApiService.getPatientHistoryForPatient()
-      if (historyResponse.success) {
-        ctx.treatments = historyResponse.data.treatments
-        console.log('Loaded treatments:', ctx.treatments.length)
-      }
-
-      // Merge appointments and treatments for unified display
-      ctx.mergeAppointmentsAndTreatments()
-    } catch (e) { console.error('Failed to load patient data', e) }
-  }
-
-  function selectDepartment(ctx, department) {
-    ctx.selectedDepartment = department
-    ctx.selectedDoctor = null // Reset doctor selection
-    ctx.availableSlots = [] // Reset slots
-    ctx.bookingForm.appointment_date = ''
-    ctx.bookingForm.appointment_time = ''
-    ctx.bookingForm.doctor_id = ''
-  }
-
-  function selectDoctor(ctx, doctor) {
-    ctx.selectedDoctor = doctor
-    ctx.bookingForm.doctor_id = doctor.id
-    ctx.availableSlots = [] // Reset slots
-    ctx.bookingForm.appointment_time = ''
-    // If date is already selected, load slots immediately
-    if (ctx.bookingForm.appointment_date) {
-      loadAvailableSlots(ctx)
     }
   }
 
-  async function loadAvailableSlots(ctx) {
-    if (ctx.bookingForm.doctor_id && ctx.bookingForm.appointment_date) {
-      try {
-        const response = await window.ApiService.getAvailableSlots(ctx.bookingForm.doctor_id, ctx.bookingForm.appointment_date)
-        if (response.success) ctx.availableSlots = response.data.slots || []
-      } catch (e) { console.error('Error loading available slots:', e) }
-    }
+  const departments = await window.ApiService.getDepartments()
+  if (departments.success) app.departments = departments.data.departments
+
+  const appointments = await window.ApiService.getPatientAppointments()
+  if (appointments.success) app.patientAppointments = appointments.data.appointments
+
+  const history = await window.ApiService.getPatientHistoryForPatient()
+  if (history.success) {
+    app.treatments = history.data.treatments
   }
 
-  async function bookAppointment(ctx) {
-    ctx.loading = true
-    ctx.error = null
-    try {
-      const response = await window.ApiService.bookAppointment(ctx.bookingForm)
-      if (response.success) {
-        ctx.success = 'Appointment booked successfully'
-        ctx.bookingForm = { specialization:'', doctor_id:'', appointment_date:'', appointment_time:'', notes:'' }
-        await loadPatientData(ctx)
-      } else { ctx.error = response.message || 'Failed to book appointment' }
-    } catch (e) { ctx.error = e.message || 'Failed to book appointment' } finally { ctx.loading=false }
-  }
+  app.mergeAppointmentsAndTreatments()
+}
 
-  async function cancelAppointment(ctx, appointmentId) {
-    if (!confirm('Are you sure you want to cancel this appointment?')) return
-    try {
-      const response = await window.ApiService.cancelAppointment(appointmentId)
-      if (response.success) { ctx.success='Appointment cancelled successfully'; await loadPatientData(ctx) }
-    } catch (e) { ctx.error = 'Failed to cancel appointment' }
-  }
+function selectDepartment(app, department) {
+  app.selectedDepartment = department
+  app.selectedDoctor = null
+  app.availableSlots = []
+  app.bookingForm.appointment_date = ''
+  app.bookingForm.appointment_time = ''
+  app.bookingForm.doctor_id = ''
+}
 
-  window.PatientModule = {
-    loadPatientData,
-    selectDepartment,
-    selectDoctor,
-    loadAvailableSlots,
-    bookAppointment,
-    cancelAppointment,
+function selectDoctor(app, doctor) {
+  app.selectedDoctor = doctor
+  app.bookingForm.doctor_id = doctor.id
+  app.availableSlots = []
+  app.bookingForm.appointment_time = ''
+  if (app.bookingForm.appointment_date) {
+    loadAvailableSlots(app)
   }
-})();
+}
+
+async function loadAvailableSlots(app) {
+  if (app.bookingForm.doctor_id && app.bookingForm.appointment_date) {
+    const resp = await window.ApiService.getAvailableSlots(app.bookingForm.doctor_id, app.bookingForm.appointment_date)
+    if (resp.success) app.availableSlots = resp.data.slots || []
+  }
+}
+
+async function bookAppointment(app) {
+  app.loading = true
+  app.error = null
+  const resp = await window.ApiService.bookAppointment(app.bookingForm)
+  if (resp.success) {
+    app.success = 'Appointment booked successfully'
+    app.bookingForm = { specialization:'', doctor_id:'', appointment_date:'', appointment_time:'', notes:'' }
+    await loadPatientData(app)
+  } else { 
+    app.error = resp.message || 'Failed to book appointment' 
+  }
+  app.loading = false
+}
+
+async function cancelAppointment(app, appointmentId) {
+  if (!confirm('Are you sure you want to cancel this appointment?')) return
+  const resp = await window.ApiService.cancelAppointment(appointmentId)
+  if (resp.success) { 
+    app.success = 'Appointment cancelled successfully'
+    await loadPatientData(app) 
+  } else {
+    app.error = 'Failed to cancel appointment'
+  }
+}
+
+window.PatientModule = {
+  loadPatientData: loadPatientData,
+  selectDepartment: selectDepartment,
+  selectDoctor: selectDoctor,
+  loadAvailableSlots: loadAvailableSlots,
+  bookAppointment: bookAppointment,
+  cancelAppointment: cancelAppointment
+}
+
+async function loadAvailableSlots(app) {
+  if (app.bookingForm.doctor_id && app.bookingForm.appointment_date) {
+    const resp = await window.ApiService.getAvailableSlots(app.bookingForm.doctor_id, app.bookingForm.appointment_date)
+    if (resp.success) app.availableSlots = resp.data.slots || []
+  }
+}
+
+async function bookAppointment(app) {
+  app.loading = true
+  app.error = null
+  const resp = await window.ApiService.bookAppointment(app.bookingForm)
+  if (resp.success) {
+    app.success = 'Appointment booked successfully'
+    app.bookingForm = { specialization:'', doctor_id:'', appointment_date:'', appointment_time:'', notes:'' }
+    await loadPatientData(app)
+  } else { 
+    app.error = resp.message || 'Failed to book appointment' 
+  }
+  app.loading = false
+}
+
+async function cancelAppointment(app, appointmentId) {
+  if (!confirm('Are you sure you want to cancel this appointment?')) return
+  const resp = await window.ApiService.cancelAppointment(appointmentId)
+  if (resp.success) { 
+    app.success = 'Appointment cancelled successfully'
+    await loadPatientData(app) 
+  } else {
+    app.error = 'Failed to cancel appointment'
+  }
+}
+
+window.PatientModule = {
+  loadPatientData: loadPatientData,
+  selectDepartment: selectDepartment,
+  selectDoctor: selectDoctor,
+  loadAvailableSlots: loadAvailableSlots,
+  bookAppointment: bookAppointment,
+  cancelAppointment: cancelAppointment
+}
 

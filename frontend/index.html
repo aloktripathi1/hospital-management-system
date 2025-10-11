@@ -36,7 +36,7 @@
         </nav>
 
         <!-- Main Content -->
-        <div class="container-fluid pt-4">
+        <div class="container-fluid" :class="{'pt-4': currentUser}">
             <!-- Messages -->
             <div v-if="error" class="alert alert-danger alert-dismissible fade show m-3">
                 {{ error }}
