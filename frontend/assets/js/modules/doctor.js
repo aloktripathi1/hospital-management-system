@@ -19,7 +19,11 @@ async function loadDoctorData(app) {
 
   await loadAppointments(app)
   await loadPatients(app)
+  
+  // Force load available slots
+  console.log('About to load available slots...')
   await loadAvailableSlots(app)
+  console.log('Finished loading slots, count:', app.doctorAvailableSlots.length)
 }
 
 async function loadAppointments(app) {
@@ -56,10 +60,19 @@ async function loadPatients(app) {
 }
 
 async function loadAvailableSlots(app) {
-  const slots = await window.ApiService.getDoctorAvailableSlots()
-  if (slots.success) {
-    app.doctorAvailableSlots = slots.data.slots
-  } else {
+  try {
+    console.log('Calling getDoctorAvailableSlots API...')
+    const slots = await window.ApiService.getDoctorAvailableSlots()
+    console.log('API response:', slots)
+    if (slots.success) {
+      app.doctorAvailableSlots = slots.data.slots || []
+      console.log('Loaded', app.doctorAvailableSlots.length, 'slots')
+    } else {
+      app.doctorAvailableSlots = []
+      console.log('No slots loaded:', slots.message)
+    }
+  } catch (error) {
+    console.error('Error loading slots:', error)
     app.doctorAvailableSlots = []
   }
 }
@@ -97,17 +110,25 @@ async function addTreatment(app) {
 }
 
 async function setAvailabilitySlots(app) {
-  app.loading = true
-  app.error = null
-  const resp = await window.ApiService.setAvailabilitySlots(app.slotForm)
+  app.loading = true;
+  app.error = null;
+  app.success = null;
+  const resp = await window.ApiService.setAvailabilitySlots(app.slotForm);
   if (resp.success) {
-    app.success = resp.message
-    app.slotForm = { start_date:'', end_date:'', start_time:'09:00', end_time:'17:00' }
-    await loadAvailableSlots(app)
-  } else { 
-    app.error = resp.message || 'Failed to create slots' 
+    app.success = resp.message;
+    app.slotForm = { start_date:'', end_date:'', start_time:'09:00', end_time:'17:00' };
+    await loadAvailableSlots(app);
+  } else if (resp.data && resp.data.existing_slots) {
+    const existingSlots = resp.data.existing_slots;
+    const dateRange = resp.data.date_range || 'this period';
+    const slotCount = existingSlots.length;
+    app.error = `${slotCount} slots already exist for ${dateRange}.`;
+    app.doctorAvailableSlots = existingSlots;
+    console.log('Set existing slots:', existingSlots.length, 'slots');
+  } else {
+    app.error = resp.message || 'Failed to create slots';
   }
-  app.loading = false
+  app.loading = false;
 }
 
 async function viewPatientHistory(app, patientId) {

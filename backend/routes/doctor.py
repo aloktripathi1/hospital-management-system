@@ -448,18 +448,51 @@ def set_availability_slots():
         
         current += timedelta(days=1)
     
-    db.session.commit()
-    
-    date_range = f'{start_date} to {end_date}'
-    
-    return jsonify({
-        'success': True,
-        'message': f'Created {total} appointment slots',
-        'data': {
-            'slots_created': total,
-            'date_range': date_range
-        }
-    })
+    try:
+        db.session.commit()
+        date_range = f'{start_date} to {end_date}'
+        return jsonify({
+            'success': True,
+            'message': f'Created {total} appointment slots',
+            'data': {
+                'slots_created': total,
+                'date_range': date_range
+            }
+        })
+    except Exception as e:
+        db.session.rollback()
+        # Check for IntegrityError (duplicate slot)
+        from sqlalchemy.exc import IntegrityError
+        if isinstance(e, IntegrityError) or 'UNIQUE constraint' in str(e):
+            # Fetch existing slots for this doctor in the date range
+            existing_slots = Appointment.query.filter(
+                Appointment.doctor_id == doctor.id,
+                Appointment.appointment_date >= start_date,
+                Appointment.appointment_date <= end_date,
+                Appointment.status == 'available'
+            ).order_by(Appointment.appointment_date.asc(), Appointment.appointment_time.asc()).all()
+            slots_data = [
+                {
+                    'id': slot.id,
+                    'date': slot.appointment_date.strftime('%Y-%m-%d'),
+                    'time': slot.appointment_time.strftime('%H:%M'),
+                    'formatted_display': f"{slot.appointment_date.strftime('%Y-%m-%d')} {slot.appointment_time.strftime('%H:%M')}"
+                }
+                for slot in existing_slots
+            ]
+            return jsonify({
+                'success': False,
+                'message': 'Slots already exist for this period.',
+                'data': {
+                    'existing_slots': slots_data,
+                    'date_range': f'{start_date} to {end_date}'
+                }
+            }), 409
+        return jsonify({
+            'success': False,
+            'message': 'Failed to create slots',
+            'errors': [str(e)]
+        }), 500
 
 @doctor_bp.route('/profile', methods=['PUT'])
 @doctor_required
