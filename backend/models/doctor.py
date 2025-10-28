@@ -8,7 +8,6 @@ class Doctor(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     name = db.Column(db.String(100), nullable=False)
     specialization = db.Column(db.String(100), nullable=False)
-    department_id = db.Column(db.Integer, db.ForeignKey('departments.id'))
     experience = db.Column(db.Integer)  # years of experience
     qualification = db.Column(db.String(200))
     phone = db.Column(db.String(20))
@@ -25,8 +24,7 @@ class Doctor(db.Model):
             'id': self.id,
             'user_id': self.user_id,
             'name': self.name,
-            'department': self.department.name if self.department else self.specialization,
-            'department_id': self.department_id,
+            'specialization': self.specialization,
             'experience': self.experience,
             'qualification': self.qualification,
             'phone': self.phone,

@@ -520,8 +520,6 @@ def update_doctor_profile():
             doctor.name = data['name']
         if 'specialization' in data:
             doctor.specialization = data['specialization']
-        if 'department_id' in data:
-            doctor.department_id = data['department_id']
         if 'experience' in data:
             doctor.experience = data['experience']
         if 'qualification' in data:

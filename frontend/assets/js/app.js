@@ -349,8 +349,9 @@ const App = {
         this.filteredDoctors = this.doctors.slice()
         this.doctorDepartments = []
         for (let i = 0; i < this.doctors.length; i++) {
-          if (this.doctorDepartments.indexOf(this.doctors[i].department) === -1) {
-            this.doctorDepartments.push(this.doctors[i].department)
+          const spec = this.doctors[i].specialization || this.doctors[i].department || ''
+          if (this.doctorDepartments.indexOf(spec) === -1) {
+            this.doctorDepartments.push(spec)
           }
         }
       }
@@ -806,8 +807,9 @@ const App = {
         this.filteredDoctors = []
         for (let i = 0; i < this.doctors.length; i++) {
           const doctor = this.doctors[i]
+          const spec = (doctor.specialization || doctor.department || '').toLowerCase()
           if (doctor.name.toLowerCase().indexOf(query) !== -1 || 
-              doctor.department.toLowerCase().indexOf(query) !== -1) {
+              spec.indexOf(query) !== -1) {
             this.filteredDoctors.push(doctor)
           }
         }
@@ -825,7 +827,8 @@ const App = {
       } else {
         this.filteredDoctors = []
         for (let i = 0; i < this.doctors.length; i++) {
-          if (this.doctors[i].department === this.doctorDepartmentFilter) {
+          const spec = this.doctors[i].specialization || this.doctors[i].department
+          if (spec === this.doctorDepartmentFilter) {
             this.filteredDoctors.push(this.doctors[i])
           }
         }

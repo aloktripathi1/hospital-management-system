@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify, current_app
 from database import db
-from models import User, Patient, Doctor, Appointment, Treatment, Department
+from models import User, Patient, Doctor, Appointment, Treatment
 from werkzeug.security import generate_password_hash
 from datetime import datetime, date
 from sqlalchemy import or_
@@ -348,7 +348,10 @@ def update_patient(patient_id):
 @admin_bp.route('/appointments', methods=['GET'])
 @admin_required
 def get_appointments():
-    appointments = Appointment.query.order_by(Appointment.appointment_date.desc()).all()
+    # Only show booked, cancelled, and completed appointments (exclude available slots)
+    appointments = Appointment.query.filter(
+        Appointment.status.in_(['booked', 'cancelled', 'completed'])
+    ).order_by(Appointment.appointment_date.desc()).all()
     data = []
     
     for apt in appointments:
@@ -362,36 +365,7 @@ def get_appointments():
         }
     })
 
-@admin_bp.route('/appointments/<int:appointment_id>', methods=['PUT'])
-@admin_required
-def update_appointment(appointment_id):
-    appointment = Appointment.query.get(appointment_id)
-    
-    if appointment is None:
-        return jsonify({
-            'success': False,
-            'message': 'Appointment not found',
-            'errors': ['Appointment not found']
-        }), 404
-    
-    data = request.get_json()
-    
-    if 'status' in data:
-        appointment.status = data['status']
-    if 'notes' in data:
-        appointment.notes = data['notes']
-    
-    appointment.updated_at = datetime.utcnow()
-    
-    db.session.commit()
-    
-    return jsonify({
-        'success': True,
-        'message': 'Appointment updated successfully',
-        'data': {
-            'appointment': appointment.to_dict()
-        }
-    })
+# Note: Admin has view-only access to appointments - no edit/cancel functionality
 
 # -------- Search and Filters ----------
 
@@ -580,128 +554,4 @@ def get_patient_history(patient_id):
             'patient': patient.to_dict(),
             'appointments': data
         }
-    })
-
-# --------- Department CRUD -----------
-
-@admin_bp.route('/departments', methods=['GET'])
-@admin_required
-def get_departments():
-    departments = Department.query.all()
-    data = []
-    
-    for dept in departments:
-        data.append(dept.to_dict())
-    
-    return jsonify({
-        'success': True,
-        'message': 'Departments retrieved successfully',
-        'data': {
-            'departments': data
-        }
-    })
-
-@admin_bp.route('/departments', methods=['POST'])
-@admin_required
-def add_department():
-    data = request.get_json()
-    
-    if not data.get('name'):
-        return jsonify({
-            'success': False,
-            'message': 'Department name is required',
-            'errors': ['Missing name']
-        }), 400
-    
-    existing = Department.query.filter_by(name=data['name']).first()
-    if existing is not None:
-        return jsonify({
-            'success': False,
-            'message': 'Department already exists',
-            'errors': ['Department name taken']
-        }), 400
-    
-    dept = Department(
-        name=data['name'],
-        description=data.get('description', ''),
-        is_active=True
-    )
-    
-    db.session.add(dept)
-    db.session.commit()
-    
-    return jsonify({
-        'success': True,
-        'message': 'Department created successfully',
-        'data': {
-            'department': dept.to_dict()
-        }
-    })
-
-@admin_bp.route('/departments/<int:department_id>', methods=['PUT'])
-@admin_required
-def update_department(department_id):
-    dept = Department.query.get(department_id)
-    
-    if dept is None:
-        return jsonify({
-            'success': False,
-            'message': 'Department not found',
-            'errors': ['Department not found']
-        }), 404
-    
-    data = request.get_json()
-    
-    if 'name' in data:
-        existing = Department.query.filter_by(name=data['name']).first()
-        if existing is not None and existing.id != department_id:
-            return jsonify({
-                'success': False,
-                'message': 'Department name already exists',
-                'errors': ['Name taken']
-            }), 400
-        dept.name = data['name']
-    
-    if 'description' in data:
-        dept.description = data['description']
-    
-    if 'is_active' in data:
-        dept.is_active = data['is_active']
-    
-    db.session.commit()
-    
-    return jsonify({
-        'success': True,
-        'message': 'Department updated successfully',
-        'data': {
-            'department': dept.to_dict()
-        }
-    })
-
-@admin_bp.route('/departments/<int:department_id>', methods=['DELETE'])
-@admin_required
-def delete_department(department_id):
-    dept = Department.query.get(department_id)
-    
-    if dept is None:
-        return jsonify({
-            'success': False,
-            'message': 'Department not found',
-            'errors': ['Department not found']
-        }), 404
-    
-    if dept.doctors:
-        return jsonify({
-            'success': False,
-            'message': 'Cannot delete department with assigned doctors',
-            'errors': ['Department has doctors']
-        }), 400
-    
-    db.session.delete(dept)
-    db.session.commit()
-    
-    return jsonify({
-        'success': True,
-        'message': 'Department deleted successfully',
-        'data': {}
     })

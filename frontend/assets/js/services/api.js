@@ -133,10 +133,6 @@ async function getDepartments() {
   return await callAPI("/patient/departments", "GET")
 }
 
-async function updateDepartment(id, data) {
-  return await callAPI("/admin/departments/" + id, "PUT", data)
-}
-
 async function getDoctorsByDepartment(department) {
   return await callAPI("/patient/doctors?department=" + encodeURIComponent(department), "GET")
 }
@@ -169,6 +165,11 @@ async function getAvailableSlots(doctorId, date) {
   return await callAPI("/patient/available-slots?doctor_id=" + doctorId + "&date=" + date, "GET")
 }
 
+// Backwards-compatible stub for admin departments (now specializations)
+async function getAdminDepartments() {
+  // Return empty list so frontend code that expects this won't break.
+  return { success: true, data: { departments: [] } }
+}
 // Search functions
 async function searchDoctors(query, specialization) {
   specialization = specialization || ''
@@ -219,19 +220,6 @@ async function addPatient(patientData) {
   return await callAPI("/admin/patients", "POST", patientData)
 }
 
-// Department functions
-async function getAdminDepartments() {
-  return await callAPI("/admin/departments", "GET")
-}
-
-async function addDepartment(departmentData) {
-  return await callAPI("/admin/departments", "POST", departmentData)
-}
-
-async function deleteDepartment(departmentId) {
-  return await callAPI("/admin/departments/" + departmentId, "DELETE")
-}
-
 async function downloadMonthlyReport() {
   return await callAPI("/doctor/reports/monthly", "POST")
 }
@@ -263,7 +251,6 @@ window.ApiService = {
   getDoctorAvailableSlots: getDoctorAvailableSlots,
   getPatientDashboard: getPatientDashboard,
   getDepartments: getDepartments,
-  updateDepartment: updateDepartment,
   getDoctorsByDepartment: getDoctorsByDepartment,
   getPatientAppointments: getPatientAppointments,
   bookAppointment: bookAppointment,
@@ -284,7 +271,5 @@ window.ApiService = {
   updatePatient: updatePatient,
   addPatient: addPatient,
   getAdminDepartments: getAdminDepartments,
-  addDepartment: addDepartment,
-  deleteDepartment: deleteDepartment,
   downloadMonthlyReport: downloadMonthlyReport
 }

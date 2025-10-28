@@ -66,7 +66,9 @@ class Appointment(db.Model):
                 'id': self.doctor.id,
                 'name': self.doctor.name,
                 'specialization': self.doctor.specialization,
-                'department': self.doctor.department.name if self.doctor.department else self.doctor.specialization,
+                # Department was removed; keep a backward-compatible 'department' field
+                # using the doctor's specialization
+                'department': self.doctor.specialization,
                 'qualification': self.doctor.qualification,
                 'consultation_fee': self.doctor.consultation_fee
             }

@@ -45,44 +45,44 @@ def get_dashboard():
 @patient_bp.route('/departments', methods=['GET'])
 @patient_or_admin_required
 def get_departments():
-    from models import Department
+    """
+    Returns list of unique specializations with doctors grouped by specialization.
+    This replaces the old department-based listing.
+    """
+    # Get all active doctors grouped by specialization
+    doctors = Doctor.query.filter_by(is_active=True).all()
     
-    departments = Department.query.filter_by(is_active=True).all()
+    # Group doctors by specialization
+    specializations_dict = {}
     
-    data = []
-    
-    for dept in departments:
-        doctors = Doctor.query.filter_by(
-            department_id=dept.id, 
-            is_active=True
-        ).all()
-        
-        docs = []
-        
-        for doc in doctors:
-            info = {
-                'id': doc.id,
-                'name': doc.name,
-                'department': dept.name,
-                'qualification': doc.qualification,
-                'experience': doc.experience
+    for doc in doctors:
+        spec = doc.specialization
+        if spec not in specializations_dict:
+            specializations_dict[spec] = {
+                'id': len(specializations_dict) + 1,  # Generate a simple ID
+                'name': spec,
+                'description': f'{spec} Department',
+                'doctor_count': 0,
+                'doctors': []
             }
-            docs.append(info)
         
-        dept_info = {
-            'id': dept.id,
-            'name': dept.name,
-            'description': dept.description,
-            'doctor_count': len(docs),
-            'doctors': docs
-        }
-        data.append(dept_info)
+        specializations_dict[spec]['doctors'].append({
+            'id': doc.id,
+            'name': doc.name,
+            'department': spec,  # Keep this for backward compatibility
+            'qualification': doc.qualification,
+            'experience': doc.experience
+        })
+        specializations_dict[spec]['doctor_count'] += 1
+    
+    # Convert to list
+    data = list(specializations_dict.values())
     
     return jsonify({
         'success': True,
-        'message': 'Departments retrieved successfully',
+        'message': 'Specializations retrieved successfully',
         'data': {
-            'departments': data
+            'departments': data  # Keep the key name for backward compatibility
         }
     })
 
@@ -206,13 +206,12 @@ def get_available_slots():
 @patient_required
 def get_doctors():
     try:
-        dept = request.args.get('department')
+        specialization = request.args.get('department')  # Keep param name for compatibility
         
         query = Doctor.query.filter_by(is_active=True)
         
-        if dept:
-            from models import Department
-            query = query.join(Department).filter(Department.name == dept)
+        if specialization:
+            query = query.filter(Doctor.specialization == specialization)
         
         doctors = query.all()
         
@@ -440,8 +439,7 @@ def get_history():
                 treatment_dict['doctor'] = {
                     'id': appointment.doctor.id,
                     'name': appointment.doctor.name,
-                    'specialization': appointment.doctor.specialization,
-                    'department': appointment.doctor.department.name if appointment.doctor.department else None
+                    'specialization': appointment.doctor.specialization
                 }
             else:
                 treatment_dict['doctor'] = None
