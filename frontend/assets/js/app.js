@@ -89,13 +89,6 @@ const App = {
       },
       selectedAppointmentForTreatment: null,
       selectedPatientForHistory: null,
-      availabilityForm: {
-        start_date: '',
-        end_date: '',
-        start_time: '',
-        end_time: '',
-        break_periods: []
-      },
       profileForm: {
         name: '',
         department_id: '',
@@ -125,12 +118,7 @@ const App = {
       },
       // Doctor availability data
       doctorAvailability: [],
-      slotForm: {
-        start_date: '',
-        end_date: '',
-        start_time: '09:00',
-        end_time: '17:00'
-      },
+      availabilityDays: [], // 7-day availability schedule
       // Search data
       searchQuery: '',
       searchResults: {
@@ -143,6 +131,22 @@ const App = {
   },
 
   methods: {
+    // Get specialization description
+    getSpecializationDescription(specialization) {
+      const descriptions = {
+        'Cardiology': 'Heart and blood vessel disorders',
+        'Neurology': 'Brain and nervous system conditions',
+        'Orthopedics': 'Bone, joint and muscle treatment',
+        'Psychiatry': 'Mental health and emotional disorders',
+        'Dermatology': 'Skin, hair and nail conditions',
+        'Pediatrics': 'Healthcare for infants and children',
+        'Gynecology': 'Women\'s reproductive health care',
+        'ENT': 'Ear, nose and throat treatment',
+        'Ophthalmology': 'Eye care and vision problems'
+      }
+      return descriptions[specialization] || 'Specialized medical care and treatment'
+    },
+
     // Get doctor name from treatment
     getTreatmentDoctor(treatment) {
         // Try to get doctor from treatment data directly
@@ -349,9 +353,8 @@ const App = {
         this.filteredDoctors = this.doctors.slice()
         this.doctorDepartments = []
         for (let i = 0; i < this.doctors.length; i++) {
-          const spec = this.doctors[i].specialization || this.doctors[i].department || ''
-          if (this.doctorDepartments.indexOf(spec) === -1) {
-            this.doctorDepartments.push(spec)
+          if (this.doctorDepartments.indexOf(this.doctors[i].department) === -1) {
+            this.doctorDepartments.push(this.doctors[i].department)
           }
         }
       }
@@ -381,6 +384,10 @@ const App = {
 
     async loadDoctorData() {
       await window.DoctorModule.loadDoctorData(this)
+    },
+
+    async saveAvailability() {
+      await window.DoctorModule.saveAvailability(this)
     },
 
     async loadPatientData() {
@@ -464,25 +471,24 @@ const App = {
       }
     },
 
-    // Format time as slot range (e.g., "9:00-11:00")
+    // Format time slot for 2-slot system (morning/evening)
     formatTimeSlot(time) {
-      if (!time || time === '00:00') return 'N/A'
+      if (!time) return 'N/A'
       
-      try {
-        const [hours, minutes] = time.split(':')
-        const startHour = parseInt(hours)
-        const endHour = startHour + 2 // Assuming 2-hour slots
-        
-        // Format start time
-        const startTime = `${startHour}:${minutes}`
-        
-        // Format end time
-        const endTime = `${endHour}:${minutes}`
-        
-        return `${startTime}-${endTime}`
-      } catch (error) {
-        console.error('Error formatting time slot:', error)
-        return time
+      // Handle both "09:00:00" and "09:00" formats
+      const timeStr = time.toString().substring(0, 5) // Get "09:00"
+      
+      // Morning slot: 09:00 -> "Morning (9:00 AM - 1:00 PM)"
+      if (timeStr === '09:00') {
+        return 'Morning (9:00 AM - 1:00 PM)'
+      }
+      // Evening slot: 15:00 -> "Evening (3:00 PM - 7:00 PM)"
+      else if (timeStr === '15:00') {
+        return 'Evening (3:00 PM - 7:00 PM)'
+      }
+      // Fallback for any other time
+      else {
+        return timeStr
       }
     },
 
@@ -620,6 +626,18 @@ const App = {
       window.DoctorModule.backToAssignedPatients(this)
     },
 
+    async cancelDoctorAppointment(appointmentId) {
+      if (confirm('Are you sure you want to cancel this appointment?')) {
+        const response = await window.ApiService.updateAppointmentStatus(appointmentId, 'cancelled')
+        if (response.success) {
+          this.success = 'Appointment cancelled successfully'
+          await this.loadDoctorData()
+        } else {
+          this.error = response.message || 'Failed to cancel appointment'
+        }
+      }
+    },
+
     // Patient methods
     async loadDoctorsByDepartment() { await window.PatientModule.loadDoctorsByDepartment(this) },
 
@@ -687,33 +705,6 @@ const App = {
         case 'available': return 'bg-dark text-white'
         default: return 'bg-secondary text-white'
       }
-    },
-
-    // Doctor availability methods
-    async setAvailabilitySlots() {
-      // Enforce 7-day max on client
-      if (this.slotForm.start_date && this.slotForm.end_date) {
-        const start = new Date(this.slotForm.start_date)
-        const end = new Date(this.slotForm.end_date)
-        const diff = (end - start) / (1000*60*60*24)
-        if (diff > 6) { this.error = 'Please select a maximum of 7 days'; return }
-      }
-      const payload = {
-        start_date: this.slotForm.start_date,
-        end_date: this.slotForm.end_date,
-        start_time: this.slotForm.start_time,
-        end_time: this.slotForm.end_time,
-        break_periods: this.availabilityForm.break_periods || []
-      }
-      this.loading = true
-      this.error = null
-      try {
-        const response = await window.ApiService.setAvailabilitySlots(payload)
-        if (response.success) {
-          this.success = response.message
-          this.slotForm = { start_date:'', end_date:'', start_time:'09:00', end_time:'17:00' }
-        } else { this.error = response.message || 'Failed to create slots' }
-      } catch (error) { this.error = error.message || 'Failed to create slots' } finally { this.loading = false }
     },
 
     async loadAvailableSlots() {
@@ -807,9 +798,8 @@ const App = {
         this.filteredDoctors = []
         for (let i = 0; i < this.doctors.length; i++) {
           const doctor = this.doctors[i]
-          const spec = (doctor.specialization || doctor.department || '').toLowerCase()
           if (doctor.name.toLowerCase().indexOf(query) !== -1 || 
-              spec.indexOf(query) !== -1) {
+              doctor.department.toLowerCase().indexOf(query) !== -1) {
             this.filteredDoctors.push(doctor)
           }
         }
@@ -827,8 +817,7 @@ const App = {
       } else {
         this.filteredDoctors = []
         for (let i = 0; i < this.doctors.length; i++) {
-          const spec = this.doctors[i].specialization || this.doctors[i].department
-          if (spec === this.doctorDepartmentFilter) {
+          if (this.doctors[i].department === this.doctorDepartmentFilter) {
             this.filteredDoctors.push(this.doctors[i])
           }
         }
@@ -855,22 +844,6 @@ const App = {
     getPatientPrefix() {
       // Return empty string to display patient names without any prefix
       return ''
-    },
-
-    formatTimeSlot(appointmentTime) {
-      if (!appointmentTime) return 'N/A'
-      
-      // Convert "09:00:00" to "9:00-11:00" format (assuming 2-hour slots)
-      const time = appointmentTime.toString().substring(0, 5) // Get "09:00" from "09:00:00"
-      const [hours, minutes] = time.split(':')
-      const startHour = parseInt(hours)
-      const endHour = startHour + 2 // Assuming 2-hour appointment slots
-      
-      const formatHour = (hour) => {
-        return hour.toString().padStart(2, '0')
-      }
-      
-      return `${formatHour(startHour)}:${minutes}-${formatHour(endHour)}:${minutes}`
     },
 
     // Admin methods
@@ -994,41 +967,6 @@ const App = {
         appointment.status === 'cancelled' || 
         appointment.status === 'completed'
       );
-    },
-
-    // Doctor methods
-    addBreakPeriod() {
-      this.availabilityForm.break_periods.push({
-        start_time: '',
-        end_time: ''
-      });
-    },
-
-    removeBreakPeriod(index) {
-      this.availabilityForm.break_periods.splice(index, 1);
-    },
-
-    async setAvailability() {
-      try {
-        this.loading = true;
-        const response = await window.ApiService.setAvailabilitySlots(this.availabilityForm);
-        if (response.success) {
-          this.success = 'Availability set successfully!';
-          this.availabilityForm = {
-            start_date: '',
-            end_date: '',
-            start_time: '',
-            end_time: '',
-            break_periods: []
-          };
-        } else {
-          this.error = response.message || 'Failed to set availability';
-        }
-      } catch (error) {
-        this.error = 'Error setting availability: ' + error.message;
-      } finally {
-        this.loading = false;
-      }
     },
 
     async updateProfile() {

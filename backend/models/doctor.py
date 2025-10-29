@@ -8,7 +8,7 @@ class Doctor(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     name = db.Column(db.String(100), nullable=False)
     specialization = db.Column(db.String(100), nullable=False)
-    experience = db.Column(db.Integer)  # years of experience
+    experience = db.Column(db.Integer)
     qualification = db.Column(db.String(200))
     phone = db.Column(db.String(20))
     is_active = db.Column(db.Boolean, default=True)
@@ -42,17 +42,28 @@ class DoctorAvailability(db.Model):
     
     id = db.Column(db.Integer, primary_key=True)
     doctor_id = db.Column(db.Integer, db.ForeignKey('doctors.id'), nullable=False)
-    day_of_week = db.Column(db.Integer, nullable=False)  # 0=Monday, 6=Sunday
-    start_time = db.Column(db.Time, nullable=False)
-    end_time = db.Column(db.Time, nullable=False)
+    availability_date = db.Column(db.Date, nullable=False)
+    slot_type = db.Column(db.String(20), nullable=False)
     is_available = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    __table_args__ = (
+        db.UniqueConstraint('doctor_id', 'availability_date', 'slot_type', name='unique_doctor_date_slot'),
+    )
     
     def to_dict(self):
         return {
             'id': self.id,
             'doctor_id': self.doctor_id,
-            'day_of_week': self.day_of_week,
-            'start_time': self.start_time.strftime('%H:%M') if self.start_time else None,
-            'end_time': self.end_time.strftime('%H:%M') if self.end_time else None,
-            'is_available': self.is_available
+            'availability_date': self.availability_date.isoformat() if self.availability_date else None,
+            'slot_type': self.slot_type,
+            'is_available': self.is_available,
+            'time_range': self.get_time_range()
         }
+    
+    def get_time_range(self):
+        if self.slot_type == 'morning':
+            return '9:00 AM - 1:00 PM'
+        elif self.slot_type == 'evening':
+            return '3:00 PM - 7:00 PM'
+        return 'N/A'

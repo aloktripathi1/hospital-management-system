@@ -2,27 +2,44 @@
 const API_URL = "/api"
 
 async function callAPI(url, method, data) {
-  const options = {
-    method: method || 'GET',
-    headers: { 'Content-Type': 'application/json' },
-    credentials: 'include'
-  }
-  
-  if (data) {
-    options.body = JSON.stringify(data)
-  }
-  
-  const response = await fetch(API_URL + url, options)
-  const responseText = await response.text()
-  
-  if (responseText) {
-    const result = JSON.parse(responseText)
+  try {
+    const options = {
+      method: method || 'GET',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include'
+    }
+    
+    if (data) {
+      options.body = JSON.stringify(data)
+    }
+    
+    const response = await fetch(API_URL + url, options)
+    const responseText = await response.text()
+    
+    if (!responseText) {
+      return { success: false, message: "Empty response from server" }
+    }
+    
+    // Try to parse JSON, catch HTML error pages
+    let result
+    try {
+      result = JSON.parse(responseText)
+    } catch (parseError) {
+      console.error('Failed to parse response as JSON:', responseText.substring(0, 200))
+      return { 
+        success: false, 
+        message: 'Server returned invalid response. Please check server logs.' 
+      }
+    }
+    
     if (!response.ok) {
       return { success: false, message: result.message || 'Request failed' }
     }
+    
     return result
-  } else {
-    return { success: false, message: "Empty response" }
+  } catch (error) {
+    console.error('API call failed:', error)
+    return { success: false, message: error.message || 'Network error occurred' }
   }
 }
 
@@ -112,7 +129,7 @@ async function updateDoctorAvailability(availabilityData) {
   return await callAPI("/doctor/availability", "PUT", availabilityData)
 }
 
-async function setAvailabilitySlots(slotData) {
+async function setDoctorSlots(slotData) {
   return await callAPI("/doctor/set-slots", "POST", slotData)
 }
 
@@ -131,6 +148,10 @@ async function getPatientDashboard() {
 
 async function getDepartments() {
   return await callAPI("/patient/departments", "GET")
+}
+
+async function updateDepartment(id, data) {
+  return await callAPI("/admin/departments/" + id, "PUT", data)
 }
 
 async function getDoctorsByDepartment(department) {
@@ -165,11 +186,6 @@ async function getAvailableSlots(doctorId, date) {
   return await callAPI("/patient/available-slots?doctor_id=" + doctorId + "&date=" + date, "GET")
 }
 
-// Backwards-compatible stub for admin departments (now specializations)
-async function getAdminDepartments() {
-  // Return empty list so frontend code that expects this won't break.
-  return { success: true, data: { departments: [] } }
-}
 // Search functions
 async function searchDoctors(query, specialization) {
   specialization = specialization || ''
@@ -220,6 +236,19 @@ async function addPatient(patientData) {
   return await callAPI("/admin/patients", "POST", patientData)
 }
 
+// Department functions
+async function getAdminDepartments() {
+  return await callAPI("/admin/departments", "GET")
+}
+
+async function addDepartment(departmentData) {
+  return await callAPI("/admin/departments", "POST", departmentData)
+}
+
+async function deleteDepartment(departmentId) {
+  return await callAPI("/admin/departments/" + departmentId, "DELETE")
+}
+
 async function downloadMonthlyReport() {
   return await callAPI("/doctor/reports/monthly", "POST")
 }
@@ -246,11 +275,12 @@ window.ApiService = {
   getDoctorPatients: getDoctorPatients,
   updatePatientHistory: updatePatientHistory,
   updateDoctorAvailability: updateDoctorAvailability,
-  setAvailabilitySlots: setAvailabilitySlots,
+  setDoctorSlots: setDoctorSlots,
   getPatientHistory: getPatientHistory,
   getDoctorAvailableSlots: getDoctorAvailableSlots,
   getPatientDashboard: getPatientDashboard,
   getDepartments: getDepartments,
+  updateDepartment: updateDepartment,
   getDoctorsByDepartment: getDoctorsByDepartment,
   getPatientAppointments: getPatientAppointments,
   bookAppointment: bookAppointment,
@@ -271,5 +301,7 @@ window.ApiService = {
   updatePatient: updatePatient,
   addPatient: addPatient,
   getAdminDepartments: getAdminDepartments,
+  addDepartment: addDepartment,
+  deleteDepartment: deleteDepartment,
   downloadMonthlyReport: downloadMonthlyReport
 }

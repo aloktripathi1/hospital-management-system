@@ -66,11 +66,22 @@ class Appointment(db.Model):
                 'id': self.doctor.id,
                 'name': self.doctor.name,
                 'specialization': self.doctor.specialization,
-                # Department was removed; keep a backward-compatible 'department' field
-                # using the doctor's specialization
-                'department': self.doctor.specialization,
+                'department': self.doctor.specialization,  # Use specialization instead of department
                 'qualification': self.doctor.qualification,
                 'consultation_fee': self.doctor.consultation_fee
+            }
+        
+        # Add treatment details if any exist
+        if self.treatments and len(self.treatments) > 0:
+            # Get the first/latest treatment for this appointment
+            treatment = self.treatments[0]
+            appointment_info['treatment'] = {
+                'id': treatment.id,
+                'visit_type': treatment.visit_type,
+                'diagnosis': treatment.diagnosis,
+                'prescription': treatment.prescription,
+                'treatment_notes': treatment.treatment_notes,
+                'created_at': treatment.created_at.strftime('%Y-%m-%d %H:%M:%S') if treatment.created_at else None
             }
             
         return appointment_info

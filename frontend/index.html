@@ -368,7 +368,7 @@
                                     <div class="row mb-3">
                                         <div class="col-md-6">
                                             <div class="input-group">
-                                                <input type="text" class="form-control" placeholder="Search doctors by name or specialization..." v-model="doctorSearchQuery" @input="searchDoctors">
+                                                <input type="text" class="form-control" placeholder="Search doctors by name or department..." v-model="doctorSearchQuery" @input="searchDoctors">
                                                 <button class="btn btn-outline-secondary" type="button" @click="clearDoctorSearch">
                                                     <i class="bi bi-x"></i>
                                                 </button>
@@ -493,18 +493,17 @@
                                                     <th>Sr. No</th>
                                                     <th>Patient</th>
                                                     <th>Doctor</th>
-                                                    <th>Specialization</th>
+                                                    <th>Department</th>
                                                     <th>Date</th>
                                                     <th>Slot</th>
                                                     <th>Status</th>
                                                 </tr>
                                             </thead>
-                                            <tbody>
-                                                <tr v-for="(appointment, index) in appointments" :key="appointment.id">
+                                                <tr v-for="(appointment, index) in filteredAppointments" :key="appointment.id">
                                                     <td>{{ index + 1 }}.</td>
                                                     <td>{{ getPatientPrefix() }}{{ appointment.patient ? appointment.patient.name : 'N/A' }}</td>
                                                     <td>Dr. {{ appointment.doctor ? appointment.doctor.name : 'N/A' }}</td>
-                                                    <td>{{ appointment.doctor ? appointment.doctor.specialization : 'N/A' }}</td>
+                                                    <td>{{ appointment.doctor ? appointment.doctor.department : 'N/A' }}</td>
                                                     <td>{{ appointment.appointment_date }}</td>
                                                     <td>{{ formatTimeSlot(appointment.appointment_time) }}</td>
                                                     <td>
@@ -512,6 +511,7 @@
                                                             {{ appointment.status }}
                                                         </span>
                                                     </td>
+                                                </tr>
                                                 </tr>
                                             </tbody>
                                         </table>
@@ -555,7 +555,10 @@
                                                 <option value="Orthopedics">Orthopedics</option>
                                                 <option value="Pediatrics">Pediatrics</option>
                                                 <option value="Dermatology">Dermatology</option>
+                                                <option value="Psychiatry">Psychiatry</option>
                                                 <option value="General Medicine">General Medicine</option>
+                                                <option value="ENT">ENT</option>
+                                                <option value="Ophthalmology">Ophthalmology</option>
                                             </select>
                                         </div>
                                     </div>
@@ -616,7 +619,10 @@
                                                 <option value="Orthopedics">Orthopedics</option>
                                                 <option value="Pediatrics">Pediatrics</option>
                                                 <option value="Dermatology">Dermatology</option>
+                                                <option value="Psychiatry">Psychiatry</option>
                                                 <option value="General Medicine">General Medicine</option>
+                                                <option value="ENT">ENT</option>
+                                                <option value="Ophthalmology">Ophthalmology</option>
                                             </select>
                                         </div>
                                     </div>
@@ -959,7 +965,11 @@
                                     <h5 class="mb-0">Appointments</h5>
                                 </div>
                                 <div class="card-body">
-                                    <div class="table-responsive mb-3">
+                                    <div v-if="doctorAppointments.length === 0" class="text-center py-4">
+                                        <i class="bi bi-calendar-x display-1 text-muted mb-3"></i>
+                                        <p class="text-muted">No appointments found</p>
+                                    </div>
+                                    <div v-else class="table-responsive mb-3">
                                         <table class="table table-striped table-hover">
                                             <thead class="table-dark">
                                                 <tr>
@@ -992,7 +1002,7 @@
                                                         </button>
                                                         <button v-if="appointment.status === 'booked'"
                                                                 class="btn btn-sm btn-outline-warning" 
-                                                                @click="DoctorModule.updateAppointmentStatus(this, appointment.id, 'cancelled')" 
+                                                                @click="cancelDoctorAppointment(appointment.id)" 
                                                                 title="Cancel Appointment">
                                                             <i class="bi bi-x-circle"></i> Cancel
                                                         </button>
@@ -1050,63 +1060,60 @@
                         <div class="tab-pane fade" id="availability" role="tabpanel">
                             <div class="card mb-4">
                                 <div class="card-header">
-                                    <h5 class="mb-0">Set Availability and Create Slots</h5>
+                                    <h5 class="mb-0">Set Availability (Next 7 Days)</h5>
                                 </div>
                                 <div class="card-body">
-                                    <form @submit.prevent="setAvailabilitySlots">
-                                        <div class="row">
-                                            <div class="col-md-6">
-                                                <div class="mb-3">
-                                                    <label for="start_date" class="form-label">Start Date</label>
-                                                    <input type="date" class="form-control" id="start_date" v-model="slotForm.start_date" required>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <div class="mb-3">
-                                                    <label for="end_date" class="form-label">End Date</label>
-                                                    <input type="date" class="form-control" id="end_date" v-model="slotForm.end_date" required>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        
-                                        <div class="row">
-                                            <div class="col-md-6">
-                                                <div class="mb-3">
-                                                    <label for="start_time" class="form-label">Start Time</label>
-                                                    <input type="time" class="form-control" id="start_time" v-model="slotForm.start_time" required>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <div class="mb-3">
-                                                    <label for="end_time" class="form-label">End Time</label>
-                                                    <input type="time" class="form-control" id="end_time" v-model="slotForm.end_time" required>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        
-                                        <div class="alert alert-light">
-                                            <strong>Current Available Slots:</strong>
-                                            <div v-if="doctorAvailableSlots && doctorAvailableSlots.length > 0" class="mt-2">
-                                                <div class="mb-2">
-                                                    <span class="badge bg-primary">{{ doctorAvailableSlots.length }} slots available</span>
-                                                </div>
-                                                <div style="max-height: 150px; overflow-y: auto;">
-                                                    <span v-for="slot in doctorAvailableSlots" :key="slot.id" class="badge bg-success me-1 mb-1">
-                                                        {{ slot.date }} {{ formatTimeSlot(slot.time + ':00') }}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                            <div v-else class="text-muted mt-2">
-                                                <span class="badge bg-secondary">0 slots available</span>
-                                                <p class="mb-0 mt-2">No available slots currently set. Create some slots using the form above.</p>
-                                            </div>
-                                        </div>
-                                        
-                                        <button type="submit" class="btn btn-primary" :disabled="loading">
-                                            <span v-if="loading" class="spinner-border spinner-border-sm me-2"></span>
-                                            Create Appointment Slots
-                                        </button>
-                                    </form>
+                                    <p class="text-muted mb-4">Check the boxes for slots when you're available. Morning: 9 AM - 1 PM, Evening: 3 PM - 7 PM</p>
+                                    
+                                    <div class="table-responsive">
+                                        <table class="table table-bordered">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <th style="width: 40%">Date</th>
+                                                    <th style="width: 30%">Morning (9 AM - 1 PM)</th>
+                                                    <th style="width: 30%">Evening (3 PM - 7 PM)</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr v-for="day in availabilityDays" :key="day.date">
+                                                    <td><strong>{{ day.day_name }}</strong></td>
+                                                    <td class="text-center">
+                                                        <div class="form-check d-inline-block">
+                                                            <input 
+                                                                class="form-check-input" 
+                                                                type="checkbox" 
+                                                                :id="'morning-' + day.date"
+                                                                v-model="day.morning_available">
+                                                            <label class="form-check-label" :for="'morning-' + day.date">
+                                                                Available
+                                                            </label>
+                                                        </div>
+                                                    </td>
+                                                    <td class="text-center">
+                                                        <div class="form-check d-inline-block">
+                                                            <input 
+                                                                class="form-check-input" 
+                                                                type="checkbox" 
+                                                                :id="'evening-' + day.date"
+                                                                v-model="day.evening_available">
+                                                            <label class="form-check-label" :for="'evening-' + day.date">
+                                                                Available
+                                                            </label>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    
+                                    <div class="alert alert-info mt-3">
+                                        <i class="bi bi-info-circle"></i> <strong>Note:</strong> Patients will be able to book appointments for the slots you mark as available.
+                                    </div>
+                                    
+                                    <button @click="saveAvailability" class="btn btn-primary" :disabled="loading">
+                                        <span v-if="loading" class="spinner-border spinner-border-sm me-2"></span>
+                                        <i class="bi bi-calendar-check"></i> Save Availability
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -1308,15 +1315,43 @@
                                 <i class="bi bi-calendar"></i> My Appointments
                             </button>
                         </li>
-                            <li class="nav-item" role="presentation">
-                                <button class="nav-link" id="history-tab" data-bs-toggle="tab" data-bs-target="#medical-history" type="button" role="tab">
-                                    <i class="bi bi-journal-medical"></i> Medical History
-                                </button>
-                            </li>
-                        
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="history-tab" data-bs-toggle="tab" data-bs-target="#medical-history" type="button" role="tab">
+                                <i class="bi bi-journal-medical"></i> Medical History
+                            </button>
+                        </li>
                     </ul>
 
                     <div class="tab-content" id="patientTabsContent">
+                        <!-- Patient Departments Tab -->
+                        <div class="tab-pane fade" id="patient-departments" role="tabpanel">
+                            <div class="card mb-4">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <h5 class="mb-0">Departments</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row" v-if="departments.length">
+                                        <div class="col-md-6 mb-3" v-for="dept in departments" :key="dept.id">
+                                            <div class="card h-100">
+                                                <div class="card-body">
+                                                    <h6 class="card-title">{{ dept.name }}</h6>
+                                                    <p class="card-text small text-muted">{{ dept.description || '—' }}</p>
+                                                    <div>
+                                                        <strong>Doctors:</strong>
+                                                        <ul class="small mb-0" v-if="dept.doctors && dept.doctors.length">
+                                                            <li v-for="doc in dept.doctors" :key="doc.id">Dr. {{ doc.name }}, {{ doc.qualification }}, {{ doc.experience }} yrs experience </li>
+                                                        </ul>
+                                                        <p v-else class="small text-muted mb-0">No doctors listed</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div v-else class="text-muted">No departments found.</div>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- Book Appointment Tab -->
                         <div class="tab-pane fade show active" id="book" role="tabpanel">
                             <div class="card mb-4">
@@ -1331,11 +1366,13 @@
                                             <select class="form-select" v-model="selectedDepartment" @change="selectDepartment(selectedDepartment)" required>
                                                 <option value="">Choose Specialization</option>
                                                 <option v-for="dept in departments" :key="dept.id" :value="dept">
-                                                    {{ dept.name }} ({{ dept.doctor_count }} doctors)
+                                                    {{ dept.name }} ({{ dept.doctor_count }} {{ dept.doctor_count === 1 ? 'doctor' : 'doctors' }})
                                                 </option>
                                             </select>
                                             <div v-if="selectedDepartment" class="mt-2">
-                                                <small class="text-muted">{{ selectedDepartment.description || 'No description available' }}</small>
+                                                <small class="text-muted">
+                                                    <i class="bi bi-info-circle me-1"></i>{{ getSpecializationDescription(selectedDepartment.name) }}
+                                                </small>
                                             </div>
                                         </div>
 
@@ -1345,17 +1382,25 @@
                                             <div class="row">
                                                 <div v-for="doctor in selectedDepartment.doctors" :key="doctor.id" class="col-md-6 mb-2">
                                                     <button type="button" 
-                                                            class="btn w-100 text-start"
+                                                            class="btn w-100 text-start py-2"
                                                             :class="selectedDoctor?.id === doctor.id ? 'btn-primary' : 'btn-outline-primary'"
                                                             @click="selectDoctor(doctor)">
-                                                        <strong>Dr. {{ doctor.name }}</strong><br>
-                                                        <small>{{ doctor.qualification }} - {{ doctor.experience }} yrs exp</small>
+                                                        <div class="d-flex justify-content-between align-items-center">
+                                                            <div>
+                                                                <strong>Dr. {{ doctor.name }}</strong><br>
+                                                                <small>{{ doctor.qualification }} • {{ doctor.experience }} yrs</small>
+                                                            </div>
+                                                            <span v-if="selectedDoctor?.id === doctor.id" class="badge bg-light text-primary">
+                                                                <i class="bi bi-check-circle-fill"></i>
+                                                            </span>
+                                                        </div>
                                                     </button>
                                                 </div>
                                             </div>
-                                            <div v-if="selectedDoctor" class="mt-2 p-2 bg-light rounded">
+                                            <div v-if="selectedDoctor" class="mt-2">
                                                 <small class="text-muted">
-                                                    <strong>Selected:</strong> Dr. {{ selectedDoctor.name }} - {{ selectedDepartment.name }}
+                                                    <i class="bi bi-check-circle me-1"></i>
+                                                    Dr. {{ selectedDoctor.name }} - {{ selectedDoctor.specialization }}, {{ selectedDoctor.qualification }}, {{ selectedDoctor.experience }} years exp.
                                                 </small>
                                             </div>
                                         </div>
@@ -1371,34 +1416,45 @@
                                             <label class="form-label">Step 4: Select Time Slot</label>
                                             <div v-if="availableSlots.length > 0">
                                                 <div class="row">
-                                                    <div v-for="slot in availableSlots" :key="slot.id" class="col-md-3 mb-2">
+                                                    <div v-for="slot in availableSlots" :key="slot.slot_type" class="col-md-6 mb-2">
                                                         <button type="button" 
                                                                 class="btn w-100" 
                                                                 :class="[
-                                                                    slot.status === 'available' ? 'btn-success' : 'btn-danger',
-                                                                    bookingForm.appointment_time === slot.time ? 'active' : ''
+                                                                    slot.status === 'available' ? 'btn-outline-success' : 'btn-outline-secondary',
+                                                                    bookingForm.appointment_time === slot.appointment_time ? 'active bg-success text-white' : ''
                                                                 ]"
                                                                 :disabled="slot.status !== 'available'"
-                                                                @click="bookingForm.appointment_time = slot.time">
-                                                            <strong>{{ slot.time }}</strong><br>
-                                                            <small>{{ slot.status === 'available' ? '✓ Available' : '✗ Booked' }}</small>
+                                                                @click="bookingForm.appointment_time = slot.appointment_time">
+                                                            <div class="py-2">
+                                                                <div>
+                                                                    <strong>{{ slot.slot_type === 'morning' ? '🌅 Morning' : '🌆 Evening' }}</strong>
+                                                                    <span class="ms-2 badge" :class="slot.status === 'available' ? 'bg-success' : 'bg-danger'">
+                                                                        {{ slot.status === 'available' ? '✓' : '✗' }}
+                                                                    </span>
+                                                                </div>
+                                                                <small>{{ slot.time }}</small>
+                                                            </div>
                                                         </button>
                                                     </div>
                                                 </div>
-                                                <div v-if="bookingForm.appointment_time" class="mt-2 p-2 bg-success bg-opacity-10 rounded">
+                                                <div v-if="bookingForm.appointment_time" class="mt-2">
                                                     <small class="text-success">
-                                                        <strong>Selected Time:</strong> {{ bookingForm.appointment_time }}
+                                                        <i class="bi bi-check-circle me-1"></i>
+                                                        {{ availableSlots.find(s => s.appointment_time === bookingForm.appointment_time)?.display }}
                                                     </small>
                                                 </div>
                                             </div>
-                                            <div v-else-if="selectedDoctor && bookingForm.appointment_date" class="text-muted">
-                                                Loading available slots...
+                                            <div v-else class="text-warning">
+                                                <small>
+                                                    <i class="bi bi-info-circle me-1"></i>
+                                                    No slots available for this date.
+                                                </small>
                                             </div>
                                         </div>
                                         
                                         <div class="mb-3">
                                             <label for="notes" class="form-label">Notes (Optional)</label>
-                                            <textarea class="form-control" id="notes" v-model="bookingForm.notes" rows="3" placeholder="Any additional notes for the doctor"></textarea>
+                                            <textarea class="form-control" id="notes" v-model="bookingForm.notes" rows="2" placeholder="Any additional notes for the doctor"></textarea>
                                         </div>
                                         
                                         <button type="submit" class="btn btn-primary" :disabled="loading">

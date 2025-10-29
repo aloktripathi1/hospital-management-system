@@ -19,6 +19,7 @@ async function loadDoctorData(app) {
 
   await loadAppointments(app)
   await loadPatients(app)
+  await loadAvailabilityDays(app)
   
   // Force load available slots
   console.log('About to load available slots...')
@@ -32,7 +33,10 @@ async function loadAppointments(app) {
     params = 'time_filter=' + app.appointmentFilter
   }
   
+  console.log('Loading doctor appointments with params:', params)
   const appointments = await window.ApiService.getDoctorAppointments(params)
+  console.log('Appointments API response:', appointments)
+  
   if (appointments.success) {
     app.doctorAppointments = []
     for (let i = 0; i < appointments.data.appointments.length; i++) {
@@ -40,8 +44,10 @@ async function loadAppointments(app) {
       appointment.sr_no = i + 1
       app.doctorAppointments.push(appointment)
     }
+    console.log('Loaded appointments count:', app.doctorAppointments.length)
   } else {
     app.error = 'Failed to load appointments'
+    console.error('Failed to load appointments:', appointments.message)
   }
 }
 
@@ -107,28 +113,6 @@ async function addTreatment(app) {
     app.error = resp.message || 'Failed to add treatment record' 
   }
   app.loading = false
-}
-
-async function setAvailabilitySlots(app) {
-  app.loading = true;
-  app.error = null;
-  app.success = null;
-  const resp = await window.ApiService.setAvailabilitySlots(app.slotForm);
-  if (resp.success) {
-    app.success = resp.message;
-    app.slotForm = { start_date:'', end_date:'', start_time:'09:00', end_time:'17:00' };
-    await loadAvailableSlots(app);
-  } else if (resp.data && resp.data.existing_slots) {
-    const existingSlots = resp.data.existing_slots;
-    const dateRange = resp.data.date_range || 'this period';
-    const slotCount = existingSlots.length;
-    app.error = `${slotCount} slots already exist for ${dateRange}.`;
-    app.doctorAvailableSlots = existingSlots;
-    console.log('Set existing slots:', existingSlots.length, 'slots');
-  } else {
-    app.error = resp.message || 'Failed to create slots';
-  }
-  app.loading = false;
 }
 
 async function viewPatientHistory(app, patientId) {
@@ -240,15 +224,103 @@ function backToDoctorAppointments(app) {
   loadAppointments(app)
 }
 
+// Load 7-day availability schedule
+async function loadAvailabilityDays(app) {
+  try {
+    const resp = await window.ApiService.getDoctorAvailability()
+    if (resp.success && resp.data && resp.data.availability) {
+      app.availabilityDays = resp.data.availability
+    } else {
+      // Generate 7 days client-side if backend fails
+      generateAvailabilityDays(app)
+    }
+  } catch (error) {
+    console.error('Error loading availability days:', error)
+    generateAvailabilityDays(app)
+  }
+}
+
+// Generate 7 days of availability schedule
+function generateAvailabilityDays(app) {
+  const days = []
+  const today = new Date()
+  const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+  
+  for (let i = 0; i < 7; i++) {
+    const date = new Date(today)
+    date.setDate(today.getDate() + i)
+    const dateStr = date.toISOString().split('T')[0]
+    const dayName = dayNames[date.getDay()] + ', ' + date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+    
+    days.push({
+      date: dateStr,
+      day_name: dayName,
+      morning_available: false,
+      evening_available: false
+    })
+  }
+  
+  app.availabilityDays = days
+}
+
+// Save availability for 7 days
+async function saveAvailability(app) {
+  app.loading = true
+  app.error = null
+  app.success = null
+  
+  try {
+    // Convert checkbox states to slots array
+    const slots = []
+    for (const day of app.availabilityDays) {
+      if (day.morning_available) {
+        slots.push({
+          date: day.date,
+          slot_type: 'morning',
+          is_available: true
+        })
+      }
+      if (day.evening_available) {
+        slots.push({
+          date: day.date,
+          slot_type: 'evening',
+          is_available: true
+        })
+      }
+    }
+    
+    if (slots.length === 0) {
+      app.error = 'Please select at least one slot'
+      app.loading = false
+      return
+    }
+    
+    const resp = await window.ApiService.setDoctorSlots({ slots: slots })
+    
+    if (resp.success) {
+      app.success = 'Availability updated successfully!'
+      await loadAvailabilityDays(app)
+    } else {
+      app.error = resp.message || 'Failed to update availability'
+    }
+  } catch (error) {
+    console.error('Error saving availability:', error)
+    app.error = 'Failed to save availability'
+  }
+  
+  app.loading = false
+}
+
 window.DoctorModule = {
   loadDoctorData: loadDoctorData,
   loadAppointments: loadAppointments,
   loadPatients: loadPatients,
   loadAvailableSlots: loadAvailableSlots,
+  loadAvailabilityDays: loadAvailabilityDays,
+  saveAvailability: saveAvailability,
   updateAppointmentStatus: updateAppointmentStatus,
   filterAppointments: filterAppointments,
   addTreatment: addTreatment,
-  setAvailabilitySlots: setAvailabilitySlots,
   viewPatientHistory: viewPatientHistory,
   viewPatientTreatmentHistory: viewPatientTreatmentHistory,
   backToAssignedPatients: backToAssignedPatients,

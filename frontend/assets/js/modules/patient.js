@@ -1,7 +1,5 @@
 // Patient functions for the app
 
-// Patient functions for the app
-
 async function loadPatientData(app) {
   const dashboard = await window.ApiService.getPatientDashboard()
   if (dashboard.success) {
@@ -55,17 +53,35 @@ function selectDoctor(app, doctor) {
 async function loadAvailableSlots(app) {
   if (app.bookingForm.doctor_id && app.bookingForm.appointment_date) {
     const resp = await window.ApiService.getAvailableSlots(app.bookingForm.doctor_id, app.bookingForm.appointment_date)
-    if (resp.success) app.availableSlots = resp.data.slots || []
+    if (resp.success) {
+      app.availableSlots = resp.data.slots || []
+    } else {
+      app.availableSlots = []
+      app.error = resp.message || 'Failed to load available slots'
+    }
   }
 }
 
 async function bookAppointment(app) {
   app.loading = true
   app.error = null
+  app.success = null
+  
   const resp = await window.ApiService.bookAppointment(app.bookingForm)
   if (resp.success) {
-    app.success = 'Appointment booked successfully'
-    app.bookingForm = { specialization:'', doctor_id:'', appointment_date:'', appointment_time:'', notes:'' }
+    app.success = 'Appointment booked successfully!'
+    // Reset booking form
+    app.bookingForm = { 
+      specialization: '', 
+      doctor_id: '', 
+      appointment_date: '', 
+      appointment_time: '', 
+      notes: '' 
+    }
+    app.selectedDepartment = null
+    app.selectedDoctor = null
+    app.availableSlots = []
+    // Reload patient data
     await loadPatientData(app)
   } else { 
     app.error = resp.message || 'Failed to book appointment' 
@@ -75,12 +91,13 @@ async function bookAppointment(app) {
 
 async function cancelAppointment(app, appointmentId) {
   if (!confirm('Are you sure you want to cancel this appointment?')) return
+  
   const resp = await window.ApiService.cancelAppointment(appointmentId)
   if (resp.success) { 
     app.success = 'Appointment cancelled successfully'
     await loadPatientData(app) 
   } else {
-    app.error = 'Failed to cancel appointment'
+    app.error = resp.message || 'Failed to cancel appointment'
   }
 }
 
@@ -92,45 +109,3 @@ window.PatientModule = {
   bookAppointment: bookAppointment,
   cancelAppointment: cancelAppointment
 }
-
-async function loadAvailableSlots(app) {
-  if (app.bookingForm.doctor_id && app.bookingForm.appointment_date) {
-    const resp = await window.ApiService.getAvailableSlots(app.bookingForm.doctor_id, app.bookingForm.appointment_date)
-    if (resp.success) app.availableSlots = resp.data.slots || []
-  }
-}
-
-async function bookAppointment(app) {
-  app.loading = true
-  app.error = null
-  const resp = await window.ApiService.bookAppointment(app.bookingForm)
-  if (resp.success) {
-    app.success = 'Appointment booked successfully'
-    app.bookingForm = { specialization:'', doctor_id:'', appointment_date:'', appointment_time:'', notes:'' }
-    await loadPatientData(app)
-  } else { 
-    app.error = resp.message || 'Failed to book appointment' 
-  }
-  app.loading = false
-}
-
-async function cancelAppointment(app, appointmentId) {
-  if (!confirm('Are you sure you want to cancel this appointment?')) return
-  const resp = await window.ApiService.cancelAppointment(appointmentId)
-  if (resp.success) { 
-    app.success = 'Appointment cancelled successfully'
-    await loadPatientData(app) 
-  } else {
-    app.error = 'Failed to cancel appointment'
-  }
-}
-
-window.PatientModule = {
-  loadPatientData: loadPatientData,
-  selectDepartment: selectDepartment,
-  selectDoctor: selectDoctor,
-  loadAvailableSlots: loadAvailableSlots,
-  bookAppointment: bookAppointment,
-  cancelAppointment: cancelAppointment
-}
-

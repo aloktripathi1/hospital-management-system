@@ -1,8 +1,8 @@
 from app import app
 from database import db
-from models import User, Doctor, Patient, DoctorAvailability, Department
+from models import User, Doctor, Patient, DoctorAvailability, Appointment
 from werkzeug.security import generate_password_hash
-from datetime import time
+from datetime import date, timedelta, time as datetime_time
 
 # =================== ADMIN USER CREATION SECTION ===================
 
@@ -19,39 +19,11 @@ def create_admin_user():
         db.session.commit()
         print("Admin user created successfully")
 
-# =================== SAMPLE DEPARTMENTS CREATION SECTION ===================
-
-def create_sample_departments():
-    existing_departments = Department.query.first()
-    if existing_departments is None:
-        departments_list = [
-            {'name': 'Cardiology', 'description': 'Heart and cardiovascular care'},
-            {'name': 'Neurology', 'description': 'Brain and nervous system disorders'},
-            {'name': 'Orthopedics', 'description': 'Bone, joint and spine care'},
-            {'name': 'Psychiatry', 'description': 'Mental health and behavioural therapy'},
-        ]
-
-        for d in departments_list:
-            new_department = Department(
-                name=d['name'],
-                description=d['description'],
-                is_active=True
-            )
-            db.session.add(new_department)
-        db.session.commit()
-        print("Sample departments created successfully")
-
 # =================== SAMPLE DOCTORS CREATION SECTION ===================
 
 def create_sample_doctors():
     existing_doctors = Doctor.query.first()
     if existing_doctors is None:
-        # fetch departments
-        cardiology = Department.query.filter_by(name='Cardiology').first()
-        neurology = Department.query.filter_by(name='Neurology').first()
-        orthopedics = Department.query.filter_by(name='Orthopedics').first()
-        psychiatry = Department.query.filter_by(name='Psychiatry').first()
-
         sample_doctors_list = [
             {
                 'username': 'dr_ajay',
@@ -59,7 +31,6 @@ def create_sample_doctors():
                 'password': 'Doctor#123',
                 'name': 'Ajay Kumar',
                 'specialization': 'Cardiology',
-                'department_id': cardiology.id if cardiology else None,
                 'experience': 14,
                 'qualification': 'MD, DM (Cardiology)',
                 'phone': '+91-9876543210',
@@ -71,7 +42,6 @@ def create_sample_doctors():
                 'password': 'Doctor#123',
                 'name': 'Rajesh Verma',
                 'specialization': 'Neurology',
-                'department_id': neurology.id if neurology else None,
                 'experience': 12,
                 'qualification': 'MBBS, MD (Neurology)',
                 'phone': '+91-9876543212',
@@ -83,7 +53,6 @@ def create_sample_doctors():
                 'password': 'Doctor#123',
                 'name': 'Sneha Patel',
                 'specialization': 'Orthopedics',
-                'department_id': orthopedics.id if orthopedics else None,
                 'experience': 8,
                 'qualification': 'MS Orthopedics',
                 'phone': '+91-9876543213',
@@ -92,10 +61,9 @@ def create_sample_doctors():
             {
                 'username': 'dr_rahul',
                 'email': 'rahul.kumar@medihub.in',
-                'password': 'rahul',
+                'password': 'Doctor#123',
                 'name': 'Rahul Kumar',
                 'specialization': 'Psychiatry',
-                'department_id': psychiatry.id if psychiatry else None,
                 'experience': 11,
                 'qualification': 'MD Psychiatry',
                 'phone': '+91-9876543216',
@@ -118,7 +86,6 @@ def create_sample_doctors():
                 user_id=doctor_user_account.id,
                 name=d['name'],
                 specialization=d['specialization'],
-                department_id=d['department_id'],
                 experience=d['experience'],
                 qualification=d['qualification'],
                 phone=d['phone'],
@@ -133,33 +100,40 @@ def create_sample_doctors():
 # =================== SAMPLE AVAILABILITY SCHEDULES SECTION ===================
 
 def create_sample_availability():
+    """
+    Create simplified 2-slot availability for next 7 days for all doctors
+    Morning: 9AM-1PM, Evening: 3PM-7PM
+    Only creates DoctorAvailability records - no pre-created appointment slots
+    """
     all_doctors_list = Doctor.query.all()
+    today = date.today()
+    
     for doc in all_doctors_list:
-        existing_availability = DoctorAvailability.query.filter_by(doctor_id=doc.id).first()
-        if existing_availability is None:
-            # Weekdays (Mon-Fri)
-            for weekday in range(5):
-                # Morning 9:00 - 13:00
-                morning_schedule = DoctorAvailability(
-                    doctor_id=doc.id,
-                    day_of_week=weekday,
-                    start_time=time(9, 0),
-                    end_time=time(13, 0),
-                    is_available=True
-                )
-                db.session.add(morning_schedule)
-
-                # Evening 15:00 - 18:00
-                evening_schedule = DoctorAvailability(
-                    doctor_id=doc.id,
-                    day_of_week=weekday,
-                    start_time=time(15, 0),
-                    end_time=time(18, 0),
-                    is_available=True
-                )
-                db.session.add(evening_schedule)
+        # Create availability for next 7 days
+        for i in range(7):
+            current_date = today + timedelta(days=i)
+            
+            # Morning slot availability
+            morning_availability = DoctorAvailability(
+                doctor_id=doc.id,
+                availability_date=current_date,
+                slot_type='morning',
+                is_available=True
+            )
+            db.session.add(morning_availability)
+            
+            # Evening slot availability
+            evening_availability = DoctorAvailability(
+                doctor_id=doc.id,
+                availability_date=current_date,
+                slot_type='evening',
+                is_available=True
+            )
+            db.session.add(evening_availability)
+    
     db.session.commit()
-    print("Sample availability schedules created successfully")
+    print("Sample availability schedules created (2 slots per day for next 7 days)")
+    print("Appointments will be created when patients book slots")
 
 # =================== SAMPLE PATIENTS CREATION SECTION ===================
 
@@ -239,13 +213,12 @@ if __name__ == '__main__':
         print("✅ Database tables created successfully!")
         
         create_admin_user()
-        create_sample_departments()
         create_sample_doctors()
         create_sample_availability()
         create_sample_patients()
 
     print("\n" + "="*60)
-    print("MediHub - Hospital Management System")
+    print("MediHub - Hospital Management System (Simplified 2-Slot System)")
     print("DATABASE INITIALIZATION COMPLETED SUCCESSFULLY!")
     print("="*60)
     print("\nDefault login credentials for testing purposes:")
@@ -258,7 +231,11 @@ if __name__ == '__main__':
     print("   Username: dr_sneha      | Password: Doctor#123 | Specialization: Orthopedics")
     print("   Username: dr_rahul      | Password: Doctor#123 | Specialization: Psychiatry")
     print("\n🏥 PATIENT ACCOUNTS:")
-    print("   Username: arjun87       | Password: Patient#123 | Name: Arjun Patel")
+    print("   Username: arjun         | Password: arjun      | Name: Arjun Patel")
     print("   Username: vikram30      | Password: Patient#123 | Name: Vikram Singh")
     print("   Username: anjali56      | Password: Patient#123 | Name: Anjali Mukherjee")
+    print("\n⏰ AVAILABILITY SYSTEM:")
+    print("   - Morning Slot: 9:00 AM - 1:00 PM")
+    print("   - Evening Slot: 3:00 PM - 7:00 PM")
+    print("   - Doctors can set availability for next 7 days")
     print("="*60)

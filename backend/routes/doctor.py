@@ -315,6 +315,9 @@ def add_patient_history():
 @doctor_bp.route('/availability', methods=['GET'])
 @doctor_required
 def get_availability():
+    """Get doctor's 7-day availability schedule"""
+    from datetime import date, timedelta
+    
     user_id = session.get('user_id')
     doctor = Doctor.query.filter_by(user_id=user_id).first()
     
@@ -325,173 +328,111 @@ def get_availability():
             'errors': ['Profile not found']
         }), 404
     
-    availability = DoctorAvailability.query.filter_by(doctor_id=doctor.id).all()
+    # Generate next 7 days
+    today = date.today()
+    availability_days = []
+    day_names = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
     
-    data = []
-    for avail in availability:
-        data.append(avail.to_dict())
+    for i in range(7):
+        current_date = today + timedelta(days=i)
+        day_name = day_names[current_date.weekday()] + ', ' + current_date.strftime('%b %d')
+        
+        # Check if doctor has availability for this date
+        morning_avail = DoctorAvailability.query.filter_by(
+            doctor_id=doctor.id,
+            availability_date=current_date,
+            slot_type='morning'
+        ).first()
+        
+        evening_avail = DoctorAvailability.query.filter_by(
+            doctor_id=doctor.id,
+            availability_date=current_date,
+            slot_type='evening'
+        ).first()
+        
+        availability_days.append({
+            'date': current_date.isoformat(),
+            'day_name': day_name,
+            'morning_available': morning_avail.is_available if morning_avail else False,
+            'evening_available': evening_avail.is_available if evening_avail else False
+        })
     
     return jsonify({
         'success': True,
         'message': 'Availability retrieved successfully',
         'data': {
-            'availability': data
+            'availability': availability_days
         }
-    })
-
-@doctor_bp.route('/availability', methods=['PUT'])
-@doctor_required
-def update_availability():
-    user_id = session.get('user_id')
-    doctor = Doctor.query.filter_by(user_id=user_id).first()
-    
-    if doctor is None:
-        return jsonify({
-            'success': False,
-            'message': 'Doctor profile not found',
-            'errors': ['Profile not found']
-        }), 404
-    
-    data = request.get_json()
-    availability = data.get('availability', [])
-    
-    DoctorAvailability.query.filter_by(doctor_id=doctor.id).delete()
-    
-    for avail in availability:
-        start = datetime.strptime(avail['start_time'], '%H:%M').time()
-        end = datetime.strptime(avail['end_time'], '%H:%M').time()
-        
-        record = DoctorAvailability(
-            doctor_id=doctor.id,
-            day_of_week=avail['day_of_week'],
-            start_time=start,
-            end_time=end,
-            is_available=avail.get('is_available', True)
-        )
-        db.session.add(record)
-    
-    db.session.commit()
-    
-    return jsonify({
-        'success': True,
-        'message': 'Availability updated successfully',
-        'data': {}
     })
 
 @doctor_bp.route('/set-slots', methods=['POST'])
 @doctor_required
 def set_availability_slots():
+    """Set doctor availability for specific date/slot combinations using the 2-slot system"""
     user_id = session.get('user_id')
     doctor = Doctor.query.filter_by(user_id=user_id).first()
     
     if doctor is None:
         return jsonify({
             'success': False,
-            'message': 'Doctor profile not found',
-            'errors': ['Profile not found']
+            'message': 'Doctor profile not found'
         }), 404
     
     data = request.get_json()
+    slots = data.get('slots', [])
     
-    start_date = datetime.strptime(data.get('start_date'), '%Y-%m-%d').date()
-    end_date = datetime.strptime(data.get('end_date'), '%Y-%m-%d').date()
-    
-    start_time = datetime.strptime(data.get('start_time', '09:00'), '%H:%M').time()
-    end_time = datetime.strptime(data.get('end_time', '17:00'), '%H:%M').time()
-    
-    total = 0
-    
-    breaks = data.get('break_periods', []) or []
-    
-    Appointment.query.filter(
-        Appointment.doctor_id == doctor.id,
-        Appointment.appointment_date >= start_date,
-        Appointment.appointment_date <= end_date,
-        Appointment.status == 'available'
-    ).delete(synchronize_session=False)
-    
-    current = start_date
-    while current <= end_date:
-        day_start = start_time
-        day_end = end_time
-        
-        daily_breaks = []
-        for brk in breaks:
-            brk_start = datetime.strptime(brk.get('start_time', '00:00'), '%H:%M').time()
-            brk_end = datetime.strptime(brk.get('end_time', '00:00'), '%H:%M').time()
-            
-            if brk_start < brk_end:
-                daily_breaks.append((brk_start, brk_end))
-        
-        def in_break(check_time):
-            for brk_start, brk_end in daily_breaks:
-                if brk_start <= check_time < brk_end:
-                    return True
-            return False
-        
-        slot_time = day_start
-        while slot_time < day_end:
-            if not in_break(slot_time):
-                slot = Appointment(
-                    doctor_id=doctor.id,
-                    patient_id=None,
-                    appointment_date=current,
-                    appointment_time=slot_time,
-                    status='available',
-                    notes=''
-                )
-                db.session.add(slot)
-                total += 1
-            
-            next_slot = datetime.combine(current, slot_time) + timedelta(hours=2)
-            slot_time = next_slot.time()
-        
-        current += timedelta(days=1)
-    
-    try:
-        db.session.commit()
-        date_range = f'{start_date} to {end_date}'
-        return jsonify({
-            'success': True,
-            'message': f'Created {total} appointment slots',
-            'data': {
-                'slots_created': total,
-                'date_range': date_range
-            }
-        })
-    except Exception as e:
-        db.session.rollback()
-        # Check for IntegrityError (duplicate slot)
-        from sqlalchemy.exc import IntegrityError
-        if isinstance(e, IntegrityError) or 'UNIQUE constraint' in str(e):
-            # Fetch existing slots for this doctor in the date range
-            existing_slots = Appointment.query.filter(
-                Appointment.doctor_id == doctor.id,
-                Appointment.appointment_date >= start_date,
-                Appointment.appointment_date <= end_date,
-                Appointment.status == 'available'
-            ).order_by(Appointment.appointment_date.asc(), Appointment.appointment_time.asc()).all()
-            slots_data = [
-                {
-                    'id': slot.id,
-                    'date': slot.appointment_date.strftime('%Y-%m-%d'),
-                    'time': slot.appointment_time.strftime('%H:%M'),
-                    'formatted_display': f"{slot.appointment_date.strftime('%Y-%m-%d')} {slot.appointment_time.strftime('%H:%M')}"
-                }
-                for slot in existing_slots
-            ]
-            return jsonify({
-                'success': False,
-                'message': 'Slots already exist for this period.',
-                'data': {
-                    'existing_slots': slots_data,
-                    'date_range': f'{start_date} to {end_date}'
-                }
-            }), 409
+    if not slots:
         return jsonify({
             'success': False,
-            'message': 'Failed to create slots',
-            'errors': [str(e)]
+            'message': 'No slots provided'
+        }), 400
+    
+    try:
+        updated_count = 0
+        created_count = 0
+        
+        for slot_data in slots:
+            date_str = slot_data.get('date')
+            slot_type = slot_data.get('slot_type')
+            is_available = slot_data.get('is_available', False)
+            
+            # Parse date
+            availability_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+            
+            # Find or create DoctorAvailability record
+            availability = DoctorAvailability.query.filter_by(
+                doctor_id=doctor.id,
+                availability_date=availability_date,
+                slot_type=slot_type
+            ).first()
+            
+            if availability:
+                # Update existing record
+                availability.is_available = is_available
+                updated_count += 1
+            else:
+                # Create new record
+                availability = DoctorAvailability(
+                    doctor_id=doctor.id,
+                    availability_date=availability_date,
+                    slot_type=slot_type,
+                    is_available=is_available
+                )
+                db.session.add(availability)
+                created_count += 1
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Availability updated successfully ({created_count} created, {updated_count} updated)'
+        })
+    
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({
+            'success': False,
+            'message': f'Error updating availability: {str(e)}'
         }), 500
 
 @doctor_bp.route('/profile', methods=['PUT'])
@@ -520,6 +461,8 @@ def update_doctor_profile():
             doctor.name = data['name']
         if 'specialization' in data:
             doctor.specialization = data['specialization']
+        if 'department_id' in data:
+            doctor.department_id = data['department_id']
         if 'experience' in data:
             doctor.experience = data['experience']
         if 'qualification' in data:

@@ -13,16 +13,28 @@ admin_bp = Blueprint('admin', __name__)
 @admin_bp.route('/dashboard-stats', methods=['GET'])
 @admin_required
 def dashboard_stats():
+    """
+    Simple caching example - cache admin dashboard stats for 5 minutes
+    This reduces database queries for frequently accessed data
+    """
     from app import cache
-    key = f"stats_{date.today()}"
+    from datetime import datetime, timedelta
     
-    if key in cache:
-        return jsonify({
-            'success': True,
-            'message': 'Dashboard stats retrieved',
-            'data': cache[key]
-        })
+    # Simple cache key with timestamp
+    cache_key = 'admin_stats'
     
+    # Check if we have cached data and it's still fresh (less than 5 minutes old)
+    if cache_key in cache:
+        cached_data, cached_time = cache[cache_key]
+        # Cache expiry: 5 minutes (300 seconds)
+        if (datetime.now() - cached_time).total_seconds() < 300:
+            return jsonify({
+                'success': True,
+                'message': 'Dashboard stats retrieved (from cache)',
+                'data': cached_data
+            })
+    
+    # Cache miss or expired - fetch fresh data from database
     total_doctors = Doctor.query.count()
     total_patients = Patient.query.count()
     # Count only actual appointments (exclude available slots)
@@ -38,11 +50,12 @@ def dashboard_stats():
         'active_doctors': active_doctors
     }
     
-    cache[key] = stats
+    # Save to cache with current timestamp
+    cache[cache_key] = (stats, datetime.now())
     
     return jsonify({
         'success': True,
-        'message': 'Dashboard stats retrieved',
+        'message': 'Dashboard stats retrieved (fresh)',
         'data': stats
     })
 
@@ -348,10 +361,7 @@ def update_patient(patient_id):
 @admin_bp.route('/appointments', methods=['GET'])
 @admin_required
 def get_appointments():
-    # Only show booked, cancelled, and completed appointments (exclude available slots)
-    appointments = Appointment.query.filter(
-        Appointment.status.in_(['booked', 'cancelled', 'completed'])
-    ).order_by(Appointment.appointment_date.desc()).all()
+    appointments = Appointment.query.order_by(Appointment.appointment_date.desc()).all()
     data = []
     
     for apt in appointments:
@@ -365,7 +375,36 @@ def get_appointments():
         }
     })
 
-# Note: Admin has view-only access to appointments - no edit/cancel functionality
+@admin_bp.route('/appointments/<int:appointment_id>', methods=['PUT'])
+@admin_required
+def update_appointment(appointment_id):
+    appointment = Appointment.query.get(appointment_id)
+    
+    if appointment is None:
+        return jsonify({
+            'success': False,
+            'message': 'Appointment not found',
+            'errors': ['Appointment not found']
+        }), 404
+    
+    data = request.get_json()
+    
+    if 'status' in data:
+        appointment.status = data['status']
+    if 'notes' in data:
+        appointment.notes = data['notes']
+    
+    appointment.updated_at = datetime.utcnow()
+    
+    db.session.commit()
+    
+    return jsonify({
+        'success': True,
+        'message': 'Appointment updated successfully',
+        'data': {
+            'appointment': appointment.to_dict()
+        }
+    })
 
 # -------- Search and Filters ----------
 

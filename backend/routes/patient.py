@@ -45,152 +45,139 @@ def get_dashboard():
 @patient_bp.route('/departments', methods=['GET'])
 @patient_or_admin_required
 def get_departments():
-    """
-    Returns list of unique specializations with doctors grouped by specialization.
-    This replaces the old department-based listing.
-    """
-    # Get all active doctors grouped by specialization
-    doctors = Doctor.query.filter_by(is_active=True).all()
+    # Get all unique specializations from active doctors
+    from sqlalchemy import func
     
-    # Group doctors by specialization
-    specializations_dict = {}
+    specializations = db.session.query(
+        Doctor.specialization,
+        func.count(Doctor.id).label('doctor_count')
+    ).filter_by(is_active=True).group_by(Doctor.specialization).all()
     
-    for doc in doctors:
-        spec = doc.specialization
-        if spec not in specializations_dict:
-            specializations_dict[spec] = {
-                'id': len(specializations_dict) + 1,  # Generate a simple ID
-                'name': spec,
-                'description': f'{spec} Department',
-                'doctor_count': 0,
-                'doctors': []
-            }
+    data = []
+    
+    for spec, count in specializations:
+        # Get doctors with this specialization
+        doctors = Doctor.query.filter_by(
+            specialization=spec,
+            is_active=True
+        ).all()
         
-        specializations_dict[spec]['doctors'].append({
-            'id': doc.id,
-            'name': doc.name,
-            'department': spec,  # Keep this for backward compatibility
-            'qualification': doc.qualification,
-            'experience': doc.experience
-        })
-        specializations_dict[spec]['doctor_count'] += 1
-    
-    # Convert to list
-    data = list(specializations_dict.values())
+        docs = []
+        for doc in doctors:
+            info = {
+                'id': doc.id,
+                'name': doc.name,
+                'department': spec,  # Using specialization as department name
+                'qualification': doc.qualification,
+                'experience': doc.experience
+            }
+            docs.append(info)
+        
+        dept_info = {
+            'id': spec.lower().replace(' ', '_'),  # Generate a pseudo-ID
+            'name': spec,
+            'description': f'{spec} Department',
+            'doctor_count': count,
+            'doctors': docs
+        }
+        data.append(dept_info)
     
     return jsonify({
         'success': True,
-        'message': 'Specializations retrieved successfully',
+        'message': 'Departments retrieved successfully',
         'data': {
-            'departments': data  # Keep the key name for backward compatibility
+            'departments': data
         }
     })
 
 @patient_bp.route('/available-slots', methods=['GET'])
 @patient_required
 def get_available_slots():
+    """Get available slots for a doctor on a specific date (2-slot system: morning/evening)"""
     doctor_id = request.args.get('doctor_id')
     date_str = request.args.get('date')
     
     if not doctor_id:
         return jsonify({
             'success': False,
-            'message': 'Doctor ID is required',
-            'errors': ['Missing doctor_id']
+            'message': 'Doctor ID is required'
         }), 400
     
     if not date_str:
         return jsonify({
             'success': False,
-            'message': 'Date is required',
-            'errors': ['Missing date']
+            'message': 'Date is required'
         }), 400
     
-    apt_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+    try:
+        apt_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+    except ValueError:
+        return jsonify({
+            'success': False,
+            'message': 'Invalid date format. Use YYYY-MM-DD'
+        }), 400
     
-    available = Appointment.query.filter_by(
+    # Get current date and time (using 24-hour format)
+    now = datetime.now()
+    current_date = now.date()
+    current_hour = now.hour
+    
+    # Check if the requested date is today
+    is_today = (apt_date == current_date)
+    
+    # Check doctor availability for this date
+    morning_avail = DoctorAvailability.query.filter_by(
+        doctor_id=doctor_id,
+        availability_date=apt_date,
+        slot_type='morning',
+        is_available=True
+    ).first()
+    
+    evening_avail = DoctorAvailability.query.filter_by(
+        doctor_id=doctor_id,
+        availability_date=apt_date,
+        slot_type='evening',
+        is_available=True
+    ).first()
+    
+    # Check if slots are already booked
+    morning_booked = Appointment.query.filter_by(
         doctor_id=doctor_id,
         appointment_date=apt_date,
-        status='available'
-    ).order_by(Appointment.appointment_time.asc()).all()
-    
-    booked = Appointment.query.filter_by(
-        doctor_id=doctor_id,
-        appointment_date=apt_date,
+        appointment_time=time(9, 0),
         status='booked'
-    ).order_by(Appointment.appointment_time.asc()).all()
+    ).first()
     
-    total = len(available) + len(booked)
-    if total == 0:
-        day = apt_date.weekday()
-        avail = DoctorAvailability.query.filter_by(
-            doctor_id=doctor_id,
-            day_of_week=day,
-            is_available=True
-        ).first()
-        
-        if avail:
-            start = avail.start_time
-            end = avail.end_time
-        else:
-            start = time(9, 0)
-            end = time(17, 0)
-        
-        slot_time = start
-        while slot_time < end:
-            slot = Appointment(
-                doctor_id=doctor_id,
-                patient_id=None,
-                appointment_date=apt_date,
-                appointment_time=slot_time,
-                status='available',
-                notes=''
-            )
-            db.session.add(slot)
-            
-            slot_dt = datetime.combine(apt_date, slot_time)
-            next_dt = slot_dt + timedelta(hours=2)
-            slot_time = next_dt.time()
-        
-        db.session.commit()
-        
-        available = Appointment.query.filter_by(
-            doctor_id=doctor_id,
-            appointment_date=apt_date,
-            status='available'
-        ).order_by(Appointment.appointment_time.asc()).all()
-
+    evening_booked = Appointment.query.filter_by(
+        doctor_id=doctor_id,
+        appointment_date=apt_date,
+        appointment_time=time(15, 0),
+        status='booked'
+    ).first()
+    
     slots = []
     
-    for slot in available:
-        start_dt = datetime.combine(apt_date, slot.appointment_time)
-        end_dt = start_dt + timedelta(hours=2)
-        end_time = end_dt.time()
-        
-        info = {
-            'id': slot.id,
-            'time': f"{slot.appointment_time.strftime('%H:%M')}-{end_time.strftime('%H:%M')}",
-            'start_time': slot.appointment_time.strftime('%H:%M'),
-            'end_time': end_time.strftime('%H:%M'),
-            'status': 'available',
-            'patient_id': None
-        }
-        slots.append(info)
+    # Morning slot (9:00 - 13:00) - ends at 13:00 (1 PM)
+    # Only show if doctor is available AND (not today OR current hour is before 13)
+    if morning_avail and (not is_today or current_hour < 13):
+        slots.append({
+            'slot_type': 'morning',
+            'time': '09:00-13:00',
+            'display': 'Morning (9:00 AM - 1:00 PM)',
+            'status': 'booked' if morning_booked else 'available',
+            'appointment_time': '09:00'
+        })
     
-    for slot in booked:
-        start_dt = datetime.combine(apt_date, slot.appointment_time)
-        end_dt = start_dt + timedelta(hours=2)
-        end_time = end_dt.time()
-        
-        info = {
-            'id': slot.id,
-            'time': f"{slot.appointment_time.strftime('%H:%M')}-{end_time.strftime('%H:%M')}",
-            'start_time': slot.appointment_time.strftime('%H:%M'),
-            'end_time': end_time.strftime('%H:%M'),
-            'status': 'booked',
-            'patient_id': slot.patient_id
-        }
-        slots.append(info)
+    # Evening slot (15:00 - 19:00) - ends at 19:00 (7 PM)
+    # Only show if doctor is available AND (not today OR current hour is before 19)
+    if evening_avail and (not is_today or current_hour < 19):
+        slots.append({
+            'slot_type': 'evening',
+            'time': '15:00-19:00',
+            'display': 'Evening (3:00 PM - 7:00 PM)',
+            'status': 'booked' if evening_booked else 'available',
+            'appointment_time': '15:00'
+        })
     
     return jsonify({
         'success': True,
@@ -206,12 +193,13 @@ def get_available_slots():
 @patient_required
 def get_doctors():
     try:
-        specialization = request.args.get('department')  # Keep param name for compatibility
+        dept = request.args.get('department')
         
         query = Doctor.query.filter_by(is_active=True)
         
-        if specialization:
-            query = query.filter(Doctor.specialization == specialization)
+        if dept:
+            # Filter by specialization instead of department
+            query = query.filter(Doctor.specialization == dept)
         
         doctors = query.all()
         
@@ -266,49 +254,58 @@ def get_appointments():
 @patient_bp.route('/appointments', methods=['POST'])
 @patient_required
 def book_appointment():
+    """Book an appointment in the simplified 2-slot system"""
     user_id = session.get('user_id')
     patient = Patient.query.filter_by(user_id=user_id).first()
     
     if patient is None:
         return jsonify({
             'success': False,
-            'message': 'Patient profile not found',
-            'errors': ['Profile not found']
+            'message': 'Patient profile not found'
         }), 404
+    
+    if patient.is_blacklisted:
+        return jsonify({
+            'success': False,
+            'message': 'Your account has been blacklisted. Please contact admin.'
+        }), 403
     
     data = request.get_json()
     
     if not data.get('doctor_id'):
         return jsonify({
             'success': False,
-            'message': 'Doctor ID is required',
-            'errors': ['Missing doctor_id']
+            'message': 'Doctor ID is required'
         }), 400
     
     if not data.get('appointment_date'):
         return jsonify({
             'success': False,
-            'message': 'Appointment date is required',
-            'errors': ['Missing appointment_date']
+            'message': 'Appointment date is required'
         }), 400
     
     if not data.get('appointment_time'):
         return jsonify({
             'success': False,
-            'message': 'Appointment time is required',
-            'errors': ['Missing appointment_time']
+            'message': 'Appointment time is required'
         }), 400
     
     doctor = Doctor.query.get(data['doctor_id'])
     if doctor is None or not doctor.is_active:
         return jsonify({
             'success': False,
-            'message': 'Doctor not found or inactive',
-            'errors': ['Invalid doctor']
+            'message': 'Doctor not found or inactive'
         }), 404
     
-    apt_date = datetime.strptime(data['appointment_date'], '%Y-%m-%d').date()
+    try:
+        apt_date = datetime.strptime(data['appointment_date'], '%Y-%m-%d').date()
+    except ValueError:
+        return jsonify({
+            'success': False,
+            'message': 'Invalid date format'
+        }), 400
     
+    # Parse appointment time to determine slot type
     time_str = data['appointment_time']
     if '-' in time_str:
         start = time_str.split('-')[0].strip()
@@ -316,46 +313,77 @@ def book_appointment():
     else:
         apt_time = datetime.strptime(time_str, '%H:%M').time()
     
-    slot = Appointment.query.filter_by(
+    # Determine slot type based on time
+    if apt_time == time(9, 0):
+        slot_type = 'morning'
+    elif apt_time == time(15, 0):
+        slot_type = 'evening'
+    else:
+        return jsonify({
+            'success': False,
+            'message': 'Invalid time slot. Only Morning (09:00) and Evening (15:00) slots are available.'
+        }), 400
+    
+    # Check if doctor has set this slot as available
+    availability = DoctorAvailability.query.filter_by(
+        doctor_id=data['doctor_id'],
+        availability_date=apt_date,
+        slot_type=slot_type,
+        is_available=True
+    ).first()
+    
+    if not availability:
+        return jsonify({
+            'success': False,
+            'message': f'Doctor is not available for {slot_type} slot on {apt_date}'
+        }), 400
+    
+    # Check if slot is already booked
+    existing_booking = Appointment.query.filter_by(
         doctor_id=data['doctor_id'],
         appointment_date=apt_date,
         appointment_time=apt_time,
-        status='available'
+        status='booked'
     ).first()
     
-    if slot is None:
+    if existing_booking:
         return jsonify({
             'success': False,
-            'message': 'Time slot not available',
-            'errors': ['This time slot is not available for booking']
+            'message': 'This slot is already booked'
         }), 400
     
-    existing = Appointment.query.filter_by(
+    # Check if patient already has appointment at this time
+    patient_conflict = Appointment.query.filter_by(
         patient_id=patient.id,
         appointment_date=apt_date,
         appointment_time=apt_time,
         status='booked'
     ).first()
     
-    if existing:
+    if patient_conflict:
         return jsonify({
             'success': False,
-            'message': 'You already have an appointment at this time',
-            'errors': ['Time slot already booked']
+            'message': 'You already have an appointment at this time'
         }), 400
     
-    slot.patient_id = patient.id
-    slot.status = 'booked'
-    slot.notes = data.get('notes', '')
-    slot.updated_at = datetime.utcnow()
+    # Create new appointment
+    appointment = Appointment(
+        doctor_id=data['doctor_id'],
+        patient_id=patient.id,
+        appointment_date=apt_date,
+        appointment_time=apt_time,
+        status='booked',
+        notes=data.get('notes', '')
+    )
     
+    db.session.add(appointment)
     db.session.commit()
     
     return jsonify({
         'success': True,
         'message': 'Appointment booked successfully',
         'data': {
-            'appointment': slot.to_dict()
+            'appointment': appointment.to_dict()
         }
     })
 
@@ -439,7 +467,8 @@ def get_history():
                 treatment_dict['doctor'] = {
                     'id': appointment.doctor.id,
                     'name': appointment.doctor.name,
-                    'specialization': appointment.doctor.specialization
+                    'specialization': appointment.doctor.specialization,
+                    'department': appointment.doctor.specialization  # Use specialization instead of department
                 }
             else:
                 treatment_dict['doctor'] = None
@@ -494,7 +523,7 @@ def export_patient_history():
                 'errors': ['Profile not found']
             }), 404
         
-        from tasks.celery_tasks import export_patient_history_csv
+        from celery_tasks import export_patient_history_csv
         task = export_patient_history_csv.delay(patient.id)
         
         return jsonify({

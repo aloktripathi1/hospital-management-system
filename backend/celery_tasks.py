@@ -2,10 +2,11 @@ from celery import Celery
 from datetime import datetime, date, timedelta
 from database import db
 from models import User, Patient, Doctor, Appointment, Treatment
+import os
 
 celery = Celery('hospital_management')
 
-# ==================== DAILY REMINDERS ====================
+# daily reminder
 
 @celery.task
 def send_daily_reminders():
@@ -17,17 +18,46 @@ def send_daily_reminders():
     count = 0
     for appt in appts:
         if appt.patient and appt.doctor:
-            # Send reminder (print for demo - can be email/SMS/webhook in production)
-            msg = f"Reminder: Hi {appt.patient.name}, you have an appointment today at {appt.appointment_time} with Dr. {appt.doctor.name}. Please be on time!"
-            print(msg)
+            # Simple reminder message
+            patient_name = appt.patient.name
+            doctor_name = appt.doctor.name
+            appointment_time = appt.appointment_time
+            
+            # Create reminder message
+            message = f"""
+            ========================================
+            APPOINTMENT REMINDER
+            ========================================
+            Hi {patient_name},
+            
+            This is a reminder that you have an appointment scheduled for TODAY:
+            
+            Doctor: Dr. {doctor_name}
+            Time: {appointment_time}
+            Date: {today}
+            
+            Please arrive 10 minutes early.
+            ========================================
+            """
+            
+            # For now, we print the message
+            # In production, you can send via:
+            # - Email using SMTP
+            # - SMS using Twilio/AWS SNS
+            # - Google Chat webhook
+            print(message)
             count += 1
     
-    return f"Sent {count} reminders for {today}"
+    return f"✅ Sent {count} daily reminders for {today}"
 
 # ==================== MONTHLY REPORTS ====================
 
 @celery.task
 def generate_monthly_report():
+    """
+    Simple monthly report generator - runs on 1st of every month
+    Creates HTML report for each doctor with their monthly activity
+    """
     now = datetime.now()
     
     # Get start of current month
@@ -50,19 +80,23 @@ def generate_monthly_report():
             Treatment.created_at >= month_start
         ).all()
         
-        # Generate HTML report
+        # Generate simple HTML report
         html = make_html_report(doc, appts, treatments, now.month, now.year)
         
-        # Send report (print for demo - can be emailed in production)
-        print(f"\n{'='*60}")
-        print(f"Monthly Report for Dr. {doc.name}")
-        print(f"{'='*60}")
+        # Print report (in production, send via email)
+        print(f"\n{'='*70}")
+        print(f"MONTHLY ACTIVITY REPORT - Dr. {doc.name}")
+        print(f"Report Period: {now.strftime('%B %Y')}")
+        print(f"{'='*70}\n")
         print(html)
-        print(f"{'='*60}\n")
+        print(f"\n{'='*70}\n")
+        
+        # TODO: Send email to doctor
+        # send_email(to=doc.email, subject=f"Monthly Report - {now.strftime('%B %Y')}", html=html)
         
         count += 1
     
-    return f"Generated {count} reports for {now.strftime('%B %Y')}"
+    return f"✅ Generated {count} monthly reports for {now.strftime('%B %Y')}"
 
 def make_html_report(doc, appts, treatments, month, year):
     # Calculate unique patients
@@ -157,68 +191,64 @@ def make_html_report(doc, appts, treatments, month, year):
 
 @celery.task
 def export_patient_history_csv(patient_id):
+    """
+    Simple async CSV export task - triggered by patient
+    Exports all treatment history to CSV file
+    """
     patient = Patient.query.get(patient_id)
     if not patient:
-        return f"Patient {patient_id} not found"
+        return f"❌ Patient {patient_id} not found"
     
     # Get all treatments for this patient
     treatments = Treatment.query.join(Appointment).filter(
         Appointment.patient_id == patient_id
     ).order_by(Treatment.created_at.desc()).all()
     
-    # Create CSV filename
-    filename = f"patient_{patient_id}_history.csv"
+    # Create simple CSV filename
+    filename = f"patient_{patient_id}_history_{datetime.now().strftime('%Y%m%d')}.csv"
+    filepath = os.path.join('exports', filename)
     
-    # Write CSV file
-    with open(filename, 'w', newline='', encoding='utf-8') as f:
-        # Write header with all required fields
-        f.write("Patient ID,Patient Name,Doctor Name,Appointment Date,Visit Type,Symptoms,Diagnosis,Treatment Given,Prescription,Notes,Next Visit\n")
+    # Create exports directory if it doesn't exist
+    os.makedirs('exports', exist_ok=True)
+    
+    # Write CSV file with all patient treatment history
+    with open(filepath, 'w', newline='', encoding='utf-8') as f:
+        # Simple CSV header
+        f.write("Patient ID,Patient Name,Doctor Name,Appointment Date,Visit Type,Symptoms,Diagnosis,Treatment,Prescription,Notes,Next Visit\n")
         
-        # Write data rows
+        # Write each treatment record
         for t in treatments:
             # Get doctor name
-            if t.appointment and t.appointment.doctor:
-                doctor = t.appointment.doctor.name
-            else:
-                doctor = 'N/A'
+            doctor = t.appointment.doctor.name if t.appointment and t.appointment.doctor else 'N/A'
             
             # Get appointment date
-            if t.appointment:
-                appt_date = str(t.appointment.appointment_date)
-            else:
-                appt_date = 'N/A'
+            appt_date = str(t.appointment.appointment_date) if t.appointment else 'N/A'
             
-            # Get fields (handle None values)
-            visit_type = t.visit_type or 'N/A'
-            symptoms = t.symptoms or 'N/A'
-            diagnosis = t.diagnosis or 'N/A'
-            treatment = t.treatment_notes or 'N/A'
-            prescription = t.prescription or 'N/A'
-            notes = t.treatment_notes or 'N/A'
+            # Clean data (replace commas and newlines to keep CSV format clean)
+            visit_type = (t.visit_type or 'N/A').replace(',', ';').replace('\n', ' ')
+            symptoms = (t.symptoms or 'N/A').replace(',', ';').replace('\n', ' ')
+            diagnosis = (t.diagnosis or 'N/A').replace(',', ';').replace('\n', ' ')
+            treatment = (t.treatment_notes or 'N/A').replace(',', ';').replace('\n', ' ')
+            prescription = (t.prescription or 'N/A').replace(',', ';').replace('\n', ' ')
+            notes = (t.treatment_notes or 'N/A').replace(',', ';').replace('\n', ' ')
+            next_visit = 'N/A'  # Can be added to Treatment model if needed
             
-            # Next visit - can add this field to Treatment model if needed
-            next_visit = 'N/A'  # Default value
-            
-            # Clean data (remove commas and newlines)
-            symptoms = symptoms.replace(',', ';').replace('\n', ' ')
-            diagnosis = diagnosis.replace(',', ';').replace('\n', ' ')
-            treatment = treatment.replace(',', ';').replace('\n', ' ')
-            prescription = prescription.replace(',', ';').replace('\n', ' ')
-            notes = notes.replace(',', ';').replace('\n', ' ')
-            
-            # Write row
+            # Write CSV row
             row = f"{patient.id},{patient.name},{doctor},{appt_date},{visit_type},{symptoms},{diagnosis},{treatment},{prescription},{notes},{next_visit}\n"
             f.write(row)
     
-    # Print confirmation (in production, send notification to patient)
-    print(f"\n{'='*60}")
-    print(f"CSV Export Complete!")
-    print(f"Patient: {patient.name}")
-    print(f"File: {filename}")
-    print(f"Total Records: {len(treatments)}")
-    print(f"{'='*60}\n")
+    # Print completion message
+    print(f"\n{'='*70}")
+    print(f"✅ CSV EXPORT COMPLETED")
+    print(f"Patient: {patient.name} (ID: {patient.id})")
+    print(f"File: {filepath}")
+    print(f"Records: {len(treatments)}")
+    print(f"{'='*70}\n")
     
-    return f"CSV exported for {patient.name}: {len(treatments)} records"
+    # TODO: Notify patient (via email or in-app notification)
+    # send_notification(patient_id, f"Your medical history export is ready: {filename}")
+    
+    return f"✅ CSV exported for {patient.name}: {len(treatments)} records saved to {filename}"
 
 # ==================== CELERY SCHEDULE ====================
 

@@ -10,7 +10,7 @@ def test_patient_booking():
     # Session to maintain cookies
     session = requests.Session()
     
-    print("=== Testing Patient Appointment Booking ===")
+    print("=== Testing Patient Appointment Booking (2-Slot System) ===")
     
     # 1. Login as patient
     print("1. Logging in as patient...")
@@ -33,43 +33,18 @@ def test_patient_booking():
     
     print("✅ Patient login successful!")
     
-    # 2. Get departments
-    print("\n2. Getting departments...")
-    response = session.get(f"{BASE_URL}/patient/departments")
-    print(f"Departments Response: {response.status_code}")
-    
-    if response.status_code == 200:
-        departments_result = response.json()
-        if departments_result.get('success'):
-            departments = departments_result['data']['departments']
-            print(f"✅ Found {len(departments)} departments")
-            for dept in departments[:3]:  # Show first 3
-                print(f"  - {dept['name']}")
-        else:
-            print("❌ Failed to get departments")
-            return
-    else:
-        print("❌ Departments request failed!")
-        return
-    
-    # 3. Get doctors by specialization
-    print("\n3. Getting doctors for Cardiology...")
-    cardiology_dept = next((d for d in departments if d['name'] == 'Cardiology'), None)
-    
-    if not cardiology_dept:
-        print("❌ Cardiology department not found!")
-        return
-        
-    response = session.get(f"{BASE_URL}/patient/doctors?specialization=Cardiology")
+    # 2. Get all doctors
+    print("\n2. Getting all doctors...")
+    response = session.get(f"{BASE_URL}/patient/doctors")
     print(f"Doctors Response: {response.status_code}")
     
     if response.status_code == 200:
         doctors_result = response.json()
         if doctors_result.get('success'):
             doctors = doctors_result['data']['doctors']
-            print(f"✅ Found {len(doctors)} cardiology doctors")
-            for doctor in doctors:
-                print(f"  - Dr. {doctor['name']} (ID: {doctor['id']})")
+            print(f"✅ Found {len(doctors)} doctors")
+            for doctor in doctors[:3]:  # Show first 3
+                print(f"  - Dr. {doctor['name']} ({doctor['specialization']}, ID: {doctor['id']})")
         else:
             print("❌ Failed to get doctors")
             return
@@ -81,11 +56,12 @@ def test_patient_booking():
         print("❌ No doctors found!")
         return
         
-    # 4. Get available slots for first doctor
+    # 3. Get available slots for first doctor (2-slot system: morning/evening)
     doctor = doctors[0]
     test_date = (datetime.now().date() + timedelta(days=1)).strftime('%Y-%m-%d')
     
-    print(f"\n4. Getting available slots for Dr. {doctor['name']} on {test_date}...")
+    print(f"\n3. Getting available slots for Dr. {doctor['name']} on {test_date}...")
+    print("Note: Using 2-slot system - Morning (9AM-1PM) and Evening (3PM-7PM)")
     response = session.get(f"{BASE_URL}/patient/available-slots?doctor_id={doctor['id']}&date={test_date}")
     print(f"Available Slots Response: {response.status_code}")
     
@@ -94,9 +70,9 @@ def test_patient_booking():
         if slots_result.get('success'):
             slots = slots_result['data']['slots']
             available_slots = [s for s in slots if s['status'] == 'available']
-            print(f"✅ Found {len(available_slots)} available slots (2-hour each)")
-            for slot in available_slots[:3]:  # Show first 3
-                print(f"  - {slot['time']} (ID: {slot['id']})")
+            print(f"✅ Found {len(available_slots)} available slots")
+            for slot in available_slots:
+                print(f"  - {slot['display']} ({slot['slot_type']})")
         else:
             print("❌ Failed to get available slots")
             print(f"Error: {slots_result.get('message')}")
@@ -109,15 +85,15 @@ def test_patient_booking():
         print("❌ No available slots found!")
         return
         
-    # 5. Try to book an appointment
+    # 4. Try to book an appointment
     first_slot = available_slots[0]
-    print(f"\n5. Booking appointment for {first_slot['time']} on {test_date}...")
+    print(f"\n4. Booking appointment for {first_slot['display']} on {test_date}...")
     
     booking_data = {
         "doctor_id": doctor['id'],
         "appointment_date": test_date,
-        "appointment_time": first_slot['time'],
-        "notes": "Test booking with 2-hour slots"
+        "appointment_time": first_slot['appointment_time'],  # Either "09:00" or "15:00"
+        "notes": "Test booking with 2-slot system (morning/evening)"
     }
     
     print(f"Booking Data: {json.dumps(booking_data, indent=2)}")
@@ -132,7 +108,8 @@ def test_patient_booking():
             print("✅ Appointment booked successfully!")
             appointment = booking_result['data']['appointment']
             print(f"Appointment ID: {appointment['id']}")
-            print(f"Time Slot: {appointment['appointment_time']} (2-hour duration)")
+            print(f"Time Slot: {first_slot['display']}")
+            print(f"Appointment Time: {appointment['appointment_time']}")
         else:
             print("❌ Failed to book appointment!")
             print(f"Error: {booking_result.get('message')}")
