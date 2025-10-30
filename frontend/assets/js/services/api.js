@@ -150,10 +150,6 @@ async function getDepartments() {
   return await callAPI("/patient/departments", "GET")
 }
 
-async function updateDepartment(id, data) {
-  return await callAPI("/admin/departments/" + id, "PUT", data)
-}
-
 async function getDoctorsByDepartment(department) {
   return await callAPI("/patient/doctors?department=" + encodeURIComponent(department), "GET")
 }
@@ -186,19 +182,6 @@ async function getAvailableSlots(doctorId, date) {
   return await callAPI("/patient/available-slots?doctor_id=" + doctorId + "&date=" + date, "GET")
 }
 
-// Search functions
-async function searchDoctors(query, specialization) {
-  specialization = specialization || ''
-  let url = "/admin/search/doctors?"
-  if (query) url += "q=" + encodeURIComponent(query)
-  if (specialization) url += "&specialization=" + encodeURIComponent(specialization)
-  return await callAPI(url, "GET")
-}
-
-async function searchPatients(query) {
-  return await callAPI("/admin/search/patients?q=" + encodeURIComponent(query), "GET")
-}
-
 // More admin functions
 async function addDoctor(doctorData) {
   return await callAPI("/admin/doctors", "POST", doctorData)
@@ -216,10 +199,6 @@ async function generateMonthlyReport() {
   return await callAPI("/admin/reports/monthly", "POST")
 }
 
-async function generateUserReport() {
-  return await callAPI("/admin/reports/users", "POST")
-}
-
 async function togglePatientBlacklist(patientId) {
   return await callAPI("/admin/patients/" + patientId + "/blacklist", "PUT")
 }
@@ -234,23 +213,6 @@ async function updatePatient(patientId, patientData) {
 
 async function addPatient(patientData) {
   return await callAPI("/admin/patients", "POST", patientData)
-}
-
-// Department functions
-async function getAdminDepartments() {
-  return await callAPI("/admin/departments", "GET")
-}
-
-async function addDepartment(departmentData) {
-  return await callAPI("/admin/departments", "POST", departmentData)
-}
-
-async function deleteDepartment(departmentId) {
-  return await callAPI("/admin/departments/" + departmentId, "DELETE")
-}
-
-async function downloadMonthlyReport() {
-  return await callAPI("/doctor/reports/monthly", "POST")
 }
 
 // Keep the same interface for the app
@@ -280,7 +242,6 @@ window.ApiService = {
   getDoctorAvailableSlots: getDoctorAvailableSlots,
   getPatientDashboard: getPatientDashboard,
   getDepartments: getDepartments,
-  updateDepartment: updateDepartment,
   getDoctorsByDepartment: getDoctorsByDepartment,
   getPatientAppointments: getPatientAppointments,
   bookAppointment: bookAppointment,
@@ -289,19 +250,12 @@ window.ApiService = {
   getDoctorAvailability: getDoctorAvailability,
   exportPatientHistory: exportPatientHistory,
   getAvailableSlots: getAvailableSlots,
-  searchDoctors: searchDoctors,
-  searchPatients: searchPatients,
   addDoctor: addDoctor,
   updateDoctor: updateDoctor,
   deactivateDoctor: deactivateDoctor,
   generateMonthlyReport: generateMonthlyReport,
-  generateUserReport: generateUserReport,
   togglePatientBlacklist: togglePatientBlacklist,
   getAdminPatientHistory: getAdminPatientHistory,
   updatePatient: updatePatient,
-  addPatient: addPatient,
-  getAdminDepartments: getAdminDepartments,
-  addDepartment: addDepartment,
-  deleteDepartment: deleteDepartment,
-  downloadMonthlyReport: downloadMonthlyReport
+  addPatient: addPatient
 }

@@ -31,7 +31,6 @@ const App = {
             patientSearchQuery: '',
             doctorDepartmentFilter: '',
             doctorDepartments: [],
-            allDepartments: [],
             filteredDoctors: [],
             filteredPatients: [],
             adminView: 'dashboard', // 'dashboard', 'add-doctor', 'edit-doctor', 'edit-patient', 'patient-history', 'departments', 'add-department', 'edit-department'
@@ -43,7 +42,6 @@ const App = {
         phone: '',
         qualification: ''
       },
-      doctorCredentials: null,
       editingPatient: null,
       selectedPatient: null,
       patientHistory: [],
@@ -56,17 +54,6 @@ const App = {
         address: '',
         medical_history: '',
         emergency_contact: ''
-      },
-      // Admin Department data
-      adminDepartments: [],
-      newDepartment: {
-        name: '',
-        description: ''
-      },
-      editingDepartment: {
-        id: null,
-        name: '',
-        description: ''
       },
       // Doctor data
       doctorAppointments: [],
@@ -117,14 +104,7 @@ const App = {
         notes: ''
       },
       // Doctor availability data
-      doctorAvailability: [],
       availabilityDays: [], // 7-day availability schedule
-      // Search data
-      searchQuery: '',
-      searchResults: {
-        doctors: [],
-        patients: []
-      },
       // Auth check flag
       authCheckInProgress: false
     }
@@ -374,11 +354,6 @@ const App = {
       if (appointments.success) {
         this.appointments = appointments.data.appointments
         this.filterAppointments()
-      }
-      
-      const adminDeps = await window.ApiService.getAdminDepartments()
-      if (adminDeps.success) {
-        this.adminDepartments = adminDeps.data.departments
       }
     },
 
@@ -723,33 +698,6 @@ const App = {
       }
     },
 
-    // Search methods
-    async searchDoctors() {
-      if (!this.searchQuery.trim()) return
-
-      try {
-        const response = await window.ApiService.searchDoctors(this.searchQuery)
-        if (response.success) {
-          this.searchResults.doctors = response.data.doctors
-        }
-      } catch (error) {
-        this.error = 'Search failed'
-      }
-    },
-
-    async searchPatients() {
-      if (!this.searchQuery.trim()) return
-
-      try {
-        const response = await window.ApiService.searchPatients(this.searchQuery)
-        if (response.success) {
-          this.searchResults.patients = response.data.patients
-        }
-      } catch (error) {
-        this.error = 'Search failed'
-      }
-    },
-
     // Admin methods
     async addDoctor() {
       this.loading = true
@@ -758,7 +706,6 @@ const App = {
       try {
         const response = await window.ApiService.addDoctor(this.newDoctor)
         if (response.success) {
-          this.doctorCredentials = response.data.credentials
           this.success = 'Doctor account created successfully!'
           this.newDoctor = {
             name: '',
@@ -1032,119 +979,6 @@ const App = {
         if (editProfileTab) {
           editProfileTab.click();
         }
-      }
-    },
-
-    async generateUserReport() {
-      try {
-        const response = await window.ApiService.generateUserReport()
-        if (response.success) {
-          this.success = 'User report generated successfully!'
-        }
-      } catch (error) {
-        this.error = 'Failed to generate user report'
-      }
-    },
-
-    // Department Management Methods
-    showAddDepartmentForm() {
-      this.adminView = 'add-department';
-    },
-
-    async addDepartment() {
-      try {
-        this.loading = true;
-        const response = await window.ApiService.addDepartment(this.newDepartment);
-        if (response.success) {
-          this.success = 'Department added successfully!';
-          this.adminView = 'dashboard';
-          this.newDepartment = {
-            name: '',
-            description: ''
-          };
-          await this.loadAdminData();
-        } else {
-          this.error = response.message || 'Failed to add department';
-        }
-      } catch (error) {
-        this.error = 'Error adding department: ' + error.message;
-      } finally {
-        this.loading = false;
-      }
-    },
-
-    editDepartment(department) {
-      this.editingDepartment = {
-        id: department.id,
-        name: department.name,
-        description: department.description || ''
-      };
-      this.adminView = 'edit-department';
-    },
-
-    async updateDepartment() {
-      try {
-        this.loading = true;
-        const response = await window.ApiService.updateDepartment(this.editingDepartment.id, {
-          name: this.editingDepartment.name,
-          description: this.editingDepartment.description
-        });
-        if (response.success) {
-          this.success = 'Department updated successfully!';
-          this.adminView = 'dashboard';
-          await this.loadAdminData();
-        } else {
-          this.error = response.message || 'Failed to update department';
-        }
-      } catch (error) {
-        this.error = 'Error updating department: ' + error.message;
-      } finally {
-        this.loading = false;
-      }
-    },
-
-    async deactivateDepartment(department) {
-      if (department.doctor_count > 0) {
-        this.error = 'Cannot deactivate department with assigned doctors';
-        return;
-      }
-      
-      if (confirm(`Are you sure you want to deactivate "${department.name}" department?`)) {
-        try {
-          this.loading = true;
-          const response = await window.ApiService.updateDepartment(department.id, {
-            is_active: false
-          });
-          if (response.success) {
-            this.success = 'Department deactivated successfully!';
-            await this.loadAdminData();
-          } else {
-            this.error = response.message || 'Failed to deactivate department';
-          }
-        } catch (error) {
-          this.error = 'Error deactivating department: ' + error.message;
-        } finally {
-          this.loading = false;
-        }
-      }
-    },
-
-    async activateDepartment(department) {
-      try {
-        this.loading = true;
-        const response = await window.ApiService.updateDepartment(department.id, {
-          is_active: true
-        });
-        if (response.success) {
-          this.success = 'Department activated successfully!';
-          await this.loadAdminData();
-        } else {
-          this.error = response.message || 'Failed to activate department';
-        }
-      } catch (error) {
-        this.error = 'Error activating department: ' + error.message;
-      } finally {
-        this.loading = false;
       }
     }
   },

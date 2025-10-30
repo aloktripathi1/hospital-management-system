@@ -18,13 +18,14 @@ app.config['SECRET_KEY'] = 'hospital-secret-key-123'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///hospital-management.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-# email config
-app.config['MAIL_SERVER'] = 'smtp.gmail.com'
-app.config['MAIL_PORT'] = 587
-app.config['MAIL_USE_TLS'] = True
-app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME')
-app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
-app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_USERNAME')
+# email config for mailhog
+app.config['MAIL_SERVER'] = os.getenv('MAIL_SERVER', 'localhost')
+app.config['MAIL_PORT'] = int(os.getenv('MAIL_PORT', 1025))
+app.config['MAIL_USE_TLS'] = os.getenv('MAIL_USE_TLS', 'False') == 'True'
+app.config['MAIL_USE_SSL'] = os.getenv('MAIL_USE_SSL', 'False') == 'True'
+app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME', None)
+app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD', None)
+app.config['MAIL_DEFAULT_SENDER'] = ('Hospital Management', os.getenv('MAIL_DEFAULT_SENDER', 'noreply@hospital.com'))
 
 # celery config
 app.config['CELERY_BROKER_URL'] = 'redis://localhost:6379/0'
@@ -32,14 +33,9 @@ app.config['CELERY_RESULT_BACKEND'] = 'redis://localhost:6379/0'
 app.config['CELERY_TASK_SERIALIZER'] = 'json'
 app.config['CELERY_ACCEPT_CONTENT'] = ['json']
 app.config['CELERY_RESULT_SERIALIZER'] = 'json'
-
-# Development Mode
 app.config['DEBUG'] = True
 
-# =================== SIMPLE CACHE & DATABASE SETUP ===================
-# Simple cache - just a dictionary
-cache = {}
-
+# initialize extensions
 db.init_app(app)
 CORS(app)
 mail = Mail(app)
@@ -63,7 +59,7 @@ def make_celery(app):
 
 celery = make_celery(app)
 
-# =================== BLUEPRINTS REGISTRATION ===================
+# register blueprints
 from models import *
 from routes import *
 
@@ -72,24 +68,21 @@ app.register_blueprint(admin_bp, url_prefix='/api/admin')
 app.register_blueprint(doctor_bp, url_prefix='/api/doctor')
 app.register_blueprint(patient_bp, url_prefix='/api/patient')
 
-# =================== ROUTES ===================
-
-# =================== ROUTES ===================
+# routes
 @app.route('/download/<filename>')  
 def download_file(filename):
     return send_from_directory('.', filename)
 
-# =================== ERROR HANDLERS ===================
-
+# error handlers
 @app.errorhandler(404)
 def not_found(error):
-    # Return JSON for API routes, HTML for others
+    # return json for api routes, html for others
     if request.path.startswith('/api/'):
         return jsonify({
             'success': False,
             'message': f'Endpoint not found: {request.path}'
         }), 404
-    # For non-API routes, serve the frontend
+    # for non-api routes, serve the frontend
     return send_from_directory('../frontend', 'index.html')
 
 @app.errorhandler(500)
@@ -108,23 +101,22 @@ def internal_error(error):
 def home():
     return send_from_directory('../frontend', 'index.html')
 
-# Catch-all route for frontend routing (must be last)
+# catch-all route for frontend routing (must be last)
 @app.route('/<path:path>')
 def serve_frontend(path):
-    # Serve static files if they exist
+    # serve static files if they exist
     frontend_path = os.path.join('../frontend', path)
     if os.path.exists(frontend_path) and os.path.isfile(frontend_path):
         return send_from_directory('../frontend', path)
-    # Otherwise serve index.html for client-side routing
+    # otherwise serve index.html for client-side routing
     return send_from_directory('../frontend', 'index.html')
 
-# =================== DATABASE INITIALIZATION ===================
-
+# database initialization
 def setup_db():
     with app.app_context():
         db.create_all()
         
-        # Create admin if not exists
+        # create admin if not exists
         admin = User.query.filter_by(role='admin').first()
         if not admin:
             admin = User(
@@ -137,16 +129,7 @@ def setup_db():
             db.session.commit()
             print("Admin created: admin/admin")
 
-# =================== APPLICATION ENTRY POINT ===================
-if __name__ == '__main__':
-    setup_db()
-    app.run(debug=True, port=5000)
-
-# =================== APPLICATION ENTRY POINT ===================
-if __name__ == '__main__':
-    setup_db()
-    app.run(debug=True, port=5000)
-
+# application entry point
 if __name__ == '__main__':
     setup_db()
     app.run(debug=True, port=5000)

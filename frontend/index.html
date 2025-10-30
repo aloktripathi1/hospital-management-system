@@ -853,52 +853,6 @@
                 </div>
             </div>
 
-            <!-- Add Department Page -->
-            <div v-if="adminView === 'add-department'" class="card">
-                <div class="card-header">
-                    <h5 class="mb-0">Add New Department</h5>
-                </div>
-                <div class="card-body">
-                    <form @submit.prevent="addDepartment">
-                        <div class="mb-3">
-                            <label for="new_dept_name" class="form-label">Department Name</label>
-                            <input type="text" class="form-control" id="new_dept_name" v-model="newDepartment.name" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="new_dept_description" class="form-label">Description</label>
-                            <textarea class="form-control" id="new_dept_description" v-model="newDepartment.description" rows="3"></textarea>
-                        </div>
-                        <button type="submit" class="btn btn-primary" :disabled="loading">
-                            <span v-if="loading" class="spinner-border spinner-border-sm me-2"></span>
-                            Add Department
-                        </button>
-                    </form>
-                </div>
-            </div>
-
-            <!-- Edit Department Page -->
-            <div v-if="adminView === 'edit-department'" class="card">
-                <div class="card-header">
-                    <h5 class="mb-0">Edit Department: {{ editingDepartment.name }}</h5>
-                </div>
-                <div class="card-body">
-                    <form @submit.prevent="updateDepartment">
-                        <div class="mb-3">
-                            <label for="edit_dept_name" class="form-label">Department Name</label>
-                            <input type="text" class="form-control" id="edit_dept_name" v-model="editingDepartment.name" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="edit_dept_description" class="form-label">Description</label>
-                            <textarea class="form-control" id="edit_dept_description" v-model="editingDepartment.description" rows="3"></textarea>
-                        </div>
-                        <button type="submit" class="btn btn-primary" :disabled="loading">
-                            <span v-if="loading" class="spinner-border spinner-border-sm me-2"></span>
-                            Update Department
-                        </button>
-                    </form>
-                </div>
-            </div>
-
             <!-- Doctor Dashboard -->
             <div v-if="currentUser && currentUser.role === 'doctor' && appView === 'dashboard'" class="dashboard-container">
                 <div class="container">
