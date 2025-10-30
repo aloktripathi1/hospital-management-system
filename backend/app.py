@@ -1,11 +1,15 @@
 from flask import Flask, send_from_directory, request, jsonify
 from flask_cors import CORS
+from flask_mail import Mail
 from werkzeug.security import generate_password_hash
 from celery import Celery
 from database import db
+from dotenv import load_dotenv
 import time
 import os
 from datetime import datetime, timedelta
+
+load_dotenv()
 
 app = Flask(__name__, static_folder='../frontend/assets', static_url_path='/static')
 
@@ -13,6 +17,14 @@ app = Flask(__name__, static_folder='../frontend/assets', static_url_path='/stat
 app.config['SECRET_KEY'] = 'hospital-secret-key-123'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///hospital-management.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+# email config
+app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+app.config['MAIL_PORT'] = 587
+app.config['MAIL_USE_TLS'] = True
+app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME')
+app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
+app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_USERNAME')
 
 # celery config
 app.config['CELERY_BROKER_URL'] = 'redis://localhost:6379/0'
@@ -30,6 +42,7 @@ cache = {}
 
 db.init_app(app)
 CORS(app)
+mail = Mail(app)
 
 # celery setup
 def make_celery(app):

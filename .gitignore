@@ -27,6 +27,10 @@ venv/
 ENV/
 env/
 .env
+backend/.env
+
+# Celery
+celerybeat-schedule*
 
 # Database
 *.db-journal
