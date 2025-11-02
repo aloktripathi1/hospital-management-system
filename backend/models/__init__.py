@@ -1,13 +1,10 @@
-# Models package - Hospital Management System
-
-# Import all model classes
+# import all models
 from .user import User
 from .patient import Patient  
 from .doctor import Doctor, DoctorAvailability
 from .appointment import Appointment
 from .treatment import Treatment
 
-# Make all models available when importing from models
 __all__ = [
     'User',
     'Patient', 

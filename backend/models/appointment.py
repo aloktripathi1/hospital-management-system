@@ -1,33 +1,28 @@
-# ----------- Import Required Libraries -----------
 from datetime import datetime
 from database import db
 
-# ----------- Appointment Model -----------
 class Appointment(db.Model):
     __tablename__ = 'appointments'
     
-    # Appointment basic details
     id = db.Column(db.Integer, primary_key=True)
-    patient_id = db.Column(db.Integer, db.ForeignKey('patients.id'), nullable=True)  # Can be empty for available slots
+    patient_id = db.Column(db.Integer, db.ForeignKey('patients.id'), nullable=True)
     doctor_id = db.Column(db.Integer, db.ForeignKey('doctors.id'), nullable=False)
     appointment_date = db.Column(db.Date, nullable=False)
     appointment_time = db.Column(db.Time, nullable=False)
-    
-    # Appointment status and info
-    status = db.Column(db.String(20), default='available')  # available, booked, completed, cancelled
+    status = db.Column(db.String(20), default='available')
     notes = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
-    # Prevent double booking - one doctor cannot have same time slot twice
-    __table_args__ = (db.UniqueConstraint('doctor_id', 'appointment_date', 'appointment_time', name='unique_doctor_slot'),)
+    __table_args__ = (
+        db.UniqueConstraint('doctor_id', 'appointment_date', 'appointment_time', name='unique_doctor_slot'),
+    )
     
-    # Connect to treatments table
+    # relationships
     treatments = db.relationship('Treatment', backref='appointment', lazy=True)
     
-    # Get appointment information as dictionary
-    def get_appointment_data(self):
-        appointment_info = {
+    def to_dict(self):
+        data = {
             'id': self.id,
             'patient_id': self.patient_id,
             'doctor_id': self.doctor_id,
@@ -39,13 +34,11 @@ class Appointment(db.Model):
             'updated_at': self.updated_at.strftime('%Y-%m-%d %H:%M:%S') if self.updated_at else None
         }
         
-        # Add patient details if appointment is booked
+        # add patient info if exists
         if self.patient:
-            appointment_info['patient_name'] = self.patient.name
-            appointment_info['patient_phone'] = self.patient.phone
-            
-            # Add nested patient object for frontend
-            appointment_info['patient'] = {
+            data['patient_name'] = self.patient.name
+            data['patient_phone'] = self.patient.phone
+            data['patient'] = {
                 'id': self.patient.id,
                 'name': self.patient.name,
                 'phone': self.patient.phone,
@@ -55,27 +48,24 @@ class Appointment(db.Model):
                 'medical_history': self.patient.medical_history
             }
             
-        # Add doctor details in nested object format for frontend compatibility
+        # add doctor info if exists
         if self.doctor:
-            appointment_info['doctor_name'] = self.doctor.name
-            appointment_info['doctor_specialization'] = self.doctor.specialization
-            appointment_info['consultation_fee'] = self.doctor.consultation_fee
-            
-            # Add nested doctor object for frontend
-            appointment_info['doctor'] = {
+            data['doctor_name'] = self.doctor.name
+            data['doctor_specialization'] = self.doctor.specialization
+            data['consultation_fee'] = self.doctor.consultation_fee
+            data['doctor'] = {
                 'id': self.doctor.id,
                 'name': self.doctor.name,
                 'specialization': self.doctor.specialization,
-                'department': self.doctor.specialization,  # Use specialization instead of department
+                'department': self.doctor.specialization,
                 'qualification': self.doctor.qualification,
                 'consultation_fee': self.doctor.consultation_fee
             }
         
-        # Add treatment details if any exist
+        # add treatment if exists
         if self.treatments and len(self.treatments) > 0:
-            # Get the first/latest treatment for this appointment
             treatment = self.treatments[0]
-            appointment_info['treatment'] = {
+            data['treatment'] = {
                 'id': treatment.id,
                 'visit_type': treatment.visit_type,
                 'diagnosis': treatment.diagnosis,
@@ -84,13 +74,8 @@ class Appointment(db.Model):
                 'created_at': treatment.created_at.strftime('%Y-%m-%d %H:%M:%S') if treatment.created_at else None
             }
             
-        return appointment_info
+        return data
     
-    # Show appointment info when printing
     def __repr__(self):
-        return f'<Appointment: {self.id} - {self.appointment_date} {self.appointment_time}>'
-
-    # Add to_dict for API compatibility
-    def to_dict(self):
-        return self.get_appointment_data()
+        return f'<Appointment {self.id} - {self.appointment_date} {self.appointment_time}>'
 

@@ -1,6 +1,6 @@
 const { createApp } = Vue
 
-// Hospital app
+// Hospital Management App - Medihub
 const App = {
   data() {
     return {

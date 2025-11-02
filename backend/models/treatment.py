@@ -8,8 +8,7 @@ class Treatment(db.Model):
     appointment_id = db.Column(db.Integer, db.ForeignKey('appointments.id'), nullable=False)
     diagnosis = db.Column(db.Text)
     prescription = db.Column(db.Text)
-    visit_type = db.Column(db.String(50))  # consultation, follow_up, emergency
-    symptoms = db.Column(db.Text)
+    visit_type = db.Column(db.String(50))
     treatment_notes = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     

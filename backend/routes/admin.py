@@ -8,36 +8,22 @@ from decorators import admin_required
 
 admin_bp = Blueprint('admin', __name__)
 
-# ---------- Dashboard Stats ------------
-
 @admin_bp.route('/dashboard-stats', methods=['GET'])
 @admin_required
 def dashboard_stats():
-    """
-    Simple caching example - cache admin dashboard stats for 5 minutes
-    This reduces database queries for frequently accessed data
-    """
     from app import cache
     from datetime import datetime, timedelta
-    
-    # Simple cache key with timestamp
+
     cache_key = 'admin_stats'
-    
-    # Check if we have cached data and it's still fresh (less than 5 minutes old)
+    # check cached data (5 min expiry)
     if cache_key in cache:
         cached_data, cached_time = cache[cache_key]
-        # Cache expiry: 5 minutes (300 seconds)
         if (datetime.now() - cached_time).total_seconds() < 300:
-            return jsonify({
-                'success': True,
-                'message': 'Dashboard stats retrieved (from cache)',
-                'data': cached_data
-            })
+            return jsonify({'success': True, 'message': 'Dashboard stats retrieved (from cache)', 'data': cached_data})
     
-    # Cache miss or expired - fetch fresh data from database
+    # fetch fresh data
     total_doctors = Doctor.query.count()
     total_patients = Patient.query.count()
-    # Count only actual appointments (exclude available slots)
     total_appointments = Appointment.query.filter(
         Appointment.status.in_(['booked', 'cancelled', 'completed'])
     ).count()
@@ -50,16 +36,10 @@ def dashboard_stats():
         'active_doctors': active_doctors
     }
     
-    # Save to cache with current timestamp
+    # save to cache
     cache[cache_key] = (stats, datetime.now())
     
-    return jsonify({
-        'success': True,
-        'message': 'Dashboard stats retrieved (fresh)',
-        'data': stats
-    })
-
-# ----------- Doctor CRUD ------------
+    return jsonify({'success': True, 'message': 'Dashboard stats retrieved (fresh)', 'data': stats})
 
 @admin_bp.route('/doctors', methods=['GET'])
 @admin_required
@@ -70,13 +50,7 @@ def get_doctors():
     for doc in doctors:
         data.append(doc.to_dict())
     
-    return jsonify({
-        'success': True,
-        'message': 'Doctors retrieved successfully',
-        'data': {
-            'doctors': data
-        }
-    })
+    return jsonify({'success': True, 'message': 'Doctors retrieved successfully', 'data': {'doctors': data}})
 
 
 @admin_bp.route('/doctors', methods=['POST'])
@@ -88,19 +62,11 @@ def add_doctor():
     for field in required:
         if not data.get(field):
             name = field.replace("_", " ").title()
-            return jsonify({
-                'success': False,
-                'message': f'{name} is required',
-                'errors': [f'Missing {field}']
-            }), 400
+            return jsonify({'success': False, 'message': f'{name} is required', 'errors': [f'Missing {field}']}), 400
     
     existing = User.query.filter_by(email=data['email']).first()
     if existing is not None:
-        return jsonify({
-            'success': False,
-            'message': 'Email already exists',
-            'errors': ['Email taken']
-        }), 400
+        return jsonify({'success': False, 'message': 'Email already exists', 'errors': ['Email taken']}), 400
     
     base = data['email'].split('@')[0]
     
@@ -139,17 +105,7 @@ def add_doctor():
     db.session.add(doctor)
     db.session.commit()
     
-    return jsonify({
-        'success': True,
-        'message': 'Doctor account created successfully',
-        'data': {
-            'doctor': doctor.to_dict(),
-            'credentials': {
-                'username': username,
-                'password': password
-            }
-        }
-    })
+    return jsonify({'success': True, 'message': 'Doctor account created successfully', 'data': {'doctor': doctor.to_dict(), 'credentials': {'username': username, 'password': password}}})
 
 
 @admin_bp.route('/doctors/<int:doctor_id>', methods=['PUT'])
@@ -158,11 +114,7 @@ def update_doctor(doctor_id):
     doctor = Doctor.query.get(doctor_id)
     
     if doctor is None:
-        return jsonify({
-            'success': False,
-            'message': 'Doctor not found',
-            'errors': ['Doctor not found']
-        }), 404
+        return jsonify({'success': False, 'message': 'Doctor not found', 'errors': ['Doctor not found']}), 404
     
     data = request.get_json()
     
@@ -181,22 +133,13 @@ def update_doctor(doctor_id):
     if 'phone' in data:
         doctor.phone = data['phone']
     
-    if 'consultation_fee' in data:
-        doctor.consultation_fee = data['consultation_fee']
-    
     if 'is_active' in data:
         doctor.is_active = data['is_active']
         doctor.user.is_active = data['is_active']
     
     db.session.commit()
     
-    return jsonify({
-        'success': True,
-        'message': 'Doctor updated successfully',
-        'data': {
-            'doctor': doctor.to_dict()
-        }
-    })
+    return jsonify({'success': True, 'message': 'Doctor updated successfully', 'data': {'doctor': doctor.to_dict()}})
 
 @admin_bp.route('/doctors/<int:doctor_id>', methods=['DELETE'])
 @admin_required
@@ -204,23 +147,13 @@ def delete_doctor(doctor_id):
     doctor = Doctor.query.get(doctor_id)
     
     if doctor is None:
-        return jsonify({
-            'success': False,
-            'message': 'Doctor not found',
-            'errors': ['Doctor not found']
-        }), 404
+        return jsonify({'success': False, 'message': 'Doctor not found', 'errors': ['Doctor not found']}), 404
     
     doctor.is_active = False
     doctor.user.is_active = False
     db.session.commit()
     
-    return jsonify({
-        'success': True,
-        'message': 'Doctor deactivated successfully',
-        'data': {}
-    })
-
-# --------- Patient CRUD ----------
+    return jsonify({'success': True, 'message': 'Doctor deactivated successfully', 'data': {}})
 
 @admin_bp.route('/patients', methods=['GET'])
 @admin_required
@@ -231,15 +164,9 @@ def get_patients():
     for p in patients:
         data.append(p.to_dict())
     
-    return jsonify({
-        'success': True,
-        'message': 'Patients retrieved successfully',
-        'data': {
-            'patients': data
-        }
-    })
+    return jsonify({'success': True, 'message': 'Patients retrieved successfully', 'data': {'patients': data}})
 
-# will comment out add_patient, update_patient routes later if not required in project statement... 
+# will comment out add_patient, update_patient routes later if not required in project statement...
 
 @admin_bp.route('/patients', methods=['POST'])
 @admin_required
@@ -250,19 +177,11 @@ def add_patient():
     for field in required:
         if not data.get(field):
             name = field.replace("_", " ").title()
-            return jsonify({
-                'success': False,
-                'message': f'{name} is required',
-                'errors': [f'Missing {field}']
-            }), 400
+            return jsonify({'success': False, 'message': f'{name} is required', 'errors': [f'Missing {field}']}), 400
     
     existing = User.query.filter_by(email=data['email']).first()
     if existing is not None:
-        return jsonify({
-            'success': False,
-            'message': 'Email already exists',
-            'errors': ['Email taken']
-        }), 400
+        return jsonify({'success': False, 'message': 'Email already exists', 'errors': ['Email taken']}), 400
     
     base = data['email'].split('@')[0]
     
@@ -303,17 +222,7 @@ def add_patient():
     db.session.add(patient)
     db.session.commit()
     
-    return jsonify({
-        'success': True,
-        'message': 'Patient account created successfully',
-        'data': {
-            'patient': patient.to_dict(),
-            'credentials': {
-                'username': username,
-                'password': password
-            }
-        }
-    })
+    return jsonify({'success': True, 'message': 'Patient account created successfully', 'data': {'patient': patient.to_dict(), 'credentials': {'username': username, 'password': password}}})
 
 @admin_bp.route('/patients/<int:patient_id>', methods=['PUT'])
 @admin_required
@@ -321,11 +230,7 @@ def update_patient(patient_id):
     patient = Patient.query.get(patient_id)
     
     if patient is None:
-        return jsonify({
-            'success': False,
-            'message': 'Patient not found',
-            'errors': ['Patient not found']
-        }), 404
+        return jsonify({'success': False, 'message': 'Patient not found', 'errors': ['Patient not found']}), 404
     
     data = request.get_json()
     
@@ -348,15 +253,7 @@ def update_patient(patient_id):
     
     db.session.commit()
     
-    return jsonify({
-        'success': True,
-        'message': 'Patient updated successfully',
-        'data': {
-            'patient': patient.to_dict()
-        }
-    })
-
-# -------- Appointments - Manage and View ----------
+    return jsonify({'success': True, 'message': 'Patient updated successfully', 'data': {'patient': patient.to_dict()}})
 
 @admin_bp.route('/appointments', methods=['GET'])
 @admin_required
@@ -367,13 +264,7 @@ def get_appointments():
     for apt in appointments:
         data.append(apt.to_dict())
     
-    return jsonify({
-        'success': True,
-        'message': 'Appointments retrieved successfully',
-        'data': {
-            'appointments': data
-        }
-    })
+    return jsonify({'success': True, 'message': 'Appointments retrieved successfully', 'data': {'appointments': data}})
 
 @admin_bp.route('/appointments/<int:appointment_id>', methods=['PUT'])
 @admin_required
@@ -381,11 +272,7 @@ def update_appointment(appointment_id):
     appointment = Appointment.query.get(appointment_id)
     
     if appointment is None:
-        return jsonify({
-            'success': False,
-            'message': 'Appointment not found',
-            'errors': ['Appointment not found']
-        }), 404
+        return jsonify({'success': False, 'message': 'Appointment not found', 'errors': ['Appointment not found']}), 404
     
     data = request.get_json()
     
@@ -398,15 +285,7 @@ def update_appointment(appointment_id):
     
     db.session.commit()
     
-    return jsonify({
-        'success': True,
-        'message': 'Appointment updated successfully',
-        'data': {
-            'appointment': appointment.to_dict()
-        }
-    })
-
-# -------- Search and Filters ----------
+    return jsonify({'success': True, 'message': 'Appointment updated successfully', 'data': {'appointment': appointment.to_dict()}})
 
 @admin_bp.route('/search', methods=['GET'])
 @admin_required
@@ -415,11 +294,7 @@ def search():
     query = request.args.get('query', '')
     
     if not search_type or not query:
-        return jsonify({
-            'success': False,
-            'message': 'Search type and query are required',
-            'errors': ['Missing parameters']
-        }), 400
+        return jsonify({'success': False, 'message': 'Search type and query are required', 'errors': ['Missing parameters']}), 400
     
     results = []
     
@@ -449,14 +324,7 @@ def search():
     
     count = len(results)
     
-    return jsonify({
-        'success': True,
-        'message': 'Search completed successfully',
-        'data': {
-            'results': results,
-            'count': count
-        }
-    })
+    return jsonify({'success': True, 'message': 'Search completed successfully', 'data': {'results': results, 'count': count}})
 
 @admin_bp.route('/search/doctors', methods=['GET'])
 @admin_required
@@ -465,11 +333,7 @@ def search_doctors():
     spec = request.args.get('specialization', '')
     
     if not q and not spec:
-        return jsonify({
-            'success': False,
-            'message': 'Search query or specialization is required',
-            'errors': ['Missing search parameters']
-        }), 400
+        return jsonify({'success': False, 'message': 'Search query or specialization is required', 'errors': ['Missing search parameters']}), 400
     
     query = Doctor.query
     
@@ -494,14 +358,7 @@ def search_doctors():
     
     count = len(data)
     
-    return jsonify({
-        'success': True,
-        'message': 'Doctors found',
-        'data': {
-            'doctors': data,
-            'count': count
-        }
-    })
+    return jsonify({'success': True, 'message': 'Doctors found', 'data': {'doctors': data, 'count': count}})
 
 @admin_bp.route('/search/patients', methods=['GET'])
 @admin_required
@@ -509,11 +366,7 @@ def search_patients():
     q = request.args.get('q', '')
     
     if not q:
-        return jsonify({
-            'success': False,
-            'message': 'Search query is required',
-            'errors': ['Missing search parameter']
-        }), 400
+        return jsonify({'success': False, 'message': 'Search query is required', 'errors': ['Missing search parameter']}), 400
     
     patients = db.session.query(Patient).join(User).filter(
         or_(
@@ -528,14 +381,7 @@ def search_patients():
     
     count = len(data)
     
-    return jsonify({
-        'success': True,
-        'message': 'Patients found',
-        'data': {
-            'patients': data,
-            'count': count
-        }
-    })
+    return jsonify({'success': True, 'message': 'Patients found', 'data': {'patients': data, 'count': count}})
 
 @admin_bp.route('/patients/<int:patient_id>/blacklist', methods=['PUT'])
 @admin_required
@@ -543,11 +389,7 @@ def toggle_patient_blacklist(patient_id):
     patient = Patient.query.get(patient_id)
     
     if patient is None:
-        return jsonify({
-            'success': False,
-            'message': 'Patient not found',
-            'errors': ['Patient not found']
-        }), 404
+        return jsonify({'success': False, 'message': 'Patient not found', 'errors': ['Patient not found']}), 404
     
     patient.is_blacklisted = not patient.is_blacklisted
     
@@ -558,15 +400,7 @@ def toggle_patient_blacklist(patient_id):
     else:
         action = "unblacklisted"
     
-    return jsonify({
-        'success': True,
-        'message': f'Patient {action} successfully',
-        'data': {
-            'patient': patient.to_dict()
-        }
-    })
-
-# --------- Patient History ----------
+    return jsonify({'success': True, 'message': f'Patient {action} successfully', 'data': {'patient': patient.to_dict()}})
 
 @admin_bp.route('/patients/<int:patient_id>/history', methods=['GET'])
 @admin_required
@@ -574,11 +408,7 @@ def get_patient_history(patient_id):
     patient = Patient.query.get(patient_id)
     
     if patient is None:
-        return jsonify({
-            'success': False,
-            'message': 'Patient not found',
-            'errors': ['Patient not found']
-        }), 404
+        return jsonify({'success': False, 'message': 'Patient not found', 'errors': ['Patient not found']}), 404
     
     appointments = Appointment.query.filter_by(patient_id=patient_id).order_by(Appointment.appointment_date.desc()).all()
     
@@ -586,11 +416,4 @@ def get_patient_history(patient_id):
     for apt in appointments:
         data.append(apt.to_dict())
     
-    return jsonify({
-        'success': True,
-        'message': 'Patient history retrieved successfully',
-        'data': {
-            'patient': patient.to_dict(),
-            'appointments': data
-        }
-    })
+    return jsonify({'success': True, 'message': 'Patient history retrieved successfully', 'data': {'patient': patient.to_dict(), 'appointments': data}})

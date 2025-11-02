@@ -12,10 +12,7 @@ def login():
     password = data.get('password')
 
     if not username or not password:
-        return jsonify({'success': False,
-            'message': 'Username and password are required',
-            'errors': ['Missing credentials']
-        }), 400
+        return jsonify({'success': False, 'message': 'Username and password are required', 'errors': ['Missing credentials']}), 400
 
     user = User.query.filter_by(username=username).first()
 
@@ -26,31 +23,13 @@ def login():
                 session['username'] = user.username
                 session['role'] = user.role
                 session['is_authenticated'] = True
-                return jsonify({
-                    'success': True,
-                    'message': 'Login successful',
-                    'data': {
-                        'user': user.to_dict()
-                    }
-                })
+                return jsonify({'success': True, 'message': 'Login successful', 'data': {'user': user.to_dict()}})
             else:
-                return jsonify({
-                    'success': False,
-                    'message': 'Account is deactivated',
-                    'errors': ['Account deactivated']
-                }), 401
+                return jsonify({'success': False, 'message': 'Account is deactivated', 'errors': ['Account deactivated']}), 401
         else:
-            return jsonify({
-                'success': False,
-                'message': 'Invalid credentials',
-                'errors': ['Invalid username or password']
-            }), 401
+            return jsonify({'success': False, 'message': 'Invalid credentials', 'errors': ['Invalid username or password']}), 401
     else:
-        return jsonify({
-            'success': False,
-            'message': 'Invalid credentials',
-            'errors': ['Invalid username or password']
-        }), 401
+        return jsonify({'success': False, 'message': 'Invalid credentials', 'errors': ['Invalid username or password']}), 401
 
 @auth_bp.route('/register', methods=['POST'])
 def register():
@@ -62,48 +41,24 @@ def register():
     name = data.get('name')
     
     if not username:
-        return jsonify({
-            'success': False,
-            'message': 'Username is required',
-            'errors': ['Missing username']
-        }), 400
+        return jsonify({'success': False, 'message': 'Username is required', 'errors': ['Missing username']}), 400
     
     if not email:
-        return jsonify({
-            'success': False,
-            'message': 'Email is required',
-            'errors': ['Missing email']
-        }), 400
+        return jsonify({'success': False, 'message': 'Email is required', 'errors': ['Missing email']}), 400
     
     if not password:
-        return jsonify({
-            'success': False,
-            'message': 'Password is required',
-            'errors': ['Missing password']
-        }), 400
+        return jsonify({'success': False, 'message': 'Password is required', 'errors': ['Missing password']}), 400
     
     if not name:
-        return jsonify({
-            'success': False,
-            'message': 'Name is required',
-            'errors': ['Missing name']
-        }), 400
+        return jsonify({'success': False, 'message': 'Name is required', 'errors': ['Missing name']}), 400
     
     existing = User.query.filter_by(username=username).first()
     if existing:
-        return jsonify({
-            'success': False,
-            'message': 'Username already exists',
-            'errors': ['Username taken']
-        }), 400
+        return jsonify({'success': False, 'message': 'Username already exists', 'errors': ['Username taken']}), 400
     
     existing_email = User.query.filter_by(email=email).first()
     if existing_email:
-        return jsonify({
-            'success': False,
-            'message': 'Email already exists',
-            'errors': ['Email taken']
-        }), 400
+        return jsonify({'success': False, 'message': 'Email already exists', 'errors': ['Email taken']}), 400
     
     user = User(
         username=username,
@@ -126,34 +81,20 @@ def register():
     db.session.add(patient)
     db.session.commit()
     
-    return jsonify({
-        'success': True,
-        'message': 'Registration successful! Please login to complete your profile with additional information.',
-        'data': {
-            'user': user.to_dict()
-        }
-    })
+    return jsonify({'success': True, 'message': 'Registration successful! Please login to complete your profile with additional information.', 'data': {'user': user.to_dict()}})
 
 @auth_bp.route('/me', methods=['GET'])
 def get_current_user():
     is_auth = session.get('is_authenticated')
     if not is_auth:
-        return jsonify({
-            'success': False,
-            'message': 'Not authenticated',
-            'errors': ['Not logged in']
-        }), 401
+        return jsonify({'success': False, 'message': 'Not authenticated', 'errors': ['Not logged in']}), 401
     
     user_id = session.get('user_id')
     user = User.query.get(user_id)
     
     if user is None:
         session.clear()
-        return jsonify({
-            'success': False,
-            'message': 'User not found',
-            'errors': ['User not found']
-        }), 404
+        return jsonify({'success': False, 'message': 'User not found', 'errors': ['User not found']}), 404
     
     data = user.to_dict()
     
@@ -166,13 +107,7 @@ def get_current_user():
     else:
         data['name'] = user.username
     
-    return jsonify({
-        'success': True,
-        'message': 'User retrieved successfully',
-        'data': {
-            'user': data
-        }
-    })
+    return jsonify({'success': True, 'message': 'User retrieved successfully', 'data': {'user': data}})
 
 @auth_bp.route('/logout', methods=['POST'])
 def logout():

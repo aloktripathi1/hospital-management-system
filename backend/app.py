@@ -18,22 +18,25 @@ app.config['SECRET_KEY'] = 'hospital-secret-key-123'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///hospital-management.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-# email config for mailhog
-app.config['MAIL_SERVER'] = os.getenv('MAIL_SERVER', 'localhost')
-app.config['MAIL_PORT'] = int(os.getenv('MAIL_PORT', 1025))
-app.config['MAIL_USE_TLS'] = os.getenv('MAIL_USE_TLS', 'False') == 'True'
-app.config['MAIL_USE_SSL'] = os.getenv('MAIL_USE_SSL', 'False') == 'True'
-app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME', None)
-app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD', None)
-app.config['MAIL_DEFAULT_SENDER'] = ('Hospital Management', os.getenv('MAIL_DEFAULT_SENDER', 'noreply@hospital.com'))
+# email config (supports both gmail and mailhog)
+app.config['MAIL_SERVER'] = os.getenv('MAIL_SERVER', 'smtp.gmail.com')
+app.config['MAIL_PORT'] = int(os.getenv('MAIL_PORT', 587))
+app.config['MAIL_USE_TLS'] = os.getenv('MAIL_USE_TLS', 'True') == 'True'
+app.config['MAIL_USE_SSL'] = False
+app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME')
+app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
+app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_USERNAME')
 
 # celery config
 app.config['CELERY_BROKER_URL'] = 'redis://localhost:6379/0'
 app.config['CELERY_RESULT_BACKEND'] = 'redis://localhost:6379/0'
 app.config['CELERY_TASK_SERIALIZER'] = 'json'
 app.config['CELERY_ACCEPT_CONTENT'] = ['json']
-app.config['CELERY_RESULT_SERIALIZER'] = 'json'
+app.config['RESULT_SERIALIZER'] = 'json'
 app.config['DEBUG'] = True
+
+# simple in-memory cache for performance
+cache = {}
 
 # initialize extensions
 db.init_app(app)

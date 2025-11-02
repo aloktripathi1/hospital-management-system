@@ -16,7 +16,7 @@ class Patient(db.Model):
     is_blacklisted = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
-    # Relationships
+    # relationships
     appointments = db.relationship('Appointment', backref='patient', lazy=True, cascade='all, delete-orphan')
     
     def to_dict(self):

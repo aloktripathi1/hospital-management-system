@@ -227,7 +227,7 @@ function backToDoctorAppointments(app) {
 // Load 7-day availability schedule
 async function loadAvailabilityDays(app) {
   try {
-    const resp = await window.ApiService.getDoctorAvailability()
+    const resp = await window.ApiService.getDoctorOwnAvailability()
     if (resp.success && resp.data && resp.data.availability) {
       app.availabilityDays = resp.data.availability
     } else {

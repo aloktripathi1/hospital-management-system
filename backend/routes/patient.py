@@ -13,11 +13,7 @@ def get_dashboard():
     patient = Patient.query.filter_by(user_id=user_id).first()
     
     if patient is None:
-        return jsonify({
-            'success': False,
-            'message': 'Patient profile not found',
-            'errors': ['Profile not found']
-        }), 404
+        return jsonify({'success': False, 'message': 'Patient profile not found', 'errors': ['Profile not found']}), 404
     
     upcoming = Appointment.query.filter(
         Appointment.patient_id == patient.id,
@@ -31,21 +27,12 @@ def get_dashboard():
         patient_id=patient.id
     ).distinct().count()
     
-    return jsonify({
-        'success': True,
-        'message': 'Dashboard data retrieved',
-        'data': {
-            'patient': patient.to_dict(),
-            'upcoming_appointments': upcoming,
-            'total_appointments': total,
-            'doctors_visited': doctors
-        }
-    })
+    return jsonify({'success': True, 'message': 'Dashboard data retrieved', 'data': {'patient': patient.to_dict(), 'upcoming_appointments': upcoming, 'total_appointments': total, 'doctors_visited': doctors}})
 
 @patient_bp.route('/departments', methods=['GET'])
 @patient_or_admin_required
 def get_departments():
-    # Get all unique specializations from active doctors
+    # get unique specializations from active doctors
     from sqlalchemy import func
     
     specializations = db.session.query(
@@ -56,7 +43,7 @@ def get_departments():
     data = []
     
     for spec, count in specializations:
-        # Get doctors with this specialization
+        # get doctors with this specialization
         doctors = Doctor.query.filter_by(
             specialization=spec,
             is_active=True
@@ -67,14 +54,14 @@ def get_departments():
             info = {
                 'id': doc.id,
                 'name': doc.name,
-                'department': spec,  # Using specialization as department name
+                'department': spec,
                 'qualification': doc.qualification,
                 'experience': doc.experience
             }
             docs.append(info)
         
         dept_info = {
-            'id': spec.lower().replace(' ', '_'),  # Generate a pseudo-ID
+            'id': spec.lower().replace(' ', '_'),
             'name': spec,
             'description': f'{spec} Department',
             'doctor_count': count,
@@ -82,50 +69,35 @@ def get_departments():
         }
         data.append(dept_info)
     
-    return jsonify({
-        'success': True,
-        'message': 'Departments retrieved successfully',
-        'data': {
-            'departments': data
-        }
-    })
+    return jsonify({'success': True, 'message': 'Departments retrieved successfully', 'data': {'departments': data}})
 
 @patient_bp.route('/available-slots', methods=['GET'])
 @patient_required
 def get_available_slots():
-    """Get available slots for a doctor on a specific date (2-slot system: morning/evening)"""
+    """get available slots for a doctor on specific date (2-slot system: morning/evening)"""
     doctor_id = request.args.get('doctor_id')
     date_str = request.args.get('date')
     
     if not doctor_id:
-        return jsonify({
-            'success': False,
-            'message': 'Doctor ID is required'
-        }), 400
+        return jsonify({'success': False, 'message': 'Doctor ID is required'}), 400
     
     if not date_str:
-        return jsonify({
-            'success': False,
-            'message': 'Date is required'
-        }), 400
+        return jsonify({'success': False, 'message': 'Date is required'}), 400
     
     try:
         apt_date = datetime.strptime(date_str, '%Y-%m-%d').date()
     except ValueError:
-        return jsonify({
-            'success': False,
-            'message': 'Invalid date format. Use YYYY-MM-DD'
-        }), 400
+        return jsonify({'success': False, 'message': 'Invalid date format. Use YYYY-MM-DD'}), 400
     
-    # Get current date and time (using 24-hour format)
+    # get current date and time (24-hour format)
     now = datetime.now()
     current_date = now.date()
     current_hour = now.hour
     
-    # Check if the requested date is today
+    # check if requested date is today
     is_today = (apt_date == current_date)
     
-    # Check doctor availability for this date
+    # check doctor availability for this date
     morning_avail = DoctorAvailability.query.filter_by(
         doctor_id=doctor_id,
         availability_date=apt_date,
@@ -140,7 +112,7 @@ def get_available_slots():
         is_available=True
     ).first()
     
-    # Check if slots are already booked
+    # check if slots already booked
     morning_booked = Appointment.query.filter_by(
         doctor_id=doctor_id,
         appointment_date=apt_date,
@@ -157,8 +129,7 @@ def get_available_slots():
     
     slots = []
     
-    # Morning slot (9:00 - 13:00) - ends at 13:00 (1 PM)
-    # Only show if doctor is available AND (not today OR current hour is before 13)
+    # morning slot (9:00-13:00), only show if available AND (not today OR hour < 13)
     if morning_avail and (not is_today or current_hour < 13):
         slots.append({
             'slot_type': 'morning',
@@ -168,8 +139,7 @@ def get_available_slots():
             'appointment_time': '09:00'
         })
     
-    # Evening slot (15:00 - 19:00) - ends at 19:00 (7 PM)
-    # Only show if doctor is available AND (not today OR current hour is before 19)
+    # evening slot (15:00-19:00), only show if available AND (not today OR hour < 19)
     if evening_avail and (not is_today or current_hour < 19):
         slots.append({
             'slot_type': 'evening',
@@ -179,15 +149,7 @@ def get_available_slots():
             'appointment_time': '15:00'
         })
     
-    return jsonify({
-        'success': True,
-        'message': 'Available slots retrieved successfully',
-        'data': {
-            'slots': slots,
-            'date': apt_date.isoformat(),
-            'doctor_id': doctor_id
-        }
-    })
+    return jsonify({'success': True, 'message': 'Available slots retrieved successfully', 'data': {'slots': slots, 'date': apt_date.isoformat(), 'doctor_id': doctor_id}})
 
 @patient_bp.route('/doctors', methods=['GET'])
 @patient_required
@@ -198,25 +160,15 @@ def get_doctors():
         query = Doctor.query.filter_by(is_active=True)
         
         if dept:
-            # Filter by specialization instead of department
+            # filter by specialization
             query = query.filter(Doctor.specialization == dept)
         
         doctors = query.all()
         
-        return jsonify({
-            'success': True,
-            'message': 'Doctors retrieved successfully',
-            'data': {
-                'doctors': [doc.to_dict() for doc in doctors]
-            }
-        })
+        return jsonify({'success': True, 'message': 'Doctors retrieved successfully', 'data': {'doctors': [doc.to_dict() for doc in doctors]}})
         
     except Exception as e:
-        return jsonify({
-            'success': False,
-            'message': 'Failed to get doctors',
-            'errors': [str(e)]
-        }), 500
+        return jsonify({'success': False, 'message': 'Failed to get doctors', 'errors': [str(e)]}), 500
 
 @patient_bp.route('/appointments', methods=['GET'])
 @patient_required
@@ -225,11 +177,7 @@ def get_appointments():
     patient = Patient.query.filter_by(user_id=user_id).first()
     
     if patient is None:
-        return jsonify({
-            'success': False,
-            'message': 'Patient profile not found',
-            'errors': ['Profile not found']
-        }), 404
+        return jsonify({'success': False, 'message': 'Patient profile not found', 'errors': ['Profile not found']}), 404
     
     status = request.args.get('status')
     
@@ -243,69 +191,42 @@ def get_appointments():
         Appointment.appointment_time.desc()
     ).all()
     
-    return jsonify({
-        'success': True,
-        'message': 'Appointments retrieved successfully',
-        'data': {
-            'appointments': [apt.to_dict() for apt in appointments]
-        }
-    })
+    return jsonify({'success': True, 'message': 'Appointments retrieved successfully', 'data': {'appointments': [apt.to_dict() for apt in appointments]}})
 
 @patient_bp.route('/appointments', methods=['POST'])
 @patient_required
 def book_appointment():
-    """Book an appointment in the simplified 2-slot system"""
+    """book appointment in simplified 2-slot system"""
     user_id = session.get('user_id')
     patient = Patient.query.filter_by(user_id=user_id).first()
     
     if patient is None:
-        return jsonify({
-            'success': False,
-            'message': 'Patient profile not found'
-        }), 404
+        return jsonify({'success': False, 'message': 'Patient profile not found'}), 404
     
     if patient.is_blacklisted:
-        return jsonify({
-            'success': False,
-            'message': 'Your account has been blacklisted. Please contact admin.'
-        }), 403
+        return jsonify({'success': False, 'message': 'Your account has been blacklisted. Please contact admin.'}), 403
     
     data = request.get_json()
     
     if not data.get('doctor_id'):
-        return jsonify({
-            'success': False,
-            'message': 'Doctor ID is required'
-        }), 400
+        return jsonify({'success': False, 'message': 'Doctor ID is required'}), 400
     
     if not data.get('appointment_date'):
-        return jsonify({
-            'success': False,
-            'message': 'Appointment date is required'
-        }), 400
+        return jsonify({'success': False, 'message': 'Appointment date is required'}), 400
     
     if not data.get('appointment_time'):
-        return jsonify({
-            'success': False,
-            'message': 'Appointment time is required'
-        }), 400
+        return jsonify({'success': False, 'message': 'Appointment time is required'}), 400
     
     doctor = Doctor.query.get(data['doctor_id'])
     if doctor is None or not doctor.is_active:
-        return jsonify({
-            'success': False,
-            'message': 'Doctor not found or inactive'
-        }), 404
+        return jsonify({'success': False, 'message': 'Doctor not found or inactive'}), 404
     
     try:
         apt_date = datetime.strptime(data['appointment_date'], '%Y-%m-%d').date()
     except ValueError:
-        return jsonify({
-            'success': False,
-            'message': 'Invalid date format'
-        }), 400
+        return jsonify({'success': False, 'message': 'Invalid date format'}), 400
     
-    # Parse appointment time to determine slot type
+    # parse time to determine slot type
     time_str = data['appointment_time']
     if '-' in time_str:
         start = time_str.split('-')[0].strip()
@@ -313,18 +234,15 @@ def book_appointment():
     else:
         apt_time = datetime.strptime(time_str, '%H:%M').time()
     
-    # Determine slot type based on time
+    # determine slot type
     if apt_time == time(9, 0):
         slot_type = 'morning'
     elif apt_time == time(15, 0):
         slot_type = 'evening'
     else:
-        return jsonify({
-            'success': False,
-            'message': 'Invalid time slot. Only Morning (09:00) and Evening (15:00) slots are available.'
-        }), 400
+        return jsonify({'success': False, 'message': 'Invalid time slot. Only Morning (09:00) and Evening (15:00) slots are available.'}), 400
     
-    # Check if doctor has set this slot as available
+    # check if doctor has set this slot as available
     availability = DoctorAvailability.query.filter_by(
         doctor_id=data['doctor_id'],
         availability_date=apt_date,
@@ -333,12 +251,9 @@ def book_appointment():
     ).first()
     
     if not availability:
-        return jsonify({
-            'success': False,
-            'message': f'Doctor is not available for {slot_type} slot on {apt_date}'
-        }), 400
+        return jsonify({'success': False, 'message': f'Doctor is not available for {slot_type} slot on {apt_date}'}), 400
     
-    # Check if slot is already booked
+    # check if slot already booked
     existing_booking = Appointment.query.filter_by(
         doctor_id=data['doctor_id'],
         appointment_date=apt_date,
@@ -347,12 +262,9 @@ def book_appointment():
     ).first()
     
     if existing_booking:
-        return jsonify({
-            'success': False,
-            'message': 'This slot is already booked'
-        }), 400
+        return jsonify({'success': False, 'message': 'This slot is already booked'}), 400
     
-    # Check if patient already has appointment at this time
+    # check if patient already has appointment at this time
     patient_conflict = Appointment.query.filter_by(
         patient_id=patient.id,
         appointment_date=apt_date,
@@ -361,12 +273,9 @@ def book_appointment():
     ).first()
     
     if patient_conflict:
-        return jsonify({
-            'success': False,
-            'message': 'You already have an appointment at this time'
-        }), 400
+        return jsonify({'success': False, 'message': 'You already have an appointment at this time'}), 400
     
-    # Create new appointment
+    # create new appointment
     appointment = Appointment(
         doctor_id=data['doctor_id'],
         patient_id=patient.id,
@@ -379,13 +288,7 @@ def book_appointment():
     db.session.add(appointment)
     db.session.commit()
     
-    return jsonify({
-        'success': True,
-        'message': 'Appointment booked successfully',
-        'data': {
-            'appointment': appointment.to_dict()
-        }
-    })
+    return jsonify({'success': True, 'message': 'Appointment booked successfully', 'data': {'appointment': appointment.to_dict()}})
 
 @patient_bp.route('/appointments/<int:appointment_id>', methods=['DELETE'])
 @patient_required
@@ -394,11 +297,7 @@ def cancel_appointment(appointment_id):
     patient = Patient.query.filter_by(user_id=user_id).first()
     
     if patient is None:
-        return jsonify({
-            'success': False,
-            'message': 'Patient profile not found',
-            'errors': ['Profile not found']
-        }), 404
+        return jsonify({'success': False, 'message': 'Patient profile not found', 'errors': ['Profile not found']}), 404
     
     appointment = Appointment.query.filter_by(
         id=appointment_id,
@@ -406,29 +305,17 @@ def cancel_appointment(appointment_id):
     ).first()
     
     if appointment is None:
-        return jsonify({
-            'success': False,
-            'message': 'Appointment not found',
-            'errors': ['Appointment not found']
-        }), 404
+        return jsonify({'success': False, 'message': 'Appointment not found', 'errors': ['Appointment not found']}), 404
     
     if appointment.status != 'booked':
-        return jsonify({
-            'success': False,
-            'message': 'Cannot cancel this appointment',
-            'errors': ['Invalid status']
-        }), 400
+        return jsonify({'success': False, 'message': 'Cannot cancel this appointment', 'errors': ['Invalid status']}), 400
     
     appointment.status = 'cancelled'
     appointment.updated_at = datetime.utcnow()
     
     db.session.commit()
     
-    return jsonify({
-        'success': True,
-        'message': 'Appointment cancelled successfully',
-        'data': {}
-    })
+    return jsonify({'success': True, 'message': 'Appointment cancelled successfully', 'data': {}})
 
 @patient_bp.route('/history', methods=['GET'])
 @patient_required
@@ -437,22 +324,18 @@ def get_history():
     patient = Patient.query.filter_by(user_id=user_id).first()
     
     if patient is None:
-        return jsonify({
-            'success': False,
-            'message': 'Patient profile not found',
-            'errors': ['Profile not found']
-        }), 404
+        return jsonify({'success': False, 'message': 'Patient profile not found', 'errors': ['Profile not found']}), 404
     
     treatments = db.session.query(Treatment).join(Appointment).filter(
         Appointment.patient_id == patient.id
     ).order_by(Treatment.created_at.desc()).all()
     
-    # Include appointment and doctor information with each treatment
+    # include appointment and doctor info
     treatment_data = []
     for treatment in treatments:
         treatment_dict = treatment.to_dict()
         
-        # Get the appointment details
+        # get appointment details
         appointment = Appointment.query.get(treatment.appointment_id)
         if appointment:
             treatment_dict['appointment'] = {
@@ -462,26 +345,20 @@ def get_history():
                 'status': appointment.status
             }
             
-            # Get doctor information
+            # get doctor info
             if appointment.doctor:
                 treatment_dict['doctor'] = {
                     'id': appointment.doctor.id,
                     'name': appointment.doctor.name,
                     'specialization': appointment.doctor.specialization,
-                    'department': appointment.doctor.specialization  # Use specialization instead of department
+                    'department': appointment.doctor.specialization
                 }
             else:
                 treatment_dict['doctor'] = None
         
         treatment_data.append(treatment_dict)
     
-    return jsonify({
-        'success': True,
-        'message': 'Patient history retrieved successfully',
-        'data': {
-            'treatments': treatment_data
-        }
-    })
+    return jsonify({'success': True, 'message': 'Patient history retrieved successfully', 'data': {'treatments': treatment_data}})
 
 @patient_bp.route('/doctor/availability/<int:doctor_id>', methods=['GET'])
 @patient_required
@@ -489,25 +366,14 @@ def get_doctor_availability(doctor_id):
     doctor = Doctor.query.get(doctor_id)
     
     if doctor is None or not doctor.is_active:
-        return jsonify({
-            'success': False,
-            'message': 'Doctor not found or inactive',
-            'errors': ['Invalid doctor']
-        }), 404
+        return jsonify({'success': False, 'message': 'Doctor not found or inactive', 'errors': ['Invalid doctor']}), 404
     
     availability = DoctorAvailability.query.filter_by(
         doctor_id=doctor_id,
         is_available=True
     ).all()
     
-    return jsonify({
-        'success': True,
-        'message': 'Doctor availability retrieved successfully',
-        'data': {
-            'doctor': doctor.to_dict(),
-            'availability': [avail.to_dict() for avail in availability]
-        }
-    })
+    return jsonify({'success': True, 'message': 'Doctor availability retrieved successfully', 'data': {'doctor': doctor.to_dict(), 'availability': [avail.to_dict() for avail in availability]}})
 
 @patient_bp.route('/export-history', methods=['POST'])
 @patient_required
@@ -517,29 +383,15 @@ def export_patient_history():
         patient = Patient.query.filter_by(user_id=user_id).first()
         
         if not patient:
-            return jsonify({
-                'success': False,
-                'message': 'Patient profile not found',
-                'errors': ['Profile not found']
-            }), 404
+            return jsonify({'success': False, 'message': 'Patient profile not found', 'errors': ['Profile not found']}), 404
         
         from celery_tasks import export_patient_history_csv
         task = export_patient_history_csv.delay(patient.id)
         
-        return jsonify({
-            'success': True,
-            'message': 'CSV export started. You will be notified when ready.',
-            'data': {
-                'task_id': task.id
-            }
-        })
+        return jsonify({'success': True, 'message': 'CSV export started. You will be notified when ready.', 'data': {'task_id': task.id}})
         
     except Exception as e:
-        return jsonify({
-            'success': False,
-            'message': 'Failed to start CSV export',
-            'errors': [str(e)]
-        }), 500
+        return jsonify({'success': False, 'message': 'Failed to start CSV export', 'errors': [str(e)]}), 500
 
 @patient_bp.route('/profile', methods=['PUT'])
 @patient_required
@@ -549,19 +401,11 @@ def update_patient_profile():
         patient = Patient.query.filter_by(user_id=user_id).first()
         
         if not patient:
-            return jsonify({
-                'success': False,
-                'message': 'Patient profile not found',
-                'errors': ['Profile not found']
-            }), 404
+            return jsonify({'success': False, 'message': 'Patient profile not found', 'errors': ['Profile not found']}), 404
         
         data = request.get_json()
         if not data:
-            return jsonify({
-                'success': False,
-                'message': 'No data provided',
-                'errors': ['Missing data']
-            }), 400
+            return jsonify({'success': False, 'message': 'No data provided', 'errors': ['Missing data']}), 400
         
         if 'name' in data:
             patient.name = data['name']
@@ -583,18 +427,8 @@ def update_patient_profile():
         
         db.session.commit()
         
-        return jsonify({
-            'success': True,
-            'message': 'Profile updated successfully',
-            'data': {
-                'patient': patient.to_dict()
-            }
-        })
+        return jsonify({'success': True, 'message': 'Profile updated successfully', 'data': {'patient': patient.to_dict()}})
         
     except Exception as e:
         db.session.rollback()
-        return jsonify({
-            'success': False,
-            'message': 'Failed to update profile',
-            'errors': [str(e)]
-        }), 500
+        return jsonify({'success': False, 'message': 'Failed to update profile', 'errors': [str(e)]}), 500

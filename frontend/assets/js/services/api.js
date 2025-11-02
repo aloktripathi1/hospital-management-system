@@ -141,6 +141,10 @@ async function getDoctorAvailableSlots() {
   return await callAPI("/doctor/available-slots", "GET")
 }
 
+async function getDoctorOwnAvailability() {
+  return await callAPI("/doctor/availability", "GET")
+}
+
 // Patient functions
 async function getPatientDashboard() {
   return await callAPI("/patient/dashboard", "GET")
@@ -240,6 +244,7 @@ window.ApiService = {
   setDoctorSlots: setDoctorSlots,
   getPatientHistory: getPatientHistory,
   getDoctorAvailableSlots: getDoctorAvailableSlots,
+  getDoctorOwnAvailability: getDoctorOwnAvailability,
   getPatientDashboard: getPatientDashboard,
   getDepartments: getDepartments,
   getDoctorsByDepartment: getDoctorsByDepartment,

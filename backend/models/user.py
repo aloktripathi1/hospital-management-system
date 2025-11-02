@@ -8,11 +8,11 @@ class User(db.Model):
     username = db.Column(db.String(80), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(255), nullable=False)
-    role = db.Column(db.String(20), nullable=False)  # admin, doctor, patient
+    role = db.Column(db.String(20), nullable=False)
     is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
-    # Relationships
+    # relationships
     patient = db.relationship('Patient', backref='user', uselist=False, cascade='all, delete-orphan')
     doctor = db.relationship('Doctor', backref='user', uselist=False, cascade='all, delete-orphan')
     

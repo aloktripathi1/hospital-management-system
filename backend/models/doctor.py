@@ -15,7 +15,7 @@ class Doctor(db.Model):
     consultation_fee = db.Column(db.Float, default=0.0)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
-    # Relationships
+    # relationships
     appointments = db.relationship('Appointment', backref='doctor', lazy=True)
     availability = db.relationship('DoctorAvailability', backref='doctor', lazy=True, cascade='all, delete-orphan')
     
@@ -58,12 +58,8 @@ class DoctorAvailability(db.Model):
             'availability_date': self.availability_date.isoformat() if self.availability_date else None,
             'slot_type': self.slot_type,
             'is_available': self.is_available,
-            'time_range': self.get_time_range()
+            'time_range': '9:00 AM - 1:00 PM' if self.slot_type == 'morning' else '3:00 PM - 7:00 PM'
         }
     
-    def get_time_range(self):
-        if self.slot_type == 'morning':
-            return '9:00 AM - 1:00 PM'
-        elif self.slot_type == 'evening':
-            return '3:00 PM - 7:00 PM'
-        return 'N/A'
+    def __repr__(self):
+        return f'<Availability {self.doctor_id} {self.availability_date} {self.slot_type}>'
