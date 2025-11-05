@@ -1,15 +1,15 @@
-from flask import Blueprint, request, jsonify, session
+from flask import Blueprint, request, jsonify
 from database import db
 from models import User, Patient, Doctor, Appointment, Treatment, DoctorAvailability
 from datetime import datetime, date, time, timedelta
-from decorators import patient_required, patient_or_admin_required
+from decorators import patient_required, patient_or_admin_required, get_current_user_id
 
 patient_bp = Blueprint('patient', __name__)
 
 @patient_bp.route('/dashboard', methods=['GET'])
 @patient_required
 def get_dashboard():
-    user_id = session.get('user_id')
+    user_id = get_current_user_id()
     patient = Patient.query.filter_by(user_id=user_id).first()
     
     if patient is None:
@@ -173,7 +173,7 @@ def get_doctors():
 @patient_bp.route('/appointments', methods=['GET'])
 @patient_required
 def get_appointments():
-    user_id = session.get('user_id')
+    user_id = get_current_user_id()
     patient = Patient.query.filter_by(user_id=user_id).first()
     
     if patient is None:
@@ -197,7 +197,7 @@ def get_appointments():
 @patient_required
 def book_appointment():
     """book appointment in simplified 2-slot system"""
-    user_id = session.get('user_id')
+    user_id = get_current_user_id()
     patient = Patient.query.filter_by(user_id=user_id).first()
     
     if patient is None:
@@ -225,6 +225,11 @@ def book_appointment():
         apt_date = datetime.strptime(data['appointment_date'], '%Y-%m-%d').date()
     except ValueError:
         return jsonify({'success': False, 'message': 'Invalid date format'}), 400
+    
+    # validate date is not in the past
+    today = datetime.now().date()
+    if apt_date < today:
+        return jsonify({'success': False, 'message': 'Cannot book appointments for past dates'}), 400
     
     # parse time to determine slot type
     time_str = data['appointment_time']
@@ -293,7 +298,7 @@ def book_appointment():
 @patient_bp.route('/appointments/<int:appointment_id>', methods=['DELETE'])
 @patient_required
 def cancel_appointment(appointment_id):
-    user_id = session.get('user_id')
+    user_id = get_current_user_id()
     patient = Patient.query.filter_by(user_id=user_id).first()
     
     if patient is None:
@@ -320,7 +325,7 @@ def cancel_appointment(appointment_id):
 @patient_bp.route('/history', methods=['GET'])
 @patient_required
 def get_history():
-    user_id = session.get('user_id')
+    user_id = get_current_user_id()
     patient = Patient.query.filter_by(user_id=user_id).first()
     
     if patient is None:
@@ -379,7 +384,7 @@ def get_doctor_availability(doctor_id):
 @patient_required
 def export_patient_history():
     try:
-        user_id = session.get('user_id')
+        user_id = get_current_user_id()
         patient = Patient.query.filter_by(user_id=user_id).first()
         
         if not patient:
@@ -397,7 +402,7 @@ def export_patient_history():
 @patient_required
 def update_patient_profile():
     try:
-        user_id = session.get('user_id')
+        user_id = get_current_user_id()
         patient = Patient.query.filter_by(user_id=user_id).first()
         
         if not patient:

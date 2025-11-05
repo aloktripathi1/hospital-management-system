@@ -303,6 +303,59 @@ This project demonstrates:
 
 ---
 
+### Issue #003: Past Date Appointment Booking Prevention (FIXED)
+**Date**: November 5, 2025  
+**Problem**: Patients were able to book appointments for past dates (e.g., yesterday), which shouldn't be allowed in a real-world scenario.
+
+**Root Cause**: 
+- No date validation in backend to check if appointment date is in the past
+- Frontend date input had no minimum date constraint
+- No client-side validation before submitting the booking request
+
+**Solution Implemented**: Three-layer validation approach
+1. **Backend Validation** (`backend/routes/patient.py`):
+   - Added date validation in `book_appointment()` function
+   - Compares appointment date with current date
+   - Returns error: "Cannot book appointments for past dates" (HTTP 400)
+
+2. **Frontend UI Constraint** (`frontend/index.html`):
+   - Added `min` attribute to date input bound to `minBookingDate` computed property
+   - Prevents users from selecting past dates in the calendar picker
+   - Added helper text: "You cannot book appointments for past dates"
+
+3. **Frontend JavaScript Validation** (`frontend/assets/js/modules/patient.js`):
+   - Added validation in `bookAppointment()` function before API call
+   - Compares selected date with today's date
+   - Shows error message if attempting to book past date
+
+**Code Changes**:
+```python
+# Backend validation
+today = datetime.now().date()
+if apt_date < today:
+    return jsonify({'success': False, 'message': 'Cannot book appointments for past dates'}), 400
+```
+
+```javascript
+// Frontend computed property
+computed: {
+  minBookingDate() {
+    const today = new Date()
+    return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+  }
+}
+```
+
+**Files Modified**:
+- `backend/routes/patient.py` - Added past date validation
+- `frontend/assets/js/app.js` - Added `minBookingDate` computed property
+- `frontend/assets/js/modules/patient.js` - Added client-side date validation
+- `frontend/index.html` - Added `min` attribute to date input
+
+**Lesson Learned**: Always validate user input on both client and server side. UI constraints improve UX, while backend validation ensures data integrity and security.
+
+---
+
 ## 🎓 Academic Compliance
 
 This project is designed for educational purposes and demonstrates:
@@ -313,6 +366,11 @@ This project is designed for educational purposes and demonstrates:
 - Student-appropriate complexity level
 
 **Perfect for**: Computer Science coursework, web development assignments, database projects, and academic presentations.
+```
+
+```python file="" isHidden
+
+
 \`\`\`
 
 ```python file="" isHidden

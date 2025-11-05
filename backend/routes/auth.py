@@ -1,4 +1,5 @@
-from flask import Blueprint, request, jsonify, session
+from flask import Blueprint, request, jsonify
+from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
 from werkzeug.security import generate_password_hash, check_password_hash
 from database import db
 from models import User, Patient, Doctor
@@ -19,11 +20,10 @@ def login():
     if user is not None:
         if check_password_hash(user.password_hash, password):
             if user.is_active:
-                session['user_id'] = user.id
-                session['username'] = user.username
-                session['role'] = user.role
-                session['is_authenticated'] = True
-                return jsonify({'success': True, 'message': 'Login successful', 'data': {'user': user.to_dict()}})
+                # create jwt token with user id as string and additional claims for role and username
+                additional_claims = {'role': user.role, 'username': user.username}
+                token = create_access_token(identity=str(user.id), additional_claims=additional_claims)
+                return jsonify({'success': True, 'message': 'Login successful', 'data': {'user': user.to_dict(), 'token': token}})
             else:
                 return jsonify({'success': False, 'message': 'Account is deactivated', 'errors': ['Account deactivated']}), 401
         else:
@@ -84,16 +84,14 @@ def register():
     return jsonify({'success': True, 'message': 'Registration successful! Please login to complete your profile with additional information.', 'data': {'user': user.to_dict()}})
 
 @auth_bp.route('/me', methods=['GET'])
+@jwt_required()
 def get_current_user():
-    is_auth = session.get('is_authenticated')
-    if not is_auth:
-        return jsonify({'success': False, 'message': 'Not authenticated', 'errors': ['Not logged in']}), 401
+    # get user id from jwt token (identity is user id as string)
+    user_id = int(get_jwt_identity())
     
-    user_id = session.get('user_id')
     user = User.query.get(user_id)
     
     if user is None:
-        session.clear()
         return jsonify({'success': False, 'message': 'User not found', 'errors': ['User not found']}), 404
     
     data = user.to_dict()
@@ -111,5 +109,5 @@ def get_current_user():
 
 @auth_bp.route('/logout', methods=['POST'])
 def logout():
-    session.clear()
+    # jwt tokens are stateless, client just deletes the token
     return jsonify({'success': True, 'message': 'Logout successful', 'data': {}})

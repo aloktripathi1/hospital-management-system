@@ -110,6 +110,17 @@ const App = {
     }
   },
 
+  computed: {
+    // Get today's date in YYYY-MM-DD format for min date attribute
+    minBookingDate() {
+      const today = new Date()
+      const year = today.getFullYear()
+      const month = String(today.getMonth() + 1).padStart(2, '0')
+      const day = String(today.getDate()).padStart(2, '0')
+      return `${year}-${month}-${day}`
+    }
+  },
+
   methods: {
     // Get specialization description
     getSpecializationDescription(specialization) {
@@ -161,6 +172,8 @@ const App = {
       const response = await window.ApiService.getCurrentUser()
       if (response && response.success) {
         this.currentUser = response.data.user
+        console.log('checkAuth - Current user set:', this.currentUser)
+        console.log('checkAuth - User role:', this.currentUser.role)
         this.currentView = 'dashboard'
         this.appView = 'dashboard'
         await this.loadDashboardData()
@@ -178,6 +191,8 @@ const App = {
       const response = await window.ApiService.login(this.loginForm)
       if (response.success) {
         this.currentUser = response.data.user
+        console.log('handleLogin - User logged in:', this.currentUser)
+        console.log('handleLogin - User role:', this.currentUser.role)
         this.success = 'Welcome back, ' + this.currentUser.username + '!'
         this.currentView = 'dashboard'
         this.appView = 'dashboard'
@@ -234,6 +249,9 @@ const App = {
 
     async loadDashboardData() {
       if (!this.currentUser) return
+
+      console.log('Loading dashboard for role:', this.currentUser.role)
+      console.log('Current user object:', this.currentUser)
 
       if (this.currentUser.role === 'admin') {
         await this.loadAdminData()

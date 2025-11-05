@@ -1,6 +1,7 @@
 from flask import Flask, send_from_directory, request, jsonify
 from flask_cors import CORS
 from flask_mail import Mail
+from flask_jwt_extended import JWTManager
 from werkzeug.security import generate_password_hash
 from celery import Celery
 from database import db
@@ -18,6 +19,12 @@ app.config['SECRET_KEY'] = 'hospital-secret-key-123'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///hospital-management.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
+# jwt config
+app.config['JWT_SECRET_KEY'] = 'jwt-secret-key-456'
+app.config['JWT_TOKEN_LOCATION'] = ['headers']
+app.config['JWT_HEADER_NAME'] = 'Authorization'
+app.config['JWT_HEADER_TYPE'] = 'Bearer'
+
 # email config (supports both gmail and mailhog)
 app.config['MAIL_SERVER'] = os.getenv('MAIL_SERVER', 'smtp.gmail.com')
 app.config['MAIL_PORT'] = int(os.getenv('MAIL_PORT', 587))
@@ -25,7 +32,7 @@ app.config['MAIL_USE_TLS'] = os.getenv('MAIL_USE_TLS', 'True') == 'True'
 app.config['MAIL_USE_SSL'] = False
 app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME')
 app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
-app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_USERNAME')
+app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_DEFAULT_SENDER', os.getenv('MAIL_USERNAME'))
 
 # celery config
 app.config['CELERY_BROKER_URL'] = 'redis://localhost:6379/0'
@@ -42,6 +49,7 @@ cache = {}
 db.init_app(app)
 CORS(app)
 mail = Mail(app)
+jwt = JWTManager(app)
 
 # celery setup
 def make_celery(app):

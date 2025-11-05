@@ -27,13 +27,11 @@ def dashboard_stats():
     total_appointments = Appointment.query.filter(
         Appointment.status.in_(['booked', 'cancelled', 'completed'])
     ).count()
-    active_doctors = Doctor.query.filter_by(is_active=True).count()
     
     stats = {
         'total_doctors': total_doctors,
         'total_patients': total_patients,
-        'total_appointments': total_appointments,
-        'active_doctors': active_doctors
+        'total_appointments': total_appointments
     }
     
     # save to cache
@@ -168,92 +166,7 @@ def get_patients():
 
 # will comment out add_patient, update_patient routes later if not required in project statement...
 
-@admin_bp.route('/patients', methods=['POST'])
-@admin_required
-def add_patient():
-    data = request.get_json()
-    
-    required = ['name', 'email', 'phone', 'age']
-    for field in required:
-        if not data.get(field):
-            name = field.replace("_", " ").title()
-            return jsonify({'success': False, 'message': f'{name} is required', 'errors': [f'Missing {field}']}), 400
-    
-    existing = User.query.filter_by(email=data['email']).first()
-    if existing is not None:
-        return jsonify({'success': False, 'message': 'Email already exists', 'errors': ['Email taken']}), 400
-    
-    base = data['email'].split('@')[0]
-    
-    username = base
-    counter = 1
-    while User.query.filter_by(username=username).first():
-        username = f"{base}{counter}"
-        counter += 1
-    
-    parts = data['name'].split()
-    if parts[0].lower() in ['dr.', 'dr', 'mr.', 'mr', 'ms.', 'ms', 'mrs.', 'mrs']:
-        first = parts[1].lower()
-    else:
-        first = parts[0].lower()
-    
-    password = f"{first}123"
-    
-    user = User(
-        username=username,
-        email=data['email'],
-        password_hash=generate_password_hash(password),
-        role='patient'
-    )
-    db.session.add(user)
-    db.session.flush()
-    
-    patient = Patient(
-        user_id=user.id,
-        name=data['name'],
-        phone=data['phone'],
-        age=data['age'],
-        gender=data.get('gender', ''),
-        address=data.get('address', ''),
-        medical_history=data.get('medical_history', ''),
-        emergency_contact=data.get('emergency_contact', ''),
-        is_blacklisted=False
-    )
-    db.session.add(patient)
-    db.session.commit()
-    
-    return jsonify({'success': True, 'message': 'Patient account created successfully', 'data': {'patient': patient.to_dict(), 'credentials': {'username': username, 'password': password}}})
 
-@admin_bp.route('/patients/<int:patient_id>', methods=['PUT'])
-@admin_required
-def update_patient(patient_id):
-    patient = Patient.query.get(patient_id)
-    
-    if patient is None:
-        return jsonify({'success': False, 'message': 'Patient not found', 'errors': ['Patient not found']}), 404
-    
-    data = request.get_json()
-    
-    if 'name' in data:
-        patient.name = data['name']
-    if 'phone' in data:
-        patient.phone = data['phone']
-    if 'address' in data:
-        patient.address = data['address']
-    if 'age' in data:
-        patient.age = data['age']
-    if 'gender' in data:
-        patient.gender = data['gender']
-    if 'medical_history' in data:
-        patient.medical_history = data['medical_history']
-    if 'emergency_contact' in data:
-        patient.emergency_contact = data['emergency_contact']
-    if 'is_active' in data:
-        patient.user.is_active = data['is_active']
-    
-    db.session.commit()
-    
-    return jsonify({'success': True, 'message': 'Patient updated successfully', 'data': {'patient': patient.to_dict()}})
 
 @admin_bp.route('/appointments', methods=['GET'])
 @admin_required

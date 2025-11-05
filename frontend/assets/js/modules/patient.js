@@ -67,6 +67,17 @@ async function bookAppointment(app) {
   app.error = null
   app.success = null
   
+  // Validate date is not in the past
+  const selectedDate = new Date(app.bookingForm.appointment_date)
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  
+  if (selectedDate < today) {
+    app.error = 'Cannot book appointments for past dates'
+    app.loading = false
+    return
+  }
+  
   const resp = await window.ApiService.bookAppointment(app.bookingForm)
   if (resp.success) {
     app.success = 'Appointment booked successfully!'

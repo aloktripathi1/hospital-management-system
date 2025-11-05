@@ -7,8 +7,8 @@ from datetime import datetime, timedelta
 BASE_URL = "http://127.0.0.1:5000/api"
 
 def test_patient_booking():
-    # Session to maintain cookies
-    session = requests.Session()
+    # Store JWT token
+    token = None
     
     print("=== Testing Patient Appointment Booking (2-Slot System) ===")
     
@@ -19,7 +19,7 @@ def test_patient_booking():
         "password": "patient123"
     }
     
-    response = session.post(f"{BASE_URL}/auth/login", json=login_data)
+    response = requests.post(f"{BASE_URL}/auth/login", json=login_data)
     print(f"Login Response: {response.status_code}")
     
     if response.status_code != 200:
@@ -31,11 +31,14 @@ def test_patient_booking():
         print("❌ Login unsuccessful!")
         return
     
+    # get jwt token from response
+    token = login_result['data']['token']
+    headers = {"Authorization": f"Bearer {token}"}
     print("✅ Patient login successful!")
     
     # 2. Get all doctors
     print("\n2. Getting all doctors...")
-    response = session.get(f"{BASE_URL}/patient/doctors")
+    response = requests.get(f"{BASE_URL}/patient/doctors", headers=headers)
     print(f"Doctors Response: {response.status_code}")
     
     if response.status_code == 200:
@@ -62,7 +65,7 @@ def test_patient_booking():
     
     print(f"\n3. Getting available slots for Dr. {doctor['name']} on {test_date}...")
     print("Note: Using 2-slot system - Morning (9AM-1PM) and Evening (3PM-7PM)")
-    response = session.get(f"{BASE_URL}/patient/available-slots?doctor_id={doctor['id']}&date={test_date}")
+    response = requests.get(f"{BASE_URL}/patient/available-slots?doctor_id={doctor['id']}&date={test_date}")
     print(f"Available Slots Response: {response.status_code}")
     
     if response.status_code == 200:
@@ -98,7 +101,7 @@ def test_patient_booking():
     
     print(f"Booking Data: {json.dumps(booking_data, indent=2)}")
     
-    response = session.post(f"{BASE_URL}/patient/appointments", json=booking_data)
+    response = requests.post(f"{BASE_URL}/patient/appointments", json=booking_data)
     print(f"Booking Response: {response.status_code}")
     print(f"Booking Data: {response.text}")
     

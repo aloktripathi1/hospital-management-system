@@ -1,12 +1,22 @@
 // API functions for hospital app
 const API_URL = "/api"
 
+// helper to get jwt token from localStorage
+function getToken() {
+  return localStorage.getItem("token")
+}
+
 async function callAPI(url, method, data) {
   try {
     const options = {
       method: method || 'GET',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include'
+      headers: { 'Content-Type': 'application/json' }
+    }
+    
+    // add jwt token to headers if available
+    const token = getToken()
+    if (token) {
+      options.headers['Authorization'] = 'Bearer ' + token
     }
     
     if (data) {
@@ -45,7 +55,12 @@ async function callAPI(url, method, data) {
 
 // Auth functions
 async function login(credentials) {
-  return await callAPI("/auth/login", "POST", credentials)
+  const result = await callAPI("/auth/login", "POST", credentials)
+  // save jwt token to localStorage
+  if (result.success && result.data && result.data.token) {
+    localStorage.setItem("token", result.data.token)
+  }
+  return result
 }
 
 async function register(userData) {
@@ -58,6 +73,7 @@ async function getCurrentUser() {
 
 async function logout() {
   const result = await callAPI("/auth/logout", "POST")
+  // remove jwt token from localStorage
   localStorage.removeItem("token")
   return result
 }
@@ -211,13 +227,6 @@ async function getAdminPatientHistory(patientId) {
   return await callAPI("/admin/patients/" + patientId + "/history", "GET")
 }
 
-async function updatePatient(patientId, patientData) {
-  return await callAPI("/admin/patients/" + patientId, "PUT", patientData)
-}
-
-async function addPatient(patientData) {
-  return await callAPI("/admin/patients", "POST", patientData)
-}
 
 // Keep the same interface for the app
 window.ApiService = {
@@ -260,7 +269,6 @@ window.ApiService = {
   deactivateDoctor: deactivateDoctor,
   generateMonthlyReport: generateMonthlyReport,
   togglePatientBlacklist: togglePatientBlacklist,
-  getAdminPatientHistory: getAdminPatientHistory,
-  updatePatient: updatePatient,
-  addPatient: addPatient
+  getAdminPatientHistory: getAdminPatientHistory
 }
+

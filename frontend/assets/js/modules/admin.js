@@ -169,46 +169,6 @@ async function loadPatientHistory(app, patientId) {
   }
 }
 
-async function updatePatient(app) {
-  app.loading = true
-  const resp = await window.ApiService.updatePatient(app.editingPatient.id, app.editingPatient)
-  if (resp.success) {
-    app.success = 'Patient updated successfully!'
-    app.adminView = 'dashboard'
-    await loadAdminData(app)
-  } else {
-    app.error = resp.message || 'Failed to update patient'
-  }
-  app.loading = false
-}
-
-function showAddPatientForm(app) {
-  app.adminView = 'add-patient'
-}
-
-async function addPatient(app) {
-  app.loading = true
-  const resp = await window.ApiService.addPatient(app.newPatient)
-  if (resp.success) {
-    app.success = 'Patient account created successfully!'
-    app.newPatient = {
-      name: '',
-      email: '',
-      phone: '',
-      age: '',
-      gender: '',
-      address: '',
-      medical_history: '',
-      emergency_contact: ''
-    }
-    app.adminView = 'dashboard'
-    await loadAdminData(app)
-  } else {
-    app.error = resp.message || 'Failed to create patient account'
-  }
-  app.loading = false
-}
-
 window.AdminModule = {
   loadAdminData: loadAdminData,
   searchDoctors: searchDoctors,
@@ -222,11 +182,8 @@ window.AdminModule = {
   searchPatients: searchPatients,
   clearPatientSearch: clearPatientSearch,
   togglePatientBlacklist: togglePatientBlacklist,
-  openAdminPatientEdit: openAdminPatientEdit,
   openAdminPatientHistory: openAdminPatientHistory,
-  loadPatientHistory: loadPatientHistory,
-  updatePatient: updatePatient,
-  showAddPatientForm: showAddPatientForm,
-  addPatient: addPatient
+  loadPatientHistory: loadPatientHistory
 }
+
 

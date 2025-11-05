@@ -1,15 +1,15 @@
-from flask import Blueprint, request, jsonify, session
+from flask import Blueprint, request, jsonify
 from database import db
 from models import User, Doctor, Patient, Appointment, Treatment, DoctorAvailability
 from datetime import datetime, date, time, timedelta
-from decorators import doctor_required
+from decorators import doctor_required, get_current_user_id
 
 doctor_bp = Blueprint('doctor', __name__)
 
 @doctor_bp.route('/dashboard', methods=['GET'])
 @doctor_required
 def get_dashboard():
-    user_id = session.get('user_id')
+    user_id = get_current_user_id()
     doctor = Doctor.query.filter_by(user_id=user_id).first()
     
     if doctor is None:
@@ -35,7 +35,7 @@ def get_dashboard():
 @doctor_bp.route('/patient-history/<int:patient_id>', methods=['GET'])
 @doctor_required
 def get_patient_history_details(patient_id):
-    user_id = session.get('user_id')
+    user_id = get_current_user_id()
     doctor = Doctor.query.filter_by(user_id=user_id).first()
     
     if doctor is None:
@@ -101,7 +101,7 @@ def get_patient_history_details(patient_id):
 @doctor_bp.route('/appointments', methods=['GET'])
 @doctor_required
 def get_appointments():
-    user_id = session.get('user_id')
+    user_id = get_current_user_id()
     doctor = Doctor.query.filter_by(user_id=user_id).first()
     
     if doctor is None:
@@ -147,7 +147,7 @@ def get_appointments():
 @doctor_bp.route('/patients', methods=['GET'])
 @doctor_required
 def get_patients():
-    user_id = session.get('user_id')
+    user_id = get_current_user_id()
     doctor = Doctor.query.filter_by(user_id=user_id).first()
     
     if doctor is None:
@@ -166,7 +166,7 @@ def get_patients():
 @doctor_bp.route('/appointments/<int:appointment_id>/status', methods=['PUT'])
 @doctor_required
 def update_appointment_status(appointment_id):
-    user_id = session.get('user_id')
+    user_id = get_current_user_id()
     doctor = Doctor.query.filter_by(user_id=user_id).first()
     
     if doctor is None:
@@ -197,7 +197,7 @@ def update_appointment_status(appointment_id):
 @doctor_bp.route('/patient-history', methods=['POST'])
 @doctor_required
 def add_patient_history():
-    user_id = session.get('user_id')
+    user_id = get_current_user_id()
     doctor = Doctor.query.filter_by(user_id=user_id).first()
     
     if doctor is None:
@@ -241,7 +241,7 @@ def get_availability():
     """get doctor's 7-day availability schedule"""
     from datetime import date, timedelta
     
-    user_id = session.get('user_id')
+    user_id = get_current_user_id()
     doctor = Doctor.query.filter_by(user_id=user_id).first()
     
     if doctor is None:
@@ -282,7 +282,7 @@ def get_availability():
 @doctor_required
 def set_availability_slots():
     """set doctor availability for specific date/slot combinations using 2-slot system"""
-    user_id = session.get('user_id')
+    user_id = get_current_user_id()
     doctor = Doctor.query.filter_by(user_id=user_id).first()
     
     if doctor is None:
@@ -340,7 +340,7 @@ def set_availability_slots():
 @doctor_required
 def update_doctor_profile():
     try:
-        user_id = session.get('user_id')
+        user_id = get_current_user_id()
         doctor = Doctor.query.filter_by(user_id=user_id).first()
         
         if not doctor:
@@ -379,7 +379,7 @@ def update_doctor_profile():
 @doctor_bp.route('/available-slots', methods=['GET'])
 @doctor_required
 def get_available_slots():
-    user_id = session.get('user_id')
+    user_id = get_current_user_id()
     doctor = Doctor.query.filter_by(user_id=user_id).first()
     
     if doctor is None:
