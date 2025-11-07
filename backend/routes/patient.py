@@ -77,7 +77,6 @@ def get_departments():
 @patient_bp.route('/available-slots', methods=['GET'])
 @patient_required
 def get_available_slots():
-    """get available slots for a doctor on specific date (2-slot system: morning/evening)"""
     doctor_id = request.args.get('doctor_id')
     date_str = request.args.get('date')
     
@@ -202,7 +201,6 @@ def get_appointments():
 @patient_bp.route('/appointments', methods=['POST'])
 @patient_required
 def book_appointment():
-    """book appointment in simplified 2-slot system"""
     user_id = get_current_user_id()
     patient = Patient.query.filter_by(user_id=user_id).first()
     
