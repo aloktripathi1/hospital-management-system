@@ -245,12 +245,10 @@ def add_patient_history():
 @doctor_bp.route('/availability', methods=['GET'])
 @doctor_required
 def get_availability():
-    """get doctor's 7-day availability schedule"""
     from datetime import date, timedelta
     
     user_id = get_current_user_id()
     doctor = Doctor.query.filter_by(user_id=user_id).first()
-    
     if doctor is None:
         return jsonify({'success': False, 'message': 'Doctor profile not found', 'errors': ['Profile not found']}), 404
     
@@ -289,7 +287,6 @@ def get_availability():
 @doctor_bp.route('/set-slots', methods=['POST'])
 @doctor_required
 def set_availability_slots():
-    """set doctor availability for specific date/slot combinations using 2-slot system"""
     user_id = get_current_user_id()
     doctor = Doctor.query.filter_by(user_id=user_id).first()
     
