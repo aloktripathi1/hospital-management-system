@@ -91,7 +91,6 @@ const App = {
   treatments: [],
   allPatientAppointments: [], // Unified appointments (both current and past)
   selectedAppointmentHistory: null, // For appointment history modal
-  selectedTreatment: null, // For treatment details modal
       selectedDepartment: null,
       selectedDoctor: null,
       availableSlots: [],
@@ -390,6 +389,9 @@ const App = {
     mergeAppointmentsAndTreatments() {
       const allAppts = []
       
+      // Collect appointment IDs that already have treatments
+      const appointmentIdsWithTreatments = new Set()
+      
       if (this.patientAppointments && this.patientAppointments.length > 0) {
         for (let i = 0; i < this.patientAppointments.length; i++) {
           const apt = this.patientAppointments[i]
@@ -403,12 +405,24 @@ const App = {
             type: 'appointment',
             treatment: apt.treatment
           })
+          
+          // Track appointments that already have treatment data
+          if (apt.treatment) {
+            appointmentIdsWithTreatments.add(apt.id)
+          }
         }
       }
       
+      // Only add treatments that don't have a corresponding appointment already shown
       if (this.treatments && this.treatments.length > 0) {
         for (let i = 0; i < this.treatments.length; i++) {
           const treat = this.treatments[i]
+          
+          // Skip if this treatment's appointment is already in the list
+          if (treat.appointment_id && appointmentIdsWithTreatments.has(treat.appointment_id)) {
+            continue
+          }
+          
           allAppts.push({
             id: 'treatment_' + treat.id,
             appointment_date: treat.created_at ? treat.created_at.split('T')[0] : '',

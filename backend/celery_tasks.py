@@ -17,9 +17,9 @@ celery.conf.broker_connection_retry_on_startup = True
 
 @celery.on_after_configure.connect
 def setup_periodic_tasks(sender, **kwargs):
-    # daily reminder every 2 minutes (demo mode)
+    # daily reminder every 2 minutes
     sender.add_periodic_task(120.0, send_daily_reminders.s())
-    # monthly report every 3 minutes (demo mode)
+    # monthly report every 3 minutes
     sender.add_periodic_task(180.0, generate_monthly_report.s())
 
 # daily reminder task
@@ -53,10 +53,8 @@ def generate_monthly_report():
     from app import app, mail
     with app.app_context():
         now = datetime.now()
-        # calculate previous month
         first_day_current = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-        last_day_previous = first_day_current - timedelta(days=1)
-        first_day_previous = last_day_previous.replace(day=1)
+        last_day_current = now.replace(hour=23, minute=59, second=59, microsecond=999999)
 
         docs = Doctor.query.filter_by(is_active=True).all()
         sent = 0
@@ -65,21 +63,21 @@ def generate_monthly_report():
                 continue
             appts = Appointment.query.filter(
                 Appointment.doctor_id == doc.id,
-                Appointment.appointment_date >= first_day_previous.date(),
-                Appointment.appointment_date <= last_day_previous.date(),
+                Appointment.appointment_date >= first_day_current.date(),
+                Appointment.appointment_date <= last_day_current.date(),
                 Appointment.status == 'completed'
             ).all()
             treatments = Treatment.query.join(Appointment).filter(
                 Appointment.doctor_id == doc.id,
-                Treatment.created_at >= first_day_previous,
-                Treatment.created_at <= last_day_previous
+                Treatment.created_at >= first_day_current,
+                Treatment.created_at <= last_day_current
             ).all()
 
-            # simple html report
+            # html report
             html = f"""<html><body>
             <h2>Monthly Activity Report</h2>
             <p>Dr. {doc.name} - {doc.specialization}</p>
-            <p>Period: {first_day_previous.strftime('%B %Y')}</p>
+            <p>Period: {first_day_current.strftime('%B %Y')} (Current Month - Demo Mode)</p>
             <p>Total appointments: {len(appts)}</p>
             <p>Total treatments: {len(treatments)}</p>
             <h3>recent appointments</h3>
@@ -90,11 +88,11 @@ def generate_monthly_report():
             html += "</table></body></html>"
 
             doctor_email = doc.user.email
-            msg = Message(subject=f"Monthly Activity Report - {first_day_previous.strftime('%B %Y')}", recipients=[doctor_email])
+            msg = Message(subject=f"Monthly Activity Report - {first_day_current.strftime('%B %Y')}", recipients=[doctor_email])
             msg.html = html
             mail.send(msg)
             sent += 1
-        return f"Sent {sent} monthly reports for {first_day_previous.strftime('%B %Y')}"
+        return f"Sent {sent} monthly reports for {first_day_current.strftime('%B %Y')}"
 
 # export patient history csv
 @celery.task

@@ -8,6 +8,7 @@ from decorators import admin_required
 
 admin_bp = Blueprint('admin', __name__)
 
+# get admin dashboard stats with caching
 @admin_bp.route('/dashboard-stats', methods=['GET'])
 @admin_required
 def dashboard_stats():
@@ -39,6 +40,7 @@ def dashboard_stats():
     
     return jsonify({'success': True, 'message': 'Dashboard stats retrieved (fresh)', 'data': stats})
 
+# get all doctors list
 @admin_bp.route('/doctors', methods=['GET'])
 @admin_required
 def get_doctors():
@@ -51,6 +53,7 @@ def get_doctors():
     return jsonify({'success': True, 'message': 'Doctors retrieved successfully', 'data': {'doctors': data}})
 
 
+# create new doctor account
 @admin_bp.route('/doctors', methods=['POST'])
 @admin_required
 def add_doctor():
@@ -74,13 +77,7 @@ def add_doctor():
         username = f"{base}{counter}"
         counter += 1
     
-    parts = data['name'].split()
-    if parts[0].lower() in ['dr.', 'dr', 'mr.', 'mr', 'ms.', 'ms', 'mrs.', 'mrs']:
-        first = parts[1].lower()
-    else:
-        first = parts[0].lower()
-    
-    password = f"{first}123"
+    password = f"{username}123"
     
     user = User(
         username=username,
@@ -106,6 +103,7 @@ def add_doctor():
     return jsonify({'success': True, 'message': 'Doctor account created successfully', 'data': {'doctor': doctor.to_dict(), 'credentials': {'username': username, 'password': password}}})
 
 
+# update doctor details
 @admin_bp.route('/doctors/<int:doctor_id>', methods=['PUT'])
 @admin_required
 def update_doctor(doctor_id):
@@ -139,6 +137,7 @@ def update_doctor(doctor_id):
     
     return jsonify({'success': True, 'message': 'Doctor updated successfully', 'data': {'doctor': doctor.to_dict()}})
 
+# deactivate doctor account
 @admin_bp.route('/doctors/<int:doctor_id>', methods=['DELETE'])
 @admin_required
 def delete_doctor(doctor_id):
@@ -153,6 +152,7 @@ def delete_doctor(doctor_id):
     
     return jsonify({'success': True, 'message': 'Doctor deactivated successfully', 'data': {}})
 
+# get all patients list
 @admin_bp.route('/patients', methods=['GET'])
 @admin_required
 def get_patients():
@@ -164,10 +164,7 @@ def get_patients():
     
     return jsonify({'success': True, 'message': 'Patients retrieved successfully', 'data': {'patients': data}})
 
-# will comment out add_patient, update_patient routes later if not required in project statement...
-
-
-
+# get all appointments list
 @admin_bp.route('/appointments', methods=['GET'])
 @admin_required
 def get_appointments():
@@ -179,6 +176,7 @@ def get_appointments():
     
     return jsonify({'success': True, 'message': 'Appointments retrieved successfully', 'data': {'appointments': data}})
 
+# update appointment status or notes
 @admin_bp.route('/appointments/<int:appointment_id>', methods=['PUT'])
 @admin_required
 def update_appointment(appointment_id):
@@ -200,45 +198,7 @@ def update_appointment(appointment_id):
     
     return jsonify({'success': True, 'message': 'Appointment updated successfully', 'data': {'appointment': appointment.to_dict()}})
 
-@admin_bp.route('/search', methods=['GET'])
-@admin_required
-def search():
-    search_type = request.args.get('type')
-    query = request.args.get('query', '')
-    
-    if not search_type or not query:
-        return jsonify({'success': False, 'message': 'Search type and query are required', 'errors': ['Missing parameters']}), 400
-    
-    results = []
-    
-    if search_type == 'doctor':
-        doctors = Doctor.query.filter(
-            Doctor.name.contains(query) | 
-            Doctor.specialization.contains(query)
-        ).all()
-        for doc in doctors:
-            results.append(doc.to_dict())
-    
-    elif search_type == 'patient':
-        patients = Patient.query.filter(
-            Patient.name.contains(query) |
-            Patient.phone.contains(query)
-        ).all()
-        for p in patients:
-            results.append(p.to_dict())
-    
-    elif search_type == 'appointment':
-        appointments = Appointment.query.join(Patient).join(Doctor).filter(
-            Patient.name.contains(query) |
-            Doctor.name.contains(query)
-        ).all()
-        for apt in appointments:
-            results.append(apt.to_dict())
-    
-    count = len(results)
-    
-    return jsonify({'success': True, 'message': 'Search completed successfully', 'data': {'results': results, 'count': count}})
-
+# search doctors by name or specialization
 @admin_bp.route('/search/doctors', methods=['GET'])
 @admin_required
 def search_doctors():
@@ -273,6 +233,7 @@ def search_doctors():
     
     return jsonify({'success': True, 'message': 'Doctors found', 'data': {'doctors': data, 'count': count}})
 
+# search patients by name or email
 @admin_bp.route('/search/patients', methods=['GET'])
 @admin_required
 def search_patients():
@@ -296,6 +257,7 @@ def search_patients():
     
     return jsonify({'success': True, 'message': 'Patients found', 'data': {'patients': data, 'count': count}})
 
+# toggle patient blacklist status
 @admin_bp.route('/patients/<int:patient_id>/blacklist', methods=['PUT'])
 @admin_required
 def toggle_patient_blacklist(patient_id):
@@ -315,6 +277,7 @@ def toggle_patient_blacklist(patient_id):
     
     return jsonify({'success': True, 'message': f'Patient {action} successfully', 'data': {'patient': patient.to_dict()}})
 
+# get patient appointment history
 @admin_bp.route('/patients/<int:patient_id>/history', methods=['GET'])
 @admin_required
 def get_patient_history(patient_id):

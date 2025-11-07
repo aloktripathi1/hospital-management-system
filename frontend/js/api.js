@@ -115,10 +115,6 @@ async function updateAppointment(id, appointmentData) {
   return await callAPI("/admin/appointments/" + id, "PUT", appointmentData)
 }
 
-async function searchRecords(type, query) {
-  return await callAPI("/admin/search?type=" + type + "&query=" + encodeURIComponent(query), "GET")
-}
-
 // Doctor functions
 async function getDoctorDashboard() {
   return await callAPI("/doctor/dashboard", "GET")
@@ -243,7 +239,6 @@ window.ApiService = {
   updatePatientProfile: updatePatientProfile,
   getAppointments: getAppointments,
   updateAppointment: updateAppointment,
-  searchRecords: searchRecords,
   getDoctorDashboard: getDoctorDashboard,
   getDoctorAppointments: getDoctorAppointments,
   updateAppointmentStatus: updateAppointmentStatus,

@@ -6,6 +6,7 @@ from decorators import patient_required, patient_or_admin_required, get_current_
 
 patient_bp = Blueprint('patient', __name__)
 
+# get patient dashboard stats
 @patient_bp.route('/dashboard', methods=['GET'])
 @patient_required
 def get_dashboard():
@@ -29,6 +30,7 @@ def get_dashboard():
     
     return jsonify({'success': True, 'message': 'Dashboard data retrieved', 'data': {'patient': patient.to_dict(), 'upcoming_appointments': upcoming, 'total_appointments': total, 'doctors_visited': doctors}})
 
+# get all departments with active doctors
 @patient_bp.route('/departments', methods=['GET'])
 @patient_or_admin_required
 def get_departments():
@@ -71,6 +73,7 @@ def get_departments():
     
     return jsonify({'success': True, 'message': 'Departments retrieved successfully', 'data': {'departments': data}})
 
+# get available slots for doctor on specific date
 @patient_bp.route('/available-slots', methods=['GET'])
 @patient_required
 def get_available_slots():
@@ -151,6 +154,7 @@ def get_available_slots():
     
     return jsonify({'success': True, 'message': 'Available slots retrieved successfully', 'data': {'slots': slots, 'date': apt_date.isoformat(), 'doctor_id': doctor_id}})
 
+# get doctors list by department
 @patient_bp.route('/doctors', methods=['GET'])
 @patient_required
 def get_doctors():
@@ -170,6 +174,7 @@ def get_doctors():
     except Exception as e:
         return jsonify({'success': False, 'message': 'Failed to get doctors', 'errors': [str(e)]}), 500
 
+# get patient's appointments
 @patient_bp.route('/appointments', methods=['GET'])
 @patient_required
 def get_appointments():
@@ -193,6 +198,7 @@ def get_appointments():
     
     return jsonify({'success': True, 'message': 'Appointments retrieved successfully', 'data': {'appointments': [apt.to_dict() for apt in appointments]}})
 
+# book new appointment
 @patient_bp.route('/appointments', methods=['POST'])
 @patient_required
 def book_appointment():
@@ -295,6 +301,7 @@ def book_appointment():
     
     return jsonify({'success': True, 'message': 'Appointment booked successfully', 'data': {'appointment': appointment.to_dict()}})
 
+# cancel appointment
 @patient_bp.route('/appointments/<int:appointment_id>', methods=['DELETE'])
 @patient_required
 def cancel_appointment(appointment_id):
@@ -322,6 +329,7 @@ def cancel_appointment(appointment_id):
     
     return jsonify({'success': True, 'message': 'Appointment cancelled successfully', 'data': {}})
 
+# get patient medical history with treatments
 @patient_bp.route('/history', methods=['GET'])
 @patient_required
 def get_history():
@@ -365,6 +373,7 @@ def get_history():
     
     return jsonify({'success': True, 'message': 'Patient history retrieved successfully', 'data': {'treatments': treatment_data}})
 
+# get doctor availability schedule
 @patient_bp.route('/doctor/availability/<int:doctor_id>', methods=['GET'])
 @patient_required
 def get_doctor_availability(doctor_id):
@@ -380,6 +389,7 @@ def get_doctor_availability(doctor_id):
     
     return jsonify({'success': True, 'message': 'Doctor availability retrieved successfully', 'data': {'doctor': doctor.to_dict(), 'availability': [avail.to_dict() for avail in availability]}})
 
+# export patient history as csv via email
 @patient_bp.route('/export-history', methods=['POST'])
 @patient_required
 def export_patient_history():
@@ -398,6 +408,7 @@ def export_patient_history():
     except Exception as e:
         return jsonify({'success': False, 'message': 'Failed to start CSV export', 'errors': [str(e)]}), 500
 
+# update patient profile information
 @patient_bp.route('/profile', methods=['PUT'])
 @patient_required
 def update_patient_profile():

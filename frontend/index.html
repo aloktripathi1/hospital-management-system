@@ -6,7 +6,7 @@
     <title>MediHub – Hospital Management System</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
-    <link href="/static/css/custom.css" rel="stylesheet">
+    <link href="/static/custom.css" rel="stylesheet">
     <style>
         /* css to prevent vuejs template flashing issue */
         [v-cloak] {
@@ -1404,47 +1404,6 @@
         </div>
 
         <!-- Complete Treatment Modal -->
-        <!-- Treatment Details Modal -->
-        <div class="modal fade" id="treatmentDetailsModal" tabindex="-1" aria-labelledby="treatmentDetailsModalLabel" aria-hidden="true">
-            <div class="modal-dialog modal-lg">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="treatmentDetailsModalLabel">Treatment Details</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    <div class="modal-body" v-if="selectedTreatment">
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <strong>Date:</strong> {{ selectedTreatment.created_at ? new Date(selectedTreatment.created_at).toLocaleDateString() : 'N/A' }}
-                            </div>
-                            <div class="col-md-6">
-                                <strong>Doctor:</strong> {{ getTreatmentDoctor(selectedTreatment) }}
-                            </div>
-                        </div>
-                        <div class="mb-3">
-                            <strong>Visit Type:</strong>
-                            <p>{{ selectedTreatment.visit_type || 'N/A' }}</p>
-                        </div>
-
-                        <div class="mb-3" v-if="selectedTreatment.diagnosis">
-                            <strong>Diagnosis:</strong>
-                            <p>{{ selectedTreatment.diagnosis }}</p>
-                        </div>
-                        <div class="mb-3" v-if="selectedTreatment.prescription">
-                            <strong>Prescription:</strong>
-                            <p>{{ selectedTreatment.prescription }}</p>
-                        </div>
-                        <div class="mb-3" v-if="selectedTreatment.treatment_notes">
-                            <strong>Treatment Notes:</strong>
-                            <p>{{ selectedTreatment.treatment_notes }}</p>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    </div>
-                </div>
-            </div>
-        </div>
         <div class="modal fade" id="completeTreatmentModal" tabindex="-1" aria-labelledby="completeTreatmentModalLabel" aria-hidden="true">
             <div class="modal-dialog">
                 <div class="modal-content">
@@ -1542,11 +1501,11 @@
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <!-- Application Scripts -->
-    <script src="/static/js/services/api.js"></script>
-    <script src="/static/js/modules/utils.js"></script>
-    <script src="/static/js/modules/admin.js"></script>
-    <script src="/static/js/modules/doctor.js"></script>
-    <script src="/static/js/modules/patient.js"></script>
+    <script src="/static/js/api.js"></script>
+    <script src="/static/js/utils.js"></script>
+    <script src="/static/js/admin.js"></script>
+    <script src="/static/js/doctor.js"></script>
+    <script src="/static/js/patient.js"></script>
     <script src="/static/js/app.js"></script>
 </body>
 </html>

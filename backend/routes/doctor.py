@@ -6,6 +6,7 @@ from decorators import doctor_required, get_current_user_id
 
 doctor_bp = Blueprint('doctor', __name__)
 
+# get doctor dashboard stats
 @doctor_bp.route('/dashboard', methods=['GET'])
 @doctor_required
 def get_dashboard():
@@ -32,6 +33,7 @@ def get_dashboard():
     
     return jsonify({'success': True, 'message': 'Dashboard data retrieved', 'data': {'doctor': doctor.to_dict(), 'today_appointments': today_appointments, 'total_appointments': total_appointments, 'total_patients': total_patients}})
 
+# get patient history with appointments and treatments
 @doctor_bp.route('/patient-history/<int:patient_id>', methods=['GET'])
 @doctor_required
 def get_patient_history_details(patient_id):
@@ -98,6 +100,7 @@ def get_patient_history_details(patient_id):
     
     return jsonify(data)
 
+# get doctor's appointments with filters
 @doctor_bp.route('/appointments', methods=['GET'])
 @doctor_required
 def get_appointments():
@@ -144,6 +147,7 @@ def get_appointments():
     
     return jsonify({'success': True, 'message': 'Appointments retrieved successfully', 'data': {'appointments': data}})
 
+# get all assigned patients
 @doctor_bp.route('/patients', methods=['GET'])
 @doctor_required
 def get_patients():
@@ -163,6 +167,7 @@ def get_patients():
     
     return jsonify({'success': True, 'message': 'Patients retrieved successfully', 'data': {'patients': data}})
 
+# update appointment status (complete, cancel, etc)
 @doctor_bp.route('/appointments/<int:appointment_id>/status', methods=['PUT'])
 @doctor_required
 def update_appointment_status(appointment_id):
@@ -194,6 +199,7 @@ def update_appointment_status(appointment_id):
     
     return jsonify({'success': True, 'message': f'Appointment marked as {status}', 'data': {'appointment': appointment.to_dict()}})
 
+# add treatment details for an appointment
 @doctor_bp.route('/patient-history', methods=['POST'])
 @doctor_required
 def add_patient_history():
@@ -235,6 +241,7 @@ def add_patient_history():
     
     return jsonify({'success': True, 'message': 'Patient history updated successfully', 'data': {'treatment': treatment.to_dict(), 'appointment': appointment.to_dict()}})
 
+# get doctor's 7-day availability schedule
 @doctor_bp.route('/availability', methods=['GET'])
 @doctor_required
 def get_availability():
@@ -278,6 +285,7 @@ def get_availability():
     
     return jsonify({'success': True, 'message': 'Availability retrieved successfully', 'data': {'availability': availability_days}})
 
+# set doctor availability for specific date/slot combinations
 @doctor_bp.route('/set-slots', methods=['POST'])
 @doctor_required
 def set_availability_slots():
@@ -336,6 +344,7 @@ def set_availability_slots():
         db.session.rollback()
         return jsonify({'success': False, 'message': f'Error updating availability: {str(e)}'}), 500
 
+# update doctor profile information
 @doctor_bp.route('/profile', methods=['PUT'])
 @doctor_required
 def update_doctor_profile():
@@ -376,6 +385,7 @@ def update_doctor_profile():
         db.session.rollback()
         return jsonify({'success': False, 'message': 'Failed to update profile', 'errors': [str(e)]}), 500
 
+# get doctor's available appointment slots
 @doctor_bp.route('/available-slots', methods=['GET'])
 @doctor_required
 def get_available_slots():

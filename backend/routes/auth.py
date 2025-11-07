@@ -6,6 +6,7 @@ from models import User, Patient, Doctor
 
 auth_bp = Blueprint('auth', __name__)
 
+# login with username and password
 @auth_bp.route('/login', methods=['POST'])
 def login():
     data = request.get_json()
@@ -31,6 +32,7 @@ def login():
     else:
         return jsonify({'success': False, 'message': 'Invalid credentials', 'errors': ['Invalid username or password']}), 401
 
+# register new patient account
 @auth_bp.route('/register', methods=['POST'])
 def register():
     data = request.get_json()
@@ -83,6 +85,7 @@ def register():
     
     return jsonify({'success': True, 'message': 'Registration successful! Please login to complete your profile with additional information.', 'data': {'user': user.to_dict()}})
 
+# get current logged in user details
 @auth_bp.route('/me', methods=['GET'])
 @jwt_required()
 def get_current_user():
@@ -107,6 +110,7 @@ def get_current_user():
     
     return jsonify({'success': True, 'message': 'User retrieved successfully', 'data': {'user': data}})
 
+# logout (client-side token deletion)
 @auth_bp.route('/logout', methods=['POST'])
 def logout():
     # jwt tokens are stateless, client just deletes the token
