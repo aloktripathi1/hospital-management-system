@@ -1,7 +1,5 @@
 # Tell GitHub that JavaScript files in frontend are Vue.js
-frontend/assets/js/*.js linguist-language=Vue
-frontend/assets/js/modules/*.js linguist-language=Vue
-frontend/assets/js/services/*.js linguist-language=Vue
+frontend/js/*.js linguist-language=Vue
 frontend/index.html linguist-language=Vue
 
 # Backend files
