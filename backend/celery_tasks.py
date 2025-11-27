@@ -10,6 +10,23 @@ import csv
 
 load_dotenv()
 
+# Standard Email CSS
+EMAIL_STYLE = """
+<style>
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; background-color: #f9f9f9; padding: 20px; }
+    .container { max-width: 600px; margin: 0 auto; background: #fff; padding: 0; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); overflow: hidden; }
+    .header { background-color: #2c3e50; color: white; padding: 20px; text-align: center; }
+    .header h2 { margin: 0; font-size: 24px; }
+    .content { padding: 30px; }
+    .footer { background-color: #f1f1f1; text-align: center; padding: 15px; font-size: 12px; color: #666; }
+    .btn { display: inline-block; padding: 10px 20px; background-color: #3498db; color: white; text-decoration: none; border-radius: 5px; margin-top: 15px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+    th { background-color: #f8f9fa; color: #2c3e50; }
+    tr:nth-child(even) { background-color: #f9f9f9; }
+</style>
+"""
+
 celery = Celery('hospital_management')
 celery.conf.broker_url = 'redis://localhost:6379/0'
 celery.conf.result_backend = 'redis://localhost:6379/0'
@@ -87,7 +104,7 @@ def generate_monthly_report():
             <p>Period: {first_day_current.strftime('%B %Y')} (Current Month - Demo Mode)</p>
             <p>Total appointments: {len(appts)}</p>
             <p>Total treatments: {len(treatments)}</p>
-            <h3>recent appointments</h3>
+            <h3>Recent appointments</h3>
             <table border="1" cellpadding="4"><tr><th>date</th><th>patient</th><th>time</th></tr>"""
             for a in appts[:10]:
                 pname = a.patient.name if a.patient else 'N/A'
