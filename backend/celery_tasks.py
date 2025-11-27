@@ -1,4 +1,5 @@
 from celery import Celery
+from celery.schedules import crontab
 from datetime import datetime, date, timedelta
 from flask_mail import Message
 from dotenv import load_dotenv
@@ -17,10 +18,16 @@ celery.conf.broker_connection_retry_on_startup = True
 
 @celery.on_after_configure.connect
 def setup_periodic_tasks(sender, **kwargs):
-    # daily reminder every 2 minutes
-    sender.add_periodic_task(120.0, send_daily_reminders.s())
-    # monthly report every 3 minutes
-    sender.add_periodic_task(180.0, generate_monthly_report.s())
+    # daily reminder at 7:30 AM every day
+    sender.add_periodic_task(
+        crontab(hour=7, minute=30),
+        send_daily_reminders.s()
+    )
+    # monthly report on the 1st of every month at 8:00 AM
+    sender.add_periodic_task(
+        crontab(day_of_month=1, hour=8, minute=0),
+        generate_monthly_report.s()
+    )
 
 # daily reminder task
 @celery.task
@@ -116,11 +123,15 @@ def export_patient_history_csv(patient_id):
         # write csv file
         with open(filepath, 'w', newline='', encoding='utf-8') as csvfile:
             writer = csv.writer(csvfile)
-            writer.writerow(['date', 'doctor', 'diagnosis', 'treatment_notes'])
-            for t in treatments:
+            writer.writerow(['Sr. No', 'Date', 'Doctor', 'Visit Type', 'Diagnosis', 'Medicines', 'Treatment Notes'])
+            for idx, t in enumerate(treatments, 1):
                 doctor_name = t.appointment.doctor.name if t.appointment and t.appointment.doctor else 'N/A'
                 appt_date = str(t.appointment.appointment_date) if t.appointment else 'N/A'
-                writer.writerow([appt_date, doctor_name, t.diagnosis or 'N/A', t.treatment_notes or 'N/A'])
+                visit_type = t.visit_type or 'General'
+                diagnosis = t.diagnosis or 'N/A'
+                medicines = t.prescription or 'N/A'
+                notes = t.treatment_notes or 'N/A'
+                writer.writerow([idx, appt_date, doctor_name, visit_type, diagnosis, medicines, notes])
 
         # send email with attachment
         patient_email = patient.user.email
