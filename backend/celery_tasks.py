@@ -10,23 +10,6 @@ import csv
 
 load_dotenv()
 
-# Standard Email CSS
-EMAIL_STYLE = """
-<style>
-    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; background-color: #f9f9f9; padding: 20px; }
-    .container { max-width: 600px; margin: 0 auto; background: #fff; padding: 0; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); overflow: hidden; }
-    .header { background-color: #2c3e50; color: white; padding: 20px; text-align: center; }
-    .header h2 { margin: 0; font-size: 24px; }
-    .content { padding: 30px; }
-    .footer { background-color: #f1f1f1; text-align: center; padding: 15px; font-size: 12px; color: #666; }
-    .btn { display: inline-block; padding: 10px 20px; background-color: #3498db; color: white; text-decoration: none; border-radius: 5px; margin-top: 15px; }
-    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-    th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
-    th { background-color: #f8f9fa; color: #2c3e50; }
-    tr:nth-child(even) { background-color: #f9f9f9; }
-</style>
-"""
-
 celery = Celery('hospital_management')
 celery.conf.broker_url = 'redis://localhost:6379/0'
 celery.conf.result_backend = 'redis://localhost:6379/0'
@@ -60,12 +43,14 @@ def send_daily_reminders():
             patient_name = appt.patient.name
             doctor_name = appt.doctor.name
             appointment_time = appt.appointment_time
-            html = f"""<html><body>
-            <h2>Appointment Reminder</h2>
-            <p>Hi {patient_name},</p>
-            <p>You have an appointment today with Dr. {doctor_name} at {appointment_time}.</p>
-            <p>Please arrive 10 minutes early.</p>
-            </body></html>"""
+            
+            content = f"""
+                <p>Hi {patient_name},</p>
+                <p>You have an appointment today with <strong>Dr. {doctor_name}</strong> at <strong>{appointment_time}</strong>.</p>
+                <p>Please arrive 10 minutes early to complete any necessary paperwork.</p>
+            """
+            html = get_email_template("Appointment Reminder", content)
+            
             msg = Message(subject=f"Appointment Reminder - {today}", recipients=[patient_email])
             msg.html = html
             mail.send(msg)
@@ -98,18 +83,28 @@ def generate_monthly_report():
             ).all()
 
             # html report
-            html = f"""<html><body>
-            <h2>Monthly Activity Report</h2>
-            <p>Dr. {doc.name} - {doc.specialization}</p>
-            <p>Period: {first_day_current.strftime('%B %Y')} (Current Month - Demo Mode)</p>
-            <p>Total appointments: {len(appts)}</p>
-            <p>Total treatments: {len(treatments)}</p>
-            <h3>Recent appointments</h3>
-            <table border="1" cellpadding="4"><tr><th>date</th><th>patient</th><th>time</th></tr>"""
+            content = f"""
+                <p><strong>Dr. {doc.name}</strong> - {doc.specialization}</p>
+                <p>Period: {first_day_current.strftime('%B %Y')}</p>
+                
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                    <p style="margin: 5px 0;"><strong>Total Appointments:</strong> {len(appts)}</p>
+                    <p style="margin: 5px 0;"><strong>Total Treatments:</strong> {len(treatments)}</p>
+                </div>
+
+                <h3>Recent Appointments</h3>
+                <table>
+                    <tr>
+                        <th>Date</th>
+                        <th>Patient</th>
+                        <th>Time</th>
+                    </tr>"""
             for a in appts[:10]:
                 pname = a.patient.name if a.patient else 'N/A'
-                html += f"<tr><td>{a.appointment_date}</td><td>{pname}</td><td>{a.appointment_time}</td></tr>"
-            html += "</table></body></html>"
+                content += f"<tr><td>{a.appointment_date}</td><td>{pname}</td><td>{a.appointment_time}</td></tr>"
+            content += "</table>"
+            
+            html = get_email_template("Monthly Activity Report", content)
 
             doctor_email = doc.user.email
             msg = Message(subject=f"Monthly Activity Report - {first_day_current.strftime('%B %Y')}", recipients=[doctor_email])
@@ -152,7 +147,15 @@ def export_patient_history_csv(patient_id):
 
         # send email with attachment
         patient_email = patient.user.email
-        html = f"""<html><body><h2>Medical History Export</h2><p>Hi {patient.name},</p><p>Your medical history export is attached.</p></body></html>"""
+        
+        content = f"""
+            <p>Hi {patient.name},</p>
+            <p>Your medical history export has been generated successfully.</p>
+            <p>Please find the attached CSV file containing your complete medical records.</p>
+            <p>If you did not request this export, please contact support immediately.</p>
+        """
+        html = get_email_template("Medical History Export", content)
+        
         msg = Message(subject='Your Medical History Export is Ready', recipients=[patient_email])
         msg.html = html
         with open(filepath, 'r', encoding='utf-8') as f:
@@ -160,4 +163,36 @@ def export_patient_history_csv(patient_id):
         msg.attach(filename, 'text/csv', content)
         mail.send(msg)
         return f"Exported {len(treatments)} records to {filename} and emailed to {patient_email}"
+
+def get_email_template(title, content):
+    return f"""
+    <html>
+    <head>
+        <style>
+            body {{ font-family: sans-serif; background-color: #f4f4f4; padding: 20px; }}
+            .container {{ max-width: 600px; margin: auto; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }}
+            .header {{ background: #2c3e50; color: #fff; padding: 20px; text-align: center; }}
+            .content {{ padding: 20px; color: #333; line-height: 1.6; }}
+            .footer {{ background: #eee; padding: 10px; text-align: center; font-size: 12px; color: #777; }}
+            table {{ width: 100%; border-collapse: collapse; margin-top: 15px; }}
+            th, td {{ border: 1px solid #ddd; padding: 8px; text-align: left; }}
+            th {{ background-color: #f2f2f2; }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h2>{title}</h2>
+            </div>
+            <div class="content">
+                {content}
+                <p style="margin-top: 30px;">Regards,<br>MediHub Support Team</p>
+            </div>
+            <div class="footer">
+                <p>&copy; MediHub</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
 
