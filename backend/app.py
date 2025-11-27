@@ -12,7 +12,7 @@ from datetime import datetime, timedelta
 
 load_dotenv()
 
-app = Flask(__name__, static_folder='../frontend/assets', static_url_path='/static')
+app = Flask(__name__, static_folder='../frontend', static_url_path='/static')
 
 # flask config
 app.config['SECRET_KEY'] = 'hospital-secret-key-123'
@@ -35,8 +35,8 @@ app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
 app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_DEFAULT_SENDER', os.getenv('MAIL_USERNAME'))
 
 # celery config
-app.config['CELERY_BROKER_URL'] = 'redis://localhost:6379/0'
-app.config['CELERY_RESULT_BACKEND'] = 'redis://localhost:6379/0'
+app.config['CELERY_BROKER_URL'] = os.getenv('CELERY_BROKER_URL', 'redis://localhost:6379/0')
+app.config['CELERY_RESULT_BACKEND'] = os.getenv('CELERY_RESULT_BACKEND', 'redis://localhost:6379/0')
 app.config['CELERY_TASK_SERIALIZER'] = 'json'
 app.config['CELERY_ACCEPT_CONTENT'] = ['json']
 app.config['RESULT_SERIALIZER'] = 'json'

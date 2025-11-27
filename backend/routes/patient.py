@@ -232,6 +232,10 @@ def book_appointment():
     
     # validate date is not in the past
     today = datetime.now().date()
+    now = datetime.now()
+    current_hour = now.hour
+    current_minute = now.minute
+    
     if apt_date < today:
         return jsonify({'success': False, 'message': 'Cannot book appointments for past dates'}), 400
     
@@ -246,10 +250,17 @@ def book_appointment():
     # determine slot type
     if apt_time == time(9, 0):
         slot_type = 'morning'
+        slot_end_hour = 13  # morning slot ends at 1 PM
     elif apt_time == time(15, 0):
         slot_type = 'evening'
+        slot_end_hour = 19  # evening slot ends at 7 PM
     else:
         return jsonify({'success': False, 'message': 'Invalid time slot. Only Morning (09:00) and Evening (15:00) slots are available.'}), 400
+    
+    # if booking for today, check if the slot time has already passed
+    if apt_date == today:
+        if current_hour >= slot_end_hour:
+            return jsonify({'success': False, 'message': f'Cannot book {slot_type} slot for today as it has already passed'}), 400
     
     # check if doctor has set this slot as available
     availability = DoctorAvailability.query.filter_by(
