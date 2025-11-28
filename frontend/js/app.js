@@ -1029,4 +1029,7 @@ const App = {
 
 // Create and mount Vue app
 const app = createApp(App)
+app.component('admin-component', window.AdminComponent)
+app.component('doctor-component', window.DoctorComponent)
+app.component('patient-component', window.PatientComponent)
 app.mount("#app")

@@ -12,7 +12,7 @@ if [ ! -d "$BACKEND_DIR/venv" ]; then
     echo "Virtual environment not found. Setting up for first time..."
     cd "$BACKEND_DIR"
     
-    # Create virtual environment
+    # Create virtual environmen
     echo "Creating virtual environment..."
     python3 -m venv venv
     
