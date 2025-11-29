@@ -478,25 +478,25 @@ const App = {
       }
     },
 
-    // Format time slot for 2-slot system (morning/evening)
+    // Format time slot (1 hour duration)
     formatTimeSlot(time) {
-      if (!time) return 'N/A'
-      
-      // Handle both "09:00:00" and "09:00" formats
-      const timeStr = time.toString().substring(0, 5) // Get "09:00"
-      
-      // Morning slot: 09:00 -> "Morning (9:00 AM - 1:00 PM)"
-      if (timeStr === '09:00') {
-        return 'Morning (9:00 AM - 1:00 PM)'
-      }
-      // Evening slot: 15:00 -> "Evening (3:00 PM - 7:00 PM)"
-      else if (timeStr === '15:00') {
-        return 'Evening (3:00 PM - 7:00 PM)'
-      }
-      // Fallback for any other time
-      else {
-        return timeStr
-      }
+        if (!time) return 'N/A';
+        const [hours, minutes] = time.toString().split(':');
+        let h = parseInt(hours);
+        const m = minutes ? minutes.substring(0, 2) : '00';
+        
+        // Calculate end time (1 hour duration)
+        let endH = h + 1;
+        
+        // Format start time
+        const startAmpm = h >= 12 ? 'PM' : 'AM';
+        const startH12 = h % 12 || 12;
+        
+        // Format end time
+        const endAmpm = endH >= 12 && endH < 24 ? 'PM' : 'AM';
+        const endH12 = endH % 12 || 12;
+        
+        return `${startH12}:${m} ${startAmpm} - ${endH12}:${m} ${endAmpm}`;
     },
 
     // Capitalize status for display

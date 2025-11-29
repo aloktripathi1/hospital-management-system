@@ -176,7 +176,7 @@ def get_appointments():
     
     return jsonify({'success': True, 'message': 'Appointments retrieved successfully', 'data': {'appointments': data}})
 
-# update appointment status or notes
+# update appointment status, notes, or reschedule
 @admin_bp.route('/appointments/<int:appointment_id>', methods=['PUT'])
 @admin_required
 def update_appointment(appointment_id):
@@ -191,6 +191,33 @@ def update_appointment(appointment_id):
         appointment.status = data['status']
     if 'notes' in data:
         appointment.notes = data['notes']
+        
+    # Handle rescheduling
+    if 'appointment_date' in data and 'appointment_time' in data:
+        try:
+            new_date = datetime.strptime(data['appointment_date'], '%Y-%m-%d').date()
+            # Handle time format HH:MM or HH:MM:SS
+            time_str = data['appointment_time']
+            if len(time_str.split(':')) == 2:
+                new_time = datetime.strptime(time_str, '%H:%M').time()
+            else:
+                new_time = datetime.strptime(time_str, '%H:%M:%S').time()
+            
+            # Check availability
+            existing = Appointment.query.filter_by(
+                doctor_id=appointment.doctor_id,
+                appointment_date=new_date,
+                appointment_time=new_time
+            ).first()
+            
+            if existing and existing.id != appointment.id and existing.status != 'cancelled':
+                 return jsonify({'success': False, 'message': 'Slot already booked', 'errors': ['Slot unavailable']}), 400
+                 
+            appointment.appointment_date = new_date
+            appointment.appointment_time = new_time
+            
+        except ValueError as e:
+            return jsonify({'success': False, 'message': f'Invalid date/time format: {str(e)}', 'errors': ['Invalid format']}), 400
     
     appointment.updated_at = datetime.utcnow()
     
@@ -293,3 +320,60 @@ def get_patient_history(patient_id):
         data.append(apt.to_dict())
     
     return jsonify({'success': True, 'message': 'Patient history retrieved successfully', 'data': {'patient': patient.to_dict(), 'appointments': data}})
+
+
+# get doctor appointment history
+@admin_bp.route('/doctors/<int:doctor_id>/history', methods=['GET'])
+@admin_required
+def get_doctor_history(doctor_id):
+    doctor = Doctor.query.get(doctor_id)
+    
+    if doctor is None:
+        return jsonify({'success': False, 'message': 'Doctor not found', 'errors': ['Doctor not found']}), 404
+    
+    appointments = Appointment.query.filter_by(doctor_id=doctor_id).order_by(Appointment.appointment_date.desc()).all()
+    
+    data = []
+    for apt in appointments:
+        data.append(apt.to_dict())
+    
+    return jsonify({'success': True, 'message': 'Doctor history retrieved successfully', 'data': {'doctor': doctor.to_dict(), 'appointments': data}})
+
+
+# update patient details
+@admin_bp.route('/patients/<int:patient_id>', methods=['PUT'])
+@admin_required
+def update_patient(patient_id):
+    patient = Patient.query.get(patient_id)
+    
+    if patient is None:
+        return jsonify({'success': False, 'message': 'Patient not found', 'errors': ['Patient not found']}), 404
+    
+    data = request.get_json()
+    
+    if 'name' in data:
+        patient.name = data['name']
+    if 'phone' in data:
+        patient.phone = data['phone']
+    if 'age' in data:
+        patient.age = data['age']
+    if 'gender' in data:
+        patient.gender = data['gender']
+    if 'address' in data:
+        patient.address = data['address']
+    if 'medical_history' in data:
+        patient.medical_history = data['medical_history']
+    if 'emergency_contact' in data:
+        patient.emergency_contact = data['emergency_contact']
+        
+    # Update email if provided (in User model)
+    if 'email' in data and patient.user:
+        # Check if email is taken by another user
+        existing = User.query.filter(User.email == data['email'], User.id != patient.user_id).first()
+        if existing:
+             return jsonify({'success': False, 'message': 'Email already exists', 'errors': ['Email taken']}), 400
+        patient.user.email = data['email']
+
+    db.session.commit()
+    
+    return jsonify({'success': True, 'message': 'Patient updated successfully', 'data': {'patient': patient.to_dict()}})

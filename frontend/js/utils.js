@@ -17,9 +17,14 @@
     return today.toISOString().split('T')[0];
   }
 
+  const getPatientPrefix = function() {
+    return ''
+  }
+
   window.UtilsModule = {
     getStatusClass,
     getTodayDate,
+    getPatientPrefix
   }
 })();
 

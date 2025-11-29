@@ -623,11 +623,22 @@ const DoctorComponent = {
 
         formatTimeSlot(time) {
             if (!time) return '';
-            const [hours, minutes] = time.split(':');
-            const h = parseInt(hours);
-            const ampm = h >= 12 ? 'PM' : 'AM';
-            const h12 = h % 12 || 12;
-            return `${h12}:${minutes} ${ampm}`;
+            const [hours, minutes] = time.toString().split(':');
+            let h = parseInt(hours);
+            const m = minutes ? minutes.substring(0, 2) : '00';
+            
+            // Calculate end time (1 hour duration)
+            let endH = h + 1;
+            
+            // Format start time
+            const startAmpm = h >= 12 ? 'PM' : 'AM';
+            const startH12 = h % 12 || 12;
+            
+            // Format end time
+            const endAmpm = endH >= 12 && endH < 24 ? 'PM' : 'AM';
+            const endH12 = endH % 12 || 12;
+            
+            return `${startH12}:${m} ${startAmpm} - ${endH12}:${m} ${endAmpm}`;
         },
 
         getStatusClass(status) {

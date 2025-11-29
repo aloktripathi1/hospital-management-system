@@ -82,14 +82,27 @@ const AdminTemplate = `
                                     </button> -->
                                 </div>
                                 <div class="card-body">
-                                    <!-- Search Form -->
+                                    <!-- Search and Sort Controls -->
                                     <div class="row mb-3">
-                                        <div class="col-md-6">
+                                        <div class="col-md-7">
                                             <div class="input-group">
-                                                <input type="text" class="form-control" placeholder="Search doctors by name or department..." v-model="doctorSearchQuery" @input="searchDoctors">
-                                                <button class="btn btn-outline-secondary" type="button" @click="clearDoctorSearch">
+                                                <input type="text" class="form-control" placeholder="Search doctors by name or specialization..." v-model="doctorSearchQuery" @input="searchDoctors">
+                                                <button class="btn btn-primary" type="button" @click="searchDoctors">
+                                                    <i class="bi bi-search"></i>
+                                                </button>
+                                                <button class="btn btn-outline-secondary" type="button" @click="clearDoctorSearch" v-if="doctorSearchQuery">
                                                     <i class="bi bi-x"></i>
                                                 </button>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-5">
+                                            <div class="input-group">
+                                                <span class="input-group-text"><i class="bi bi-sort-alpha-down"></i></span>
+                                                <select class="form-select" v-model="sortOption" @change="applySort">
+                                                    <option value="name">Name (A-Z)</option>
+                                                    <option value="specialization">Specialization</option>
+                                                    <option value="experience">Experience (High-Low)</option>
+                                                </select>
                                             </div>
                                         </div>
                                     </div>
@@ -120,6 +133,9 @@ const AdminTemplate = `
                                                         <button class="btn btn-sm btn-outline-info me-1" @click="editDoctor(doctor)" title="Edit Doctor">
                                                             <i class="bi bi-pencil"></i>
                                                         </button>
+                                                        <button class="btn btn-sm btn-outline-primary me-1" @click="openDoctorHistory(doctor)" title="View Doctor History">
+                                                            <i class="bi bi-clock-history"></i>
+                                                        </button>
                                                         <button class="btn btn-sm" :class="doctor.is_active ? 'btn-outline-warning' : 'btn-outline-success'" @click="toggleDoctorStatus(doctor)" :title="doctor.is_active ? 'Blacklist Doctor' : 'Activate Doctor'">
                                                             <i class="bi" :class="doctor.is_active ? 'bi-ban' : 'bi-check-circle'"></i>
                                                         </button>
@@ -141,7 +157,7 @@ const AdminTemplate = `
                                 <div class="card-body">
                                     <!-- Search Form -->
                                     <div class="row mb-3">
-                                        <div class="col-md-6">
+                                        <div class="col-md-7">
                                             <div class="input-group">
                                                 <input type="text" class="form-control" placeholder="Search patients by name..." v-model="patientSearchQuery" @input="searchPatients">
                                                 <button class="btn btn-outline-secondary" type="button" @click="clearPatientSearch">
@@ -149,9 +165,23 @@ const AdminTemplate = `
                                                 </button>
                                             </div>
                                         </div>
+                                        <div class="col-md-5">
+                                            <div class="input-group">
+                                                <span class="input-group-text"><i class="bi bi-sort-alpha-down"></i></span>
+                                                <select class="form-select" v-model="patientSortOption" @change="applyPatientSort">
+                                                    <option value="name">Name (A-Z)</option>
+                                                    <option value="age">Age (Low-High)</option>
+                                                    <option value="newest">Newest First</option>
+                                                </select>
+                                            </div>
+                                        </div>
                                     </div>
                                     
-                                    <div class="table-responsive mb-3">
+                                    <div v-if="filteredPatients.length === 0" class="alert alert-info">
+                                        No patients found.
+                                    </div>
+                                    
+                                    <div class="table-responsive mb-3" v-if="filteredPatients.length > 0">
                                         <table class="table table-striped table-hover">
                                             <thead class="table-dark">
                                                 <tr>
@@ -176,6 +206,9 @@ const AdminTemplate = `
                                                     <td>{{ patient.age }}</td>
                                                     <td>{{ patient.gender }}</td>
                                                     <td>
+                                                        <button class="btn btn-sm btn-outline-info me-1" @click="editPatient(patient)" title="Edit Patient">
+                                                            <i class="bi bi-pencil"></i>
+                                                        </button>
                                                         <button class="btn btn-sm me-1" :class="patient.is_blacklisted ? 'btn-outline-success' : 'btn-outline-warning'" @click="togglePatientBlacklist(patient)" title="Blacklist/Unblacklist Patient">
                                                             <i class="bi" :class="patient.is_blacklisted ? 'bi-check-circle' : 'bi-ban'"></i>
                                                         </button>
@@ -198,7 +231,15 @@ const AdminTemplate = `
                                     <h5 class="mb-0">All Appointments</h5>
                                 </div>
                                 <div class="card-body">
-                                    <div class="table-responsive mb-3">
+                                    <div class="mb-3">
+                                        <small class="text-muted">Total appointments: {{ appointments.length }} | Filtered: {{ filteredAppointments.length }}</small>
+                                    </div>
+                                    
+                                    <div v-if="filteredAppointments.length === 0" class="alert alert-info">
+                                        No appointments found.
+                                    </div>
+                                    
+                                    <div class="table-responsive mb-3" v-if="filteredAppointments.length > 0">
                                         <table class="table table-striped table-hover">
                                             <thead class="table-dark">
                                                 <tr>
@@ -209,8 +250,10 @@ const AdminTemplate = `
                                                     <th>Date</th>
                                                     <th>Slot</th>
                                                     <th>Status</th>
+                                                    <th>Actions</th>
                                                 </tr>
                                             </thead>
+                                            <tbody>
                                                 <tr v-for="(appointment, index) in filteredAppointments" :key="appointment.id">
                                                     <td>{{ index + 1 }}.</td>
                                                     <td>{{ getPatientPrefix() }}{{ appointment.patient ? appointment.patient.name : 'N/A' }}</td>
@@ -223,7 +266,14 @@ const AdminTemplate = `
                                                             {{ appointment.status }}
                                                         </span>
                                                     </td>
-                                                </tr>
+                                                    <td>
+                                                        <button class="btn btn-sm btn-outline-primary me-1" @click="openReschedule(appointment)" title="Reschedule" :disabled="appointment.status === 'cancelled' || appointment.status === 'completed'">
+                                                            <i class="bi bi-calendar-event"></i>
+                                                        </button>
+                                                        <button class="btn btn-sm btn-outline-danger" @click="cancelAppointment(appointment)" title="Cancel" :disabled="appointment.status === 'cancelled' || appointment.status === 'completed'">
+                                                            <i class="bi bi-x-circle"></i>
+                                                        </button>
+                                                    </td>
                                                 </tr>
                                             </tbody>
                                         </table>
@@ -232,6 +282,42 @@ const AdminTemplate = `
                             </div>
                         </div>
                     </div>
+                    </div>
+
+                    <!-- Reschedule Appointment -->
+                    <div v-if="adminView === 'reschedule-appointment'" class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">Reschedule Appointment</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="alert alert-info" v-if="reschedulingAppointment">
+                                <strong>Current Appointment:</strong><br>
+                                Patient: {{ reschedulingAppointment.patient?.name }}<br>
+                                Doctor: Dr. {{ reschedulingAppointment.doctor?.name }}<br>
+                                Date: {{ reschedulingAppointment.appointment_date }} at {{ formatTimeSlot(reschedulingAppointment.appointment_time) }}
+                            </div>
+                            
+                            <form @submit.prevent="rescheduleAppointment">
+                                <div class="mb-3">
+                                    <label class="form-label">New Date</label>
+                                    <input type="date" class="form-control" v-model="rescheduleData.date" :min="getTodayDate()" @change="loadAvailableSlots" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">New Time</label>
+                                    <select class="form-select" v-model="rescheduleData.time" required :disabled="!availableSlots.length">
+                                        <option value="">Select Time Slot</option>
+                                        <option v-for="slot in availableSlots" :value="slot">{{ formatTimeSlot(slot) }}</option>
+                                    </select>
+                                    <small class="text-muted" v-if="!rescheduleData.date">Please select a date first to see available slots.</small>
+                                    <small class="text-danger" v-if="rescheduleData.date && availableSlots.length === 0">No slots available for this date.</small>
+                                </div>
+                                <button type="submit" class="btn btn-primary" :disabled="loading">
+                                    <span v-if="loading" class="spinner-border spinner-border-sm me-2"></span>
+                                    Confirm Reschedule
+                                </button>
+                                <button type="button" class="btn btn-secondary ms-2" @click="adminView = 'dashboard'">Cancel</button>
+                            </form>
+                        </div>
                     </div>
 
                     <!-- Add Doctor Page -->
@@ -379,6 +465,76 @@ const AdminTemplate = `
                         </div>
                     </div>
 
+                    <!-- edit patient -->
+                    <div v-if="adminView === 'edit-patient'" class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">Edit Patient: {{ editingPatient.name }}</h5>
+                        </div>
+                        <div class="card-body">
+                            <form @submit.prevent="updatePatient">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="edit_p_name" class="form-label">Full Name</label>
+                                            <input type="text" class="form-control" id="edit_p_name" v-model="editingPatient.name" required>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="edit_p_email" class="form-label">Email</label>
+                                            <input type="email" class="form-control" id="edit_p_email" v-model="editingPatient.email" required>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="edit_p_phone" class="form-label">Phone</label>
+                                            <input type="tel" class="form-control" id="edit_p_phone" v-model="editingPatient.phone">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="edit_p_age" class="form-label">Age</label>
+                                            <input type="number" class="form-control" id="edit_p_age" v-model="editingPatient.age" min="0">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="edit_p_gender" class="form-label">Gender</label>
+                                            <select class="form-select" id="edit_p_gender" v-model="editingPatient.gender">
+                                                <option value="">Select Gender</option>
+                                                <option value="Male">Male</option>
+                                                <option value="Female">Female</option>
+                                                <option value="Other">Other</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="edit_p_emergency" class="form-label">Emergency Contact</label>
+                                            <input type="text" class="form-control" id="edit_p_emergency" v-model="editingPatient.emergency_contact">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="edit_p_address" class="form-label">Address</label>
+                                    <textarea class="form-control" id="edit_p_address" v-model="editingPatient.address" rows="2"></textarea>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="edit_p_history" class="form-label">Medical History</label>
+                                    <textarea class="form-control" id="edit_p_history" v-model="editingPatient.medical_history" rows="3"></textarea>
+                                </div>
+                                <button type="submit" class="btn btn-primary" :disabled="loading">
+                                    <span v-if="loading" class="spinner-border spinner-border-sm me-2"></span>
+                                    Update Patient
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
                     <!-- Patient History View -->
                     <div v-if="adminView === 'patient-history'" class="card">
                         <div class="card-header">
@@ -422,6 +578,53 @@ const AdminTemplate = `
                                         </tr>
                                     </tbody>
                                 </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Doctor History View -->
+                    <div v-if="adminView === 'doctor-history'" class="card">
+                        <div class="card-header">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0">
+                                    <i class="bi bi-clock-history"></i> Doctor History - Dr. {{ selectedDoctor?.name }}
+                                </h5>
+                                <span class="badge bg-info">{{ doctorHistory.length }} appointments</span>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div v-if="doctorHistory.length === 0" class="text-center text-muted py-4">
+                                <i class="bi bi-clock-history icon-3x mb-3"></i>
+                                <p>No appointments found for this doctor.</p>
+                            </div>
+                            <div v-else class="table-responsive mb-3">
+                                <table class="table table-striped table-hover">
+                                    <thead class="table-dark">
+                                        <tr>
+                                            <th>Sr. No</th>
+                                            <th>Date</th>
+                                            <th>Slot</th>
+                                            <th>Patient</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr v-for="(appointment, index) in doctorHistory" :key="appointment.id">
+                                            <td>{{ index + 1 }}.</td>
+                                            <td>{{ new Date(appointment.appointment_date).toLocaleDateString() }}</td>
+                                            <td>{{ formatTimeSlot(appointment.appointment_time) }}</td>
+                                            <td>{{ getPatientPrefix() }}{{ appointment.patient?.name || 'N/A' }}</td>
+                                            <td>
+                                                <span class="badge" :class="getStatusClass(appointment.status)">
+                                                    {{ appointment.status }}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
         </div>
     </div>
 </div>
@@ -443,6 +646,8 @@ const AdminComponent = {
             filteredAppointments: [],
             doctorSearchQuery: '',
             patientSearchQuery: '',
+            sortOption: 'name',
+            patientSortOption: 'name',
             newDoctor: {
                 name: '',
                 email: '',
@@ -452,8 +657,14 @@ const AdminComponent = {
                 qualification: ''
             },
             editingDoctor: null,
+            editingPatient: null,
             selectedPatient: null,
             patientHistory: [],
+            selectedDoctor: null,
+            doctorHistory: [],
+            reschedulingAppointment: null,
+            rescheduleData: { date: '', time: '' },
+            availableSlots: [],
             loading: false,
             error: null,
             success: null
@@ -461,43 +672,93 @@ const AdminComponent = {
     },
     methods: {
         async loadAdminData() {
-            const stats = await window.ApiService.getAdminStats()
-            if (stats.success) this.stats = stats.data
-
-            const doctors = await window.ApiService.getDoctors()
-            if (doctors.success) {
-                this.doctors = doctors.data.doctors
-                this.filteredDoctors = this.doctors.slice()
+            console.log('Loading admin data...')
+            try {
+                const stats = await window.ApiService.getAdminStats()
+                if (stats.success) this.stats = stats.data
+            } catch (e) {
+                console.error('Error loading stats:', e)
             }
 
-            const patients = await window.ApiService.getPatients()
-            if (patients.success) {
-                this.patients = patients.data.patients
-                this.filteredPatients = this.patients.slice()
+            try {
+                const doctors = await window.ApiService.getDoctors()
+                console.log('Doctors response:', doctors)
+                if (doctors.success) {
+                    this.doctors = doctors.data.doctors || []
+                    console.log('Loaded doctors:', this.doctors.length)
+                    this.applySort(); // Apply initial sort
+                }
+            } catch (e) {
+                console.error('Error loading doctors:', e)
             }
 
-            const appointments = await window.ApiService.getAppointments()
-            if (appointments.success) {
-                this.appointments = appointments.data.appointments
-                this.filteredAppointments = this.appointments.slice()
+            try {
+                const patients = await window.ApiService.getPatients()
+                console.log('Patients response:', patients)
+                if (patients.success) {
+                    this.patients = patients.data.patients || []
+                    this.searchPatients(); // Apply initial sort and filter
+                    console.log('Loaded patients:', this.patients.length, this.patients)
+                } else {
+                    console.error('Failed to load patients:', patients)
+                }
+            } catch (e) {
+                console.error('Error loading patients:', e)
+            }
+
+            try {
+                const appointments = await window.ApiService.getAppointments()
+                console.log('Appointments response:', appointments)
+                if (appointments.success) {
+                    this.appointments = appointments.data.appointments || []
+                    this.filteredAppointments = [...this.appointments]
+                    console.log('Loaded appointments:', this.appointments.length)
+                } else {
+                    console.error('Failed to load appointments:', appointments)
+                }
+            } catch (e) {
+                console.error('Error loading appointments:', e)
             }
         },
 
         searchDoctors() {
-            if (!this.doctorSearchQuery.trim()) {
-                this.filteredDoctors = this.doctors.slice()
-            } else {
-                const query = this.doctorSearchQuery.toLowerCase()
-                this.filteredDoctors = this.doctors.filter(doctor => 
-                    doctor.name.toLowerCase().includes(query) || 
-                    doctor.specialization.toLowerCase().includes(query)
-                )
+            let result = [...this.doctors];
+
+            // Search filter
+            if (this.doctorSearchQuery && this.doctorSearchQuery.trim()) {
+                const query = this.doctorSearchQuery.toLowerCase().trim();
+                result = result.filter(doctor => {
+                    const name = (doctor.name || '').toLowerCase();
+                    const spec = (doctor.specialization || '').toLowerCase();
+                    return name.includes(query) || spec.includes(query);
+                });
             }
+
+            // Sort
+            if (this.sortOption) {
+                result.sort((a, b) => {
+                    if (this.sortOption === 'experience') {
+                        const expA = parseInt(a.experience) || 0;
+                        const expB = parseInt(b.experience) || 0;
+                        return expB - expA; // Descending
+                    }
+                    const valA = (a[this.sortOption] || '').toString().toLowerCase();
+                    const valB = (b[this.sortOption] || '').toString().toLowerCase();
+                    return valA.localeCompare(valB);
+                });
+            }
+
+            this.filteredDoctors = result;
+        },
+
+        applySort() {
+            // Apply sort without search filter
+            this.searchDoctors();
         },
 
         clearDoctorSearch() {
-            this.doctorSearchQuery = ''
-            this.filteredDoctors = this.doctors.slice()
+            this.doctorSearchQuery = '';
+            this.searchDoctors(); // Re-run search with empty query but keep sort
         },
 
         async toggleDoctorStatus(doctor) {
@@ -520,6 +781,15 @@ const AdminComponent = {
         editDoctor(doctor) {
             this.editingDoctor = { ...doctor }
             this.adminView = 'edit-doctor'
+        },
+
+        editPatient(patient) {
+            // Flatten the user email into the patient object for editing
+            this.editingPatient = { 
+                ...patient,
+                email: patient.user ? patient.user.email : ''
+            }
+            this.adminView = 'edit-patient'
         },
 
         async addDoctor() {
@@ -549,21 +819,59 @@ const AdminComponent = {
             this.loading = false
         },
 
-        searchPatients() {
-            if (!this.patientSearchQuery.trim()) {
-                this.filteredPatients = this.patients.slice()
+        async updatePatient() {
+            this.loading = true
+            const resp = await window.ApiService.updatePatient(this.editingPatient.id, this.editingPatient)
+            if (resp.success) {
+                this.success = 'Patient updated successfully!'
+                this.adminView = 'dashboard'
+                await this.loadAdminData()
             } else {
-                const query = this.patientSearchQuery.toLowerCase()
-                this.filteredPatients = this.patients.filter(patient =>
-                    patient.name.toLowerCase().includes(query) ||
-                    (patient.user && patient.user.email.toLowerCase().includes(query))
-                )
+                this.error = resp.message || 'Failed to update patient'
             }
+            this.loading = false
+        },
+
+        searchPatients() {
+            let result = [...this.patients];
+
+            // Search filter
+            if (this.patientSearchQuery && this.patientSearchQuery.trim()) {
+                const query = this.patientSearchQuery.toLowerCase().trim();
+                result = result.filter(patient =>
+                    (patient.name && patient.name.toLowerCase().includes(query)) ||
+                    (patient.user && patient.user.email && patient.user.email.toLowerCase().includes(query))
+                );
+            }
+
+            // Sort
+            if (this.patientSortOption) {
+                result.sort((a, b) => {
+                    if (this.patientSortOption === 'age') {
+                        const ageA = parseInt(a.age) || 0;
+                        const ageB = parseInt(b.age) || 0;
+                        return ageA - ageB; // Ascending
+                    } else if (this.patientSortOption === 'newest') {
+                        const dateA = new Date(a.created_at || 0);
+                        const dateB = new Date(b.created_at || 0);
+                        return dateB - dateA; // Descending
+                    }
+                    const valA = (a[this.patientSortOption] || '').toString().toLowerCase();
+                    const valB = (b[this.patientSortOption] || '').toString().toLowerCase();
+                    return valA.localeCompare(valB);
+                });
+            }
+
+            this.filteredPatients = result;
+        },
+
+        applyPatientSort() {
+            this.searchPatients();
         },
 
         clearPatientSearch() {
             this.patientSearchQuery = ''
-            this.filteredPatients = this.patients.slice()
+            this.searchPatients();
         },
 
         async togglePatientBlacklist(patient) {
@@ -594,6 +902,82 @@ const AdminComponent = {
             }
         },
 
+        openDoctorHistory(doctor) {
+            this.selectedDoctor = doctor
+            this.adminView = 'doctor-history'
+            this.loadDoctorHistory(doctor.id)
+        },
+
+        async loadDoctorHistory(doctorId) {
+            const resp = await window.ApiService.getAdminDoctorHistory(doctorId)
+            if (resp.success) {
+                this.doctorHistory = resp.data.appointments || []
+            } else {
+                this.doctorHistory = []
+            }
+        },
+
+        async cancelAppointment(appointment) {
+            if (confirm('Are you sure you want to cancel this appointment?')) {
+                this.loading = true;
+                const resp = await window.ApiService.updateAppointment(appointment.id, { status: 'cancelled' });
+                if (resp.success) {
+                    this.success = 'Appointment cancelled successfully';
+                    await this.loadAdminData();
+                } else {
+                    this.error = resp.message || 'Failed to cancel appointment';
+                }
+                this.loading = false;
+            }
+        },
+
+        openReschedule(appointment) {
+            this.reschedulingAppointment = appointment;
+            this.rescheduleData = { date: '', time: '' };
+            this.availableSlots = [];
+            this.adminView = 'reschedule-appointment';
+        },
+
+        async loadAvailableSlots() {
+            if (!this.rescheduleData.date || !this.reschedulingAppointment) return;
+            
+            this.loading = true;
+            const resp = await window.ApiService.getAvailableSlots(this.reschedulingAppointment.doctor_id, this.rescheduleData.date);
+            if (resp.success) {
+                this.availableSlots = resp.data.slots || [];
+            } else {
+                this.availableSlots = [];
+            }
+            this.loading = false;
+        },
+
+        async rescheduleAppointment() {
+            if (!this.rescheduleData.date || !this.rescheduleData.time) {
+                this.error = 'Please select date and time';
+                return;
+            }
+
+            this.loading = true;
+            const resp = await window.ApiService.updateAppointment(this.reschedulingAppointment.id, {
+                appointment_date: this.rescheduleData.date,
+                appointment_time: this.rescheduleData.time,
+                status: 'booked' // Reset status to booked if it was cancelled
+            });
+
+            if (resp.success) {
+                this.success = 'Appointment rescheduled successfully';
+                this.adminView = 'dashboard';
+                await this.loadAdminData();
+            } else {
+                this.error = resp.message || 'Failed to reschedule appointment';
+            }
+            this.loading = false;
+        },
+        
+        getTodayDate() {
+            return window.UtilsModule.getTodayDate();
+        },
+
         // Helper methods
         getStatusClass(status) {
             return window.UtilsModule.getStatusClass(status)
@@ -601,11 +985,22 @@ const AdminComponent = {
 
         formatTimeSlot(time) {
             if (!time) return '';
-            const [hours, minutes] = time.split(':');
-            const h = parseInt(hours);
-            const ampm = h >= 12 ? 'PM' : 'AM';
-            const h12 = h % 12 || 12;
-            return `${h12}:${minutes} ${ampm}`;
+            const [hours, minutes] = time.toString().split(':');
+            let h = parseInt(hours);
+            const m = minutes ? minutes.substring(0, 2) : '00';
+            
+            // Calculate end time (1 hour duration)
+            let endH = h + 1;
+            
+            // Format start time
+            const startAmpm = h >= 12 ? 'PM' : 'AM';
+            const startH12 = h % 12 || 12;
+            
+            // Format end time
+            const endAmpm = endH >= 12 && endH < 24 ? 'PM' : 'AM';
+            const endH12 = endH % 12 || 12;
+            
+            return `${startH12}:${m} ${startAmpm} - ${endH12}:${m} ${endAmpm}`;
         },
 
         getPatientPrefix() {

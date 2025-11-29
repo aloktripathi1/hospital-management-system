@@ -224,6 +224,16 @@ async function getAdminPatientHistory(patientId) {
 }
 
 
+async function getAdminDoctorHistory(doctorId) {
+  return await callAPI("/admin/doctors/" + doctorId + "/history", "GET")
+}
+
+
+async function updatePatient(patientId, patientData) {
+  return await callAPI("/admin/patients/" + patientId, "PUT", patientData)
+}
+
+
 // Keep the same interface for the app
 window.ApiService = {
   login: login,
@@ -264,6 +274,8 @@ window.ApiService = {
   deactivateDoctor: deactivateDoctor,
   generateMonthlyReport: generateMonthlyReport,
   togglePatientBlacklist: togglePatientBlacklist,
-  getAdminPatientHistory: getAdminPatientHistory
+  getAdminPatientHistory: getAdminPatientHistory,
+  getAdminDoctorHistory: getAdminDoctorHistory,
+  updatePatient: updatePatient
 }
 

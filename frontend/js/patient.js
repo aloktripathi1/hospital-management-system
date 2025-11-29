@@ -96,20 +96,25 @@ const PatientTemplate = `
                                     <label class="form-label">Step 2: Select Doctor</label>
                                     <div class="row">
                                         <div v-for="doctor in selectedDepartment.doctors" :key="doctor.id" class="col-md-6 mb-2">
-                                            <button type="button" 
-                                                    class="btn w-100 text-start py-2"
-                                                    :class="selectedDoctor?.id === doctor.id ? 'btn-primary' : 'btn-outline-primary'"
-                                                    @click="selectDoctor(doctor)">
-                                                <div class="d-flex justify-content-between align-items-center">
-                                                    <div>
-                                                        <strong>Dr. {{ doctor.name }}</strong><br>
-                                                        <small>{{ doctor.qualification }} • {{ doctor.experience }} yrs</small>
+                                            <div class="d-flex gap-2">
+                                                <button type="button" 
+                                                        class="btn flex-grow-1 text-start py-2"
+                                                        :class="selectedDoctor?.id === doctor.id ? 'btn-primary' : 'btn-outline-primary'"
+                                                        @click="selectDoctor(doctor)">
+                                                    <div class="d-flex justify-content-between align-items-center">
+                                                        <div>
+                                                            <strong>Dr. {{ doctor.name }}</strong><br>
+                                                            <small>{{ doctor.qualification }} • {{ doctor.experience }} yrs</small>
+                                                        </div>
+                                                        <span v-if="selectedDoctor?.id === doctor.id" class="badge bg-light text-primary">
+                                                            <i class="bi bi-check-circle-fill"></i>
+                                                        </span>
                                                     </div>
-                                                    <span v-if="selectedDoctor?.id === doctor.id" class="badge bg-light text-primary">
-                                                        <i class="bi bi-check-circle-fill"></i>
-                                                    </span>
-                                                </div>
-                                            </button>
+                                                </button>
+                                                <button type="button" class="btn btn-outline-info d-flex align-items-center" @click="viewDoctorProfile(doctor)" title="View Profile">
+                                                    <i class="bi bi-info-circle"></i>
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                     <div v-if="selectedDoctor" class="mt-2">
@@ -143,12 +148,12 @@ const PatientTemplate = `
                                                         @click="bookingForm.appointment_time = slot.appointment_time">
                                                     <div class="py-2">
                                                         <div>
-                                                            <strong>{{ slot.slot_type === 'morning' ? '🌅 Morning' : '🌆 Evening' }}</strong>
+                                                            <strong>{{ slot.display }}</strong>
                                                             <span class="ms-2 badge" :class="slot.status === 'available' ? 'bg-success' : 'bg-danger'">
                                                                 {{ slot.status === 'available' ? '✓' : '✗' }}
                                                             </span>
                                                         </div>
-                                                        <small>{{ slot.time }}</small>
+                                                        <small class="text-muted">{{ slot.slot_type === 'morning' ? 'Morning Slot' : 'Evening Slot' }}</small>
                                                     </div>
                                                 </button>
                                             </div>
@@ -337,6 +342,56 @@ const PatientTemplate = `
             </div>
         </div>
     </div>
+    <!-- Doctor Profile View -->
+    <div v-if="view === 'doctor-profile'" class="container mt-4">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Doctor Profile</h5>
+                        <button class="btn btn-outline-secondary btn-sm" @click="closeDoctorProfile">
+                            <i class="bi bi-arrow-left"></i> Back
+                        </button>
+                    </div>
+                    <div class="card-body text-center" v-if="viewingDoctor">
+                        <div class="mb-4">
+                            <div class="avatar-circle bg-primary text-white mx-auto mb-3" style="width: 80px; height: 80px; font-size: 2rem; display: flex; align-items: center; justify-content: center; border-radius: 50%;">
+                                {{ viewingDoctor.name.charAt(0) }}
+                            </div>
+                            <h4>Dr. {{ viewingDoctor.name }}</h4>
+                            <p class="text-muted mb-1">{{ viewingDoctor.department }}</p>
+                            <span class="badge bg-info">{{ viewingDoctor.experience }} Years Experience</span>
+                        </div>
+                        
+                        <div class="row text-start">
+                            <div class="col-md-6 mb-3">
+                                <strong><i class="bi bi-mortarboard me-2"></i>Qualification</strong>
+                                <p class="text-muted ms-4">{{ viewingDoctor.qualification }}</p>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <strong><i class="bi bi-cash me-2"></i>Consultation Fee</strong>
+                                <p class="text-muted ms-4">$ {{ viewingDoctor.consultation_fee || '0.00' }}</p>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <strong><i class="bi bi-telephone me-2"></i>Contact</strong>
+                                <p class="text-muted ms-4">{{ viewingDoctor.phone || 'N/A' }}</p>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <strong><i class="bi bi-envelope me-2"></i>Email</strong>
+                                <p class="text-muted ms-4">{{ viewingDoctor.email || 'N/A' }}</p>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-4">
+                            <button class="btn btn-primary" @click="selectDoctorAndBook(viewingDoctor)">
+                                Book Appointment
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 `;
 
@@ -352,6 +407,7 @@ const PatientComponent = {
             treatments: [],
             selectedDepartment: null,
             selectedDoctor: null,
+            viewingDoctor: null,
             availableSlots: [],
             bookingForm: {
                 specialization: '',
@@ -487,14 +543,40 @@ const PatientComponent = {
             this.selectedAppointmentHistory = null;
         },
 
+        viewDoctorProfile(doctor) {
+            this.viewingDoctor = doctor;
+            this.view = 'doctor-profile';
+        },
+
+        closeDoctorProfile() {
+            this.viewingDoctor = null;
+            this.view = 'dashboard';
+        },
+
+        selectDoctorAndBook(doctor) {
+            this.selectDoctor(doctor);
+            this.closeDoctorProfile();
+        },
+
         // Helpers
         formatTimeSlot(time) {
             if (!time) return '';
-            const [hours, minutes] = time.split(':');
-            const h = parseInt(hours);
-            const ampm = h >= 12 ? 'PM' : 'AM';
-            const h12 = h % 12 || 12;
-            return `${h12}:${minutes} ${ampm}`;
+            const [hours, minutes] = time.toString().split(':');
+            let h = parseInt(hours);
+            const m = minutes ? minutes.substring(0, 2) : '00';
+            
+            // Calculate end time (1 hour duration)
+            let endH = h + 1;
+            
+            // Format start time
+            const startAmpm = h >= 12 ? 'PM' : 'AM';
+            const startH12 = h % 12 || 12;
+            
+            // Format end time
+            const endAmpm = endH >= 12 && endH < 24 ? 'PM' : 'AM';
+            const endH12 = endH % 12 || 12;
+            
+            return `${startH12}:${m} ${startAmpm} - ${endH12}:${m} ${endAmpm}`;
         },
 
         getStatusClass(status) {

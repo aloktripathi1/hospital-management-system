@@ -32,6 +32,19 @@ h1, h2, h3, h4, h5, h6 {
     overflow-x: hidden;
 }
 
+/* Floating Navbar */
+.floating-navbar {
+    background: rgba(15, 23, 42, 0.1);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    transition: all 0.3s ease;
+    z-index: 1000;
+}
+
+.floating-navbar:hover {
+    background: rgba(15, 23, 42, 0.3);
+}
+
 /* Hero Section */
 .hero-section {
     background: radial-gradient(circle at top right, #115e59, #0f172a);

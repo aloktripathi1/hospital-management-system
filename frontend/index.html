@@ -50,6 +50,19 @@
 
             <!-- Homepage -->
             <div v-if="!currentUser && currentView === 'home'" class="homepage">
+                <!-- Floating Header -->
+                <nav class="navbar navbar-expand-lg navbar-dark fixed-top p-3 floating-navbar">
+                    <div class="container">
+                        <a class="navbar-brand fw-bold fs-3" href="#">
+                            <i class="bi bi-hospital-fill me-2"></i>MediHub
+                        </a>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-outline-light rounded-pill px-4" @click="currentView = 'login'">Sign In</button>
+                            <button class="btn btn-light rounded-pill px-4 text-primary fw-bold" @click="currentView = 'register'">Get Started</button>
+                        </div>
+                    </div>
+                </nav>
+
                 <!-- Hero Section -->
                 <section class="hero-section position-relative overflow-hidden">
                     <div class="hero-bg-shapes">
@@ -58,20 +71,19 @@
                     </div>
                     <div class="container position-relative z-1">
                         <div class="row align-items-center min-vh-100 py-5">
-                            <div class="col-lg-6 text-white hero-content">
+                            <div class="col-lg-10 offset-lg-1 text-center text-white hero-content pt-5">
                                 <div class="mb-4 fade-in-up" style="animation-delay: 0.1s;">
                                     <span class="badge glass-badge px-3 py-2 rounded-pill">
                                         <i class="bi bi-stars me-2 text-warning"></i>Next-Gen Healthcare
                                     </span>
                                 </div>
                                 <h1 class="display-3 fw-bold mb-4 fade-in-up" style="animation-delay: 0.2s;">
-                                    Healthcare <br>
-                                    <span class="text-gradient-gold">Reimagined</span>
+                                    Healthcare <span class="text-gradient-gold">Reimagined</span>
                                 </h1>
-                                <p class="lead mb-5 text-white-50 fade-in-up" style="animation-delay: 0.3s;">
+                                <p class="lead mb-5 text-white-50 fade-in-up mx-auto" style="max-width: 700px; animation-delay: 0.3s;">
                                     Experience the future of medical management. Seamlessly connect patients, doctors, and administrators in one unified, intelligent ecosystem.
                                 </p>
-                                <div class="d-flex gap-3 mb-5 fade-in-up" style="animation-delay: 0.4s;">
+                                <div class="d-flex gap-3 justify-content-center mb-5 fade-in-up" style="animation-delay: 0.4s;">
                                     <button class="btn btn-light btn-lg px-5 py-3 rounded-pill shadow-lg hover-scale" @click="currentView = 'login'">
                                         <span class="fw-bold text-primary">Sign In</span>
                                     </button>
@@ -80,9 +92,9 @@
                                         <i class="bi bi-arrow-right ms-2"></i>
                                     </button>
                                 </div>
-                                <div class="row g-4 fade-in-up" style="animation-delay: 0.5s;">
+                                <div class="row g-4 justify-content-center fade-in-up" style="animation-delay: 0.5s;">
                                     <div class="col-auto">
-                                        <div class="d-flex align-items-center glass-card p-3 rounded-4">
+                                        <div class="d-flex align-items-center glass-card p-3 rounded-4 text-start">
                                             <div class="icon-box bg-white text-primary rounded-circle me-3">
                                                 <i class="bi bi-people-fill"></i>
                                             </div>
@@ -93,7 +105,7 @@
                                         </div>
                                     </div>
                                     <div class="col-auto">
-                                        <div class="d-flex align-items-center glass-card p-3 rounded-4">
+                                        <div class="d-flex align-items-center glass-card p-3 rounded-4 text-start">
                                             <div class="icon-box bg-white text-success rounded-circle me-3">
                                                 <i class="bi bi-star-fill"></i>
                                             </div>
@@ -103,33 +115,6 @@
                                             </div>
                                         </div>
                                     </div>
-                                </div>
-                            </div>
-                            <div class="col-lg-6 d-none d-lg-block position-relative">
-                                <div class="hero-image-container fade-in-right">
-                                    <div class="floating-card card-1 glass-card p-3 rounded-4">
-                                        <div class="d-flex align-items-center gap-3">
-                                            <div class="avatar bg-success rounded-circle">
-                                                <i class="bi bi-check-lg text-white"></i>
-                                            </div>
-                                            <div>
-                                                <div class="small text-white-50">Appointment</div>
-                                                <div class="fw-bold text-white">Confirmed</div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="floating-card card-2 glass-card p-3 rounded-4">
-                                        <div class="d-flex align-items-center gap-3">
-                                            <div class="avatar bg-warning rounded-circle">
-                                                <i class="bi bi-star-fill text-white"></i>
-                                            </div>
-                                            <div>
-                                                <div class="small text-white-50">Top Rated</div>
-                                                <div class="fw-bold text-white">Specialists</div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <i class="bi bi-hospital-fill hero-main-icon text-white opacity-25"></i>
                                 </div>
                             </div>
                         </div>
@@ -520,14 +505,14 @@
                                             <label for="reg_name" class="form-label fw-medium">Full Name</label>
                                             <div class="input-group">
                                                 <span class="input-group-text bg-light border-end-0"><i class="bi bi-person text-muted"></i></span>
-                                                <input type="text" class="form-control bg-light border-start-0 ps-0" id="reg_name" v-model="registerForm.name" placeholder="John Doe" required>
+                                                <input type="text" class="form-control bg-light border-start-0 ps-0" id="reg_name" v-model="registerForm.name" placeholder="Aman Pandey" required>
                                             </div>
                                         </div>
                                         <div class="mb-3">
                                             <label for="reg_email" class="form-label fw-medium">Email Address</label>
                                             <div class="input-group">
                                                 <span class="input-group-text bg-light border-end-0"><i class="bi bi-envelope text-muted"></i></span>
-                                                <input type="email" class="form-control bg-light border-start-0 ps-0" id="reg_email" v-model="registerForm.email" placeholder="john@example.com" required>
+                                                <input type="email" class="form-control bg-light border-start-0 ps-0" id="reg_email" v-model="registerForm.email" placeholder="aman@medihub.com" required>
                                             </div>
                                         </div>
                                         <div class="mb-3">
@@ -685,3 +670,4 @@
     <script src="/static/js/app.js"></script>
 </body>
 </html>
+

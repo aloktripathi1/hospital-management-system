@@ -58,7 +58,10 @@ def get_departments():
                 'name': doc.name,
                 'department': spec,
                 'qualification': doc.qualification,
-                'experience': doc.experience
+                'experience': doc.experience,
+                'consultation_fee': doc.consultation_fee,
+                'phone': doc.phone,
+                'email': doc.user.email if doc.user else 'N/A'
             }
             docs.append(info)
         
@@ -91,8 +94,9 @@ def get_available_slots():
     except ValueError:
         return jsonify({'success': False, 'message': 'Invalid date format. Use YYYY-MM-DD'}), 400
     
-    # get current date and time (24-hour format)
-    now = datetime.now()
+    # get current date and time (adjusted for IST - UTC+5:30)
+    # This ensures that checks for "today" and current hour are accurate for the target user base
+    now = datetime.utcnow() + timedelta(hours=5, minutes=30)
     current_date = now.date()
     current_hour = now.hour
     
@@ -114,42 +118,45 @@ def get_available_slots():
         is_available=True
     ).first()
     
-    # check if slots already booked
-    morning_booked = Appointment.query.filter_by(
-        doctor_id=doctor_id,
-        appointment_date=apt_date,
-        appointment_time=time(9, 0),
-        status='booked'
-    ).first()
-    
-    evening_booked = Appointment.query.filter_by(
-        doctor_id=doctor_id,
-        appointment_date=apt_date,
-        appointment_time=time(15, 0),
-        status='booked'
-    ).first()
-    
     slots = []
     
-    # morning slot (9:00-13:00), only show if available AND (not today OR hour < 13)
-    if morning_avail and (not is_today or current_hour < 13):
-        slots.append({
-            'slot_type': 'morning',
-            'time': '09:00-13:00',
-            'display': 'Morning (9:00 AM - 1:00 PM)',
-            'status': 'booked' if morning_booked else 'available',
-            'appointment_time': '09:00'
-        })
+    def add_hourly_slots(start_hour, end_hour, slot_type):
+        for h in range(start_hour, end_hour):
+            slot_time = time(h, 0)
+            
+            # Check if this specific hour is booked
+            booked = Appointment.query.filter_by(
+                doctor_id=doctor_id,
+                appointment_date=apt_date,
+                appointment_time=slot_time,
+                status='booked'
+            ).first()
+            
+            # Check if passed (if today)
+            # If current_hour is 9, the 9:00-10:00 slot is considered started/passed
+            is_passed = is_today and current_hour >= h
+            
+            if not is_passed:
+                # Format time for display (12-hour format)
+                start_time_obj = datetime.strptime(f'{h}:00', '%H:%M')
+                end_time_obj = datetime.strptime(f'{h+1}:00', '%H:%M')
+                display_time = f"{start_time_obj.strftime('%I:%M %p')} - {end_time_obj.strftime('%I:%M %p')}"
+                
+                slots.append({
+                    'slot_type': slot_type,
+                    'time': f'{h:02d}:00-{h+1:02d}:00',
+                    'display': display_time,
+                    'status': 'booked' if booked else 'available',
+                    'appointment_time': f'{h:02d}:00'
+                })
+
+    # morning slots (9:00-13:00) -> 9, 10, 11, 12
+    if morning_avail:
+        add_hourly_slots(9, 13, 'morning')
     
-    # evening slot (15:00-19:00), only show if available AND (not today OR hour < 19)
-    if evening_avail and (not is_today or current_hour < 19):
-        slots.append({
-            'slot_type': 'evening',
-            'time': '15:00-19:00',
-            'display': 'Evening (3:00 PM - 7:00 PM)',
-            'status': 'booked' if evening_booked else 'available',
-            'appointment_time': '15:00'
-        })
+    # evening slots (15:00-19:00) -> 15, 16, 17, 18
+    if evening_avail:
+        add_hourly_slots(15, 19, 'evening')
     
     return jsonify({'success': True, 'message': 'Available slots retrieved successfully', 'data': {'slots': slots, 'date': apt_date.isoformat(), 'doctor_id': doctor_id}})
 
@@ -231,8 +238,9 @@ def book_appointment():
         return jsonify({'success': False, 'message': 'Invalid date format'}), 400
     
     # validate date is not in the past
-    today = datetime.now().date()
-    now = datetime.now()
+    # Use IST adjusted time
+    now = datetime.utcnow() + timedelta(hours=5, minutes=30)
+    today = now.date()
     current_hour = now.hour
     current_minute = now.minute
     
@@ -247,20 +255,19 @@ def book_appointment():
     else:
         apt_time = datetime.strptime(time_str, '%H:%M').time()
     
-    # determine slot type
-    if apt_time == time(9, 0):
+    # determine slot type and validate hour
+    hour = apt_time.hour
+    if 9 <= hour < 13:
         slot_type = 'morning'
-        slot_end_hour = 13  # morning slot ends at 1 PM
-    elif apt_time == time(15, 0):
+    elif 15 <= hour < 19:
         slot_type = 'evening'
-        slot_end_hour = 19  # evening slot ends at 7 PM
     else:
-        return jsonify({'success': False, 'message': 'Invalid time slot. Only Morning (09:00) and Evening (15:00) slots are available.'}), 400
+        return jsonify({'success': False, 'message': 'Invalid time slot. Only Morning (09:00-13:00) and Evening (15:00-19:00) slots are available.'}), 400
     
     # if booking for today, check if the slot time has already passed
     if apt_date == today:
-        if current_hour >= slot_end_hour:
-            return jsonify({'success': False, 'message': f'Cannot book {slot_type} slot for today as it has already passed'}), 400
+        if current_hour >= hour:
+            return jsonify({'success': False, 'message': f'Cannot book this slot for today as it has already passed'}), 400
     
     # check if doctor has set this slot as available
     availability = DoctorAvailability.query.filter_by(
