@@ -57,8 +57,7 @@
                             <i class="bi bi-hospital-fill me-2"></i>MediHub
                         </a>
                         <div class="d-flex gap-2">
-                            <button class="btn btn-outline-light rounded-pill px-4" @click="currentView = 'login'">Sign In</button>
-                            <button class="btn btn-light rounded-pill px-4 text-primary fw-bold" @click="currentView = 'register'">Get Started</button>
+                            <button class="btn btn-outline-light rounded-pill px-4" @click="currentView = 'login'">Login</button>
                         </div>
                     </div>
                 </nav>
@@ -71,7 +70,8 @@
                     </div>
                     <div class="container position-relative z-1">
                         <div class="row align-items-center min-vh-100 py-5">
-                            <div class="col-lg-10 offset-lg-1 text-center text-white hero-content pt-5">
+                            <!-- Left Content -->
+                            <div class="col-lg-6 text-white hero-content pt-5 text-start">
                                 <div class="mb-4 fade-in-up" style="animation-delay: 0.1s;">
                                     <span class="badge glass-badge px-3 py-2 rounded-pill">
                                         <i class="bi bi-stars me-2 text-warning"></i>Next-Gen Healthcare
@@ -80,19 +80,19 @@
                                 <h1 class="display-3 fw-bold mb-4 fade-in-up" style="animation-delay: 0.2s;">
                                     Healthcare <span class="text-gradient-gold">Reimagined</span>
                                 </h1>
-                                <p class="lead mb-5 text-white-50 fade-in-up mx-auto" style="max-width: 700px; animation-delay: 0.3s;">
+                                <p class="lead mb-5 text-white-50 fade-in-up" style="max-width: 600px; animation-delay: 0.3s;">
                                     Experience the future of medical management. Seamlessly connect patients, doctors, and administrators in one unified, intelligent ecosystem.
                                 </p>
-                                <div class="d-flex gap-3 justify-content-center mb-5 fade-in-up" style="animation-delay: 0.4s;">
-                                    <button class="btn btn-light btn-lg px-5 py-3 rounded-pill shadow-lg hover-scale" @click="currentView = 'login'">
-                                        <span class="fw-bold text-primary">Sign In</span>
+                                <div class="d-flex gap-3 mb-5 fade-in-up" style="animation-delay: 0.4s;">
+                                    <button class="btn btn-light btn-lg px-5 py-3 rounded-pill shadow-lg hover-scale" @click="currentView = 'register'">
+                                        <span class="fw-bold text-primary">Book Appointment</span>
                                     </button>
-                                    <button class="btn btn-outline-light btn-lg px-5 py-3 rounded-pill hover-scale" @click="currentView = 'register'">
-                                        <span class="fw-bold">Get Started</span>
-                                        <i class="bi bi-arrow-right ms-2"></i>
+                                    <button class="btn btn-outline-light btn-lg px-5 py-3 rounded-pill hover-scale" onclick="document.getElementById('features').scrollIntoView({behavior: 'smooth'})">
+                                        <span class="fw-bold">Learn More</span>
+                                        <i class="bi bi-arrow-down ms-2"></i>
                                     </button>
                                 </div>
-                                <div class="row g-4 justify-content-center fade-in-up" style="animation-delay: 0.5s;">
+                                <div class="row g-4 fade-in-up" style="animation-delay: 0.5s;">
                                     <div class="col-auto">
                                         <div class="d-flex align-items-center glass-card p-3 rounded-4 text-start">
                                             <div class="icon-box bg-white text-primary rounded-circle me-3">
@@ -117,6 +117,50 @@
                                     </div>
                                 </div>
                             </div>
+                            
+                            <!-- Right SVG Illustration -->
+                            <div class="col-lg-6 d-none d-lg-block fade-in-up text-center" style="animation-delay: 0.3s;">
+                                <svg viewBox="0 0 600 400" xmlns="http://www.w3.org/2000/svg" class="img-fluid" style="max-height: 400px; filter: drop-shadow(0 10px 20px rgba(0,0,0,0.2));">
+                                    <defs>
+                                        <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+                                            <feGaussianBlur stdDeviation="10" result="blur"/>
+                                            <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+                                        </filter>
+                                    </defs>
+                                    <!-- Main Dashboard Card -->
+                                    <rect x="100" y="50" width="400" height="300" rx="20" fill="rgba(255, 255, 255, 0.15)" stroke="rgba(255, 255, 255, 0.5)" stroke-width="2"/>
+                                    
+                                    <!-- Header Bar -->
+                                    <rect x="120" y="70" width="360" height="40" rx="10" fill="rgba(255, 255, 255, 0.2)"/>
+                                    <circle cx="140" cy="90" r="6" fill="#ff5f56"/>
+                                    <circle cx="160" cy="90" r="6" fill="#ffbd2e"/>
+                                    <circle cx="180" cy="90" r="6" fill="#27c93f"/>
+                                    
+                                    <!-- Sidebar -->
+                                    <rect x="120" y="130" width="80" height="200" rx="10" fill="rgba(255, 255, 255, 0.1)"/>
+                                    <rect x="135" y="150" width="50" height="8" rx="4" fill="rgba(255, 255, 255, 0.4)"/>
+                                    <rect x="135" y="170" width="50" height="8" rx="4" fill="rgba(255, 255, 255, 0.4)"/>
+                                    <rect x="135" y="190" width="50" height="8" rx="4" fill="rgba(255, 255, 255, 0.4)"/>
+                                    
+                                    <!-- Main Content Area -->
+                                    <!-- Chart Area -->
+                                    <path d="M230 280 L270 240 L310 260 L350 200 L390 230 L430 180" fill="none" stroke="#4facfe" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <circle cx="230" cy="280" r="4" fill="white"/>
+                                    <circle cx="270" cy="240" r="4" fill="white"/>
+                                    <circle cx="310" cy="260" r="4" fill="white"/>
+                                    <circle cx="350" cy="200" r="4" fill="white"/>
+                                    <circle cx="390" cy="230" r="4" fill="white"/>
+                                    <circle cx="430" cy="180" r="4" fill="white"/>
+                                    
+                                    <!-- Stats Cards -->
+                                    <rect x="220" y="130" width="120" height="60" rx="10" fill="rgba(255, 255, 255, 0.1)"/>
+                                    <rect x="360" y="130" width="120" height="60" rx="10" fill="rgba(255, 255, 255, 0.1)"/>
+                                    
+                                    <!-- Floating Elements -->
+                                    <circle cx="520" cy="100" r="30" fill="#4facfe" fill-opacity="0.2" filter="url(#glow)"/>
+                                    <circle cx="80" cy="300" r="20" fill="#00f2fe" fill-opacity="0.2" filter="url(#glow)"/>
+                                </svg>
+                            </div>
                         </div>
                     </div>
                     <div class="wave-bottom">
@@ -127,7 +171,7 @@
                 </section>
 
                 <!-- Features Section -->
-                <section class="py-6 bg-light position-relative">
+                <section id="features" class="py-6 bg-light position-relative">
                     <div class="container py-5">
                         <div class="text-center mb-5">
                             <span class="text-primary fw-bold text-uppercase tracking-wider">Why Choose MediHub</span>
@@ -483,14 +527,6 @@
                                         <p class="text-muted mb-0">Don't have an account? 
                                             <a href="#" @click.prevent="currentView = 'register'" class="text-primary fw-bold text-decoration-none">Create Account</a>
                                         </p>
-                                    </div>
-                                    <div class="mt-5 p-4 bg-light rounded-4 border border-dashed">
-                                        <h6 class="fw-bold text-muted mb-3 text-uppercase small tracking-wider">Demo Credentials</h6>
-                                        <div class="d-flex gap-2 flex-wrap">
-                                            <span class="badge bg-white text-dark border fw-normal py-2 px-3">Admin: admin / admin</span>
-                                            <span class="badge bg-white text-dark border fw-normal py-2 px-3">Doctor: dr_rahul / rahul</span>
-                                            <span class="badge bg-white text-dark border fw-normal py-2 px-3">Patient: arjun / arjun</span>
-                                        </div>
                                     </div>
                                 </div>
                                 

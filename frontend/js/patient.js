@@ -342,52 +342,66 @@ const PatientTemplate = `
             </div>
         </div>
     </div>
-    <!-- Doctor Profile View -->
-    <div v-if="view === 'doctor-profile'" class="container mt-4">
-        <div class="row justify-content-center">
-            <div class="col-md-8">
-                <div class="card">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0">Doctor Profile</h5>
-                        <button class="btn btn-outline-secondary btn-sm" @click="closeDoctorProfile">
-                            <i class="bi bi-arrow-left"></i> Back
-                        </button>
+    <!-- Doctor Profile Modal -->
+    <div class="modal fade" id="doctorProfileModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Doctor Profile</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-center" v-if="viewingDoctor">
+                    <div class="mb-4">
+                        <div class="avatar-circle bg-primary text-white mx-auto mb-3" style="width: 80px; height: 80px; font-size: 2rem; display: flex; align-items: center; justify-content: center; border-radius: 50%;">
+                            {{ viewingDoctor.name.charAt(0) }}
+                        </div>
+                        <h4>Dr. {{ viewingDoctor.name }}</h4>
+                        <p class="text-muted mb-1">{{ viewingDoctor.department }}</p>
+                        <span class="badge bg-info">{{ viewingDoctor.experience }} Years Experience</span>
                     </div>
-                    <div class="card-body text-center" v-if="viewingDoctor">
-                        <div class="mb-4">
-                            <div class="avatar-circle bg-primary text-white mx-auto mb-3" style="width: 80px; height: 80px; font-size: 2rem; display: flex; align-items: center; justify-content: center; border-radius: 50%;">
-                                {{ viewingDoctor.name.charAt(0) }}
-                            </div>
-                            <h4>Dr. {{ viewingDoctor.name }}</h4>
-                            <p class="text-muted mb-1">{{ viewingDoctor.department }}</p>
-                            <span class="badge bg-info">{{ viewingDoctor.experience }} Years Experience</span>
+                    
+                    <div class="row text-start">
+                        <div class="col-md-6 mb-3">
+                            <strong><i class="bi bi-mortarboard me-2"></i>Qualification</strong>
+                            <p class="text-muted ms-4">{{ viewingDoctor.qualification }}</p>
                         </div>
-                        
-                        <div class="row text-start">
-                            <div class="col-md-6 mb-3">
-                                <strong><i class="bi bi-mortarboard me-2"></i>Qualification</strong>
-                                <p class="text-muted ms-4">{{ viewingDoctor.qualification }}</p>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <strong><i class="bi bi-cash me-2"></i>Consultation Fee</strong>
-                                <p class="text-muted ms-4">$ {{ viewingDoctor.consultation_fee || '0.00' }}</p>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <strong><i class="bi bi-telephone me-2"></i>Contact</strong>
-                                <p class="text-muted ms-4">{{ viewingDoctor.phone || 'N/A' }}</p>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <strong><i class="bi bi-envelope me-2"></i>Email</strong>
-                                <p class="text-muted ms-4">{{ viewingDoctor.email || 'N/A' }}</p>
-                            </div>
+                        <div class="col-md-6 mb-3">
+                            <strong><i class="bi bi-cash me-2"></i>Consultation Fee</strong>
+                            <p class="text-muted ms-4">$ {{ viewingDoctor.consultation_fee || '0.00' }}</p>
                         </div>
-                        
-                        <div class="mt-4">
-                            <button class="btn btn-primary" @click="selectDoctorAndBook(viewingDoctor)">
-                                Book Appointment
-                            </button>
+                        <div class="col-md-6 mb-3">
+                            <strong><i class="bi bi-telephone me-2"></i>Contact</strong>
+                            <p class="text-muted ms-4">{{ viewingDoctor.phone || 'N/A' }}</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <strong><i class="bi bi-envelope me-2"></i>Email</strong>
+                            <p class="text-muted ms-4">{{ viewingDoctor.email || 'N/A' }}</p>
                         </div>
                     </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" @click="selectDoctorAndBook(viewingDoctor)">Book Appointment</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cancel Appointment Modal -->
+    <div class="modal fade" id="cancelAppointmentModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Cancel Appointment</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to cancel this appointment?</p>
+                    <p class="text-danger"><small>This action cannot be undone.</small></p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">No, Keep it</button>
+                    <button type="button" class="btn btn-danger" @click="confirmCancelAppointment">Yes, Cancel Appointment</button>
                 </div>
             </div>
         </div>
@@ -420,7 +434,8 @@ const PatientComponent = {
             error: null,
             success: null,
             selectedAppointmentHistory: null,
-            minBookingDate: new Date().toISOString().split('T')[0]
+            minBookingDate: new Date().toISOString().split('T')[0],
+            appointmentToCancel: null
         }
     },
     methods: {
@@ -508,16 +523,27 @@ const PatientComponent = {
             this.loading = false
         },
 
-        async cancelPatientAppointment(appointmentId) {
-            if (!confirm('Are you sure you want to cancel this appointment?')) return
+        cancelPatientAppointment(appointmentId) {
+            this.appointmentToCancel = appointmentId;
+            const modal = new bootstrap.Modal(document.getElementById('cancelAppointmentModal'));
+            modal.show();
+        },
+
+        async confirmCancelAppointment() {
+            if (!this.appointmentToCancel) return;
             
-            const resp = await window.ApiService.cancelAppointment(appointmentId)
+            const modalEl = document.getElementById('cancelAppointmentModal');
+            const modal = bootstrap.Modal.getInstance(modalEl);
+            if (modal) modal.hide();
+
+            const resp = await window.ApiService.cancelAppointment(this.appointmentToCancel);
             if (resp.success) { 
-                this.success = 'Appointment cancelled successfully'
-                await this.loadPatientData() 
+                this.success = 'Appointment cancelled successfully';
+                await this.loadPatientData();
             } else {
-                this.error = resp.message || 'Failed to cancel appointment'
+                this.error = resp.message || 'Failed to cancel appointment';
             }
+            this.appointmentToCancel = null;
         },
 
         async exportHistory() {
@@ -545,12 +571,15 @@ const PatientComponent = {
 
         viewDoctorProfile(doctor) {
             this.viewingDoctor = doctor;
-            this.view = 'doctor-profile';
+            const modal = new bootstrap.Modal(document.getElementById('doctorProfileModal'));
+            modal.show();
         },
 
         closeDoctorProfile() {
+            const modalEl = document.getElementById('doctorProfileModal');
+            const modal = bootstrap.Modal.getInstance(modalEl);
+            if (modal) modal.hide();
             this.viewingDoctor = null;
-            this.view = 'dashboard';
         },
 
         selectDoctorAndBook(doctor) {

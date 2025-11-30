@@ -44,9 +44,14 @@ Healthcare facilities often struggle with appointment conflicts, lost patient re
 *   **Easy Booking:** Intuitive 4-step booking process (Department -> Doctor -> Date -> Time).
 *   **Smart Slots:** View real-time availability with 1-hour slot precision.
 *   **Medical History:** View past appointments, prescriptions, and diagnoses.
-*   **Doctor Profiles:** View detailed doctor information (experience, fees, qualifications) before booking.
+*   **Doctor Profiles:** View detailed doctor information (experience, fees, qualifications) via interactive modals before booking.
 
 ---
+
+## 🚀 Recent Updates
+*   **Enhanced UI/UX:** Implemented Bootstrap Modals for smoother interactions (Rescheduling, Canceling, Doctor Profiles).
+*   **Improved Scheduling:** Added 1-hour slot precision and past-time booking constraints.
+*   **Admin Controls:** Fixed rescheduling logic and added confirmation dialogs.
 
 ## 🏗️ Architecture
 

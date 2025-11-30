@@ -87,10 +87,7 @@ const AdminTemplate = `
                                         <div class="col-md-7">
                                             <div class="input-group">
                                                 <input type="text" class="form-control" placeholder="Search doctors by name or specialization..." v-model="doctorSearchQuery" @input="searchDoctors">
-                                                <button class="btn btn-primary" type="button" @click="searchDoctors">
-                                                    <i class="bi bi-search"></i>
-                                                </button>
-                                                <button class="btn btn-outline-secondary" type="button" @click="clearDoctorSearch" v-if="doctorSearchQuery">
+                                                <button class="btn btn-outline-secondary" type="button" @click="searchDoctors">
                                                     <i class="bi bi-x"></i>
                                                 </button>
                                             </div>
@@ -164,6 +161,7 @@ const AdminTemplate = `
                                                     <i class="bi bi-x"></i>
                                                 </button>
                                             </div>
+
                                         </div>
                                         <div class="col-md-5">
                                             <div class="input-group">
@@ -284,39 +282,66 @@ const AdminTemplate = `
                     </div>
                     </div>
 
-                    <!-- Reschedule Appointment -->
-                    <div v-if="adminView === 'reschedule-appointment'" class="card">
-                        <div class="card-header">
-                            <h5 class="mb-0">Reschedule Appointment</h5>
-                        </div>
-                        <div class="card-body">
-                            <div class="alert alert-info" v-if="reschedulingAppointment">
-                                <strong>Current Appointment:</strong><br>
-                                Patient: {{ reschedulingAppointment.patient?.name }}<br>
-                                Doctor: Dr. {{ reschedulingAppointment.doctor?.name }}<br>
-                                Date: {{ reschedulingAppointment.appointment_date }} at {{ formatTimeSlot(reschedulingAppointment.appointment_time) }}
+                    <!-- Reschedule Modal -->
+                    <div class="modal fade" id="rescheduleModal" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">Reschedule Appointment</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <div class="alert alert-info" v-if="reschedulingAppointment">
+                                        <strong>Current Appointment:</strong><br>
+                                        Patient: {{ reschedulingAppointment.patient?.name }}<br>
+                                        Doctor: Dr. {{ reschedulingAppointment.doctor?.name }}<br>
+                                        Date: {{ reschedulingAppointment.appointment_date }} at {{ formatTimeSlot(reschedulingAppointment.appointment_time) }}
+                                    </div>
+                                    
+                                    <form @submit.prevent="rescheduleAppointment">
+                                        <div class="mb-3">
+                                            <label class="form-label">New Date</label>
+                                            <input type="date" class="form-control" v-model="rescheduleData.date" :min="getTodayDate()" @change="loadAvailableSlots" required>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">New Time</label>
+                                            <select class="form-select" v-model="rescheduleData.time" required :disabled="!availableSlots.length">
+                                                <option value="">Select Time Slot</option>
+                                                <option v-for="slot in availableSlots" :value="slot.appointment_time">{{ formatTimeSlot(slot.appointment_time) }}</option>
+                                            </select>
+                                            <small class="text-muted" v-if="!rescheduleData.date">Please select a date first to see available slots.</small>
+                                            <small class="text-danger" v-if="rescheduleData.date && availableSlots.length === 0">No slots available for this date.</small>
+                                        </div>
+                                        <div class="d-flex justify-content-end">
+                                            <button type="button" class="btn btn-secondary me-2" data-bs-dismiss="modal">Cancel</button>
+                                            <button type="submit" class="btn btn-primary" :disabled="loading">
+                                                <span v-if="loading" class="spinner-border spinner-border-sm me-2"></span>
+                                                Confirm Reschedule
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
                             </div>
-                            
-                            <form @submit.prevent="rescheduleAppointment">
-                                <div class="mb-3">
-                                    <label class="form-label">New Date</label>
-                                    <input type="date" class="form-control" v-model="rescheduleData.date" :min="getTodayDate()" @change="loadAvailableSlots" required>
+                        </div>
+                    </div>
+
+                    <!-- Cancel Appointment Modal -->
+                    <div class="modal fade" id="cancelAppointmentModal" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">Cancel Appointment</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                 </div>
-                                <div class="mb-3">
-                                    <label class="form-label">New Time</label>
-                                    <select class="form-select" v-model="rescheduleData.time" required :disabled="!availableSlots.length">
-                                        <option value="">Select Time Slot</option>
-                                        <option v-for="slot in availableSlots" :value="slot">{{ formatTimeSlot(slot) }}</option>
-                                    </select>
-                                    <small class="text-muted" v-if="!rescheduleData.date">Please select a date first to see available slots.</small>
-                                    <small class="text-danger" v-if="rescheduleData.date && availableSlots.length === 0">No slots available for this date.</small>
+                                <div class="modal-body">
+                                    <p>Are you sure you want to cancel this appointment?</p>
+                                    <p class="text-danger"><small>This action cannot be undone.</small></p>
                                 </div>
-                                <button type="submit" class="btn btn-primary" :disabled="loading">
-                                    <span v-if="loading" class="spinner-border spinner-border-sm me-2"></span>
-                                    Confirm Reschedule
-                                </button>
-                                <button type="button" class="btn btn-secondary ms-2" @click="adminView = 'dashboard'">Cancel</button>
-                            </form>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">No, Keep it</button>
+                                    <button type="button" class="btn btn-danger" @click="confirmCancelAppointment">Yes, Cancel Appointment</button>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -667,7 +692,8 @@ const AdminComponent = {
             availableSlots: [],
             loading: false,
             error: null,
-            success: null
+            success: null,
+            appointmentToCancel: null
         }
     },
     methods: {
@@ -918,24 +944,36 @@ const AdminComponent = {
         },
 
         async cancelAppointment(appointment) {
-            if (confirm('Are you sure you want to cancel this appointment?')) {
-                this.loading = true;
-                const resp = await window.ApiService.updateAppointment(appointment.id, { status: 'cancelled' });
-                if (resp.success) {
-                    this.success = 'Appointment cancelled successfully';
-                    await this.loadAdminData();
-                } else {
-                    this.error = resp.message || 'Failed to cancel appointment';
-                }
-                this.loading = false;
+            this.appointmentToCancel = appointment;
+            const modal = new bootstrap.Modal(document.getElementById('cancelAppointmentModal'));
+            modal.show();
+        },
+
+        async confirmCancelAppointment() {
+            if (!this.appointmentToCancel) return;
+            
+            const modalEl = document.getElementById('cancelAppointmentModal');
+            const modal = bootstrap.Modal.getInstance(modalEl);
+            if (modal) modal.hide();
+
+            this.loading = true;
+            const resp = await window.ApiService.updateAppointment(this.appointmentToCancel.id, { status: 'cancelled' });
+            if (resp.success) {
+                this.success = 'Appointment cancelled successfully';
+                await this.loadAdminData();
+            } else {
+                this.error = resp.message || 'Failed to cancel appointment';
             }
+            this.loading = false;
+            this.appointmentToCancel = null;
         },
 
         openReschedule(appointment) {
             this.reschedulingAppointment = appointment;
             this.rescheduleData = { date: '', time: '' };
             this.availableSlots = [];
-            this.adminView = 'reschedule-appointment';
+            const modal = new bootstrap.Modal(document.getElementById('rescheduleModal'));
+            modal.show();
         },
 
         async loadAvailableSlots() {
@@ -966,7 +1004,9 @@ const AdminComponent = {
 
             if (resp.success) {
                 this.success = 'Appointment rescheduled successfully';
-                this.adminView = 'dashboard';
+                const modalEl = document.getElementById('rescheduleModal');
+                const modal = bootstrap.Modal.getInstance(modalEl);
+                if (modal) modal.hide();
                 await this.loadAdminData();
             } else {
                 this.error = resp.message || 'Failed to reschedule appointment';

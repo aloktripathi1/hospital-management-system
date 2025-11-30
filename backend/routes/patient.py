@@ -78,7 +78,7 @@ def get_departments():
 
 # get available slots for doctor on specific date
 @patient_bp.route('/available-slots', methods=['GET'])
-@patient_required
+@patient_or_admin_required
 def get_available_slots():
     doctor_id = request.args.get('doctor_id')
     date_str = request.args.get('date')
