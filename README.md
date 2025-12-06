@@ -116,7 +116,7 @@ After running `seed_db.py`, you can login as:
 
 **Admin:**
 - Username: `admin`
-- Password: `admin123`
+- Password: `admin`
 
 **Doctors:**
 - Username: `dr_sharma` / `dr_verma` / `dr_patel` / `dr_singh` / `dr_kumar`
