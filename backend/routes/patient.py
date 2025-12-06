@@ -315,13 +315,6 @@ def book_appointment():
     db.session.add(appointment)
     db.session.commit()
     
-    # Send confirmation email
-    try:
-        from celery_tasks.imports import booking_confirmation
-        booking_confirmation.delay(appointment.id)
-    except Exception as e:
-        print(f"Failed to send confirmation email: {e}")
-    
     return jsonify({'success': True, 'message': 'Appointment booked successfully', 'data': {'appointment': appointment.to_dict()}})
 
 # cancel appointment
@@ -349,13 +342,6 @@ def cancel_appointment(appointment_id):
     appointment.updated_at = datetime.utcnow()
     
     db.session.commit()
-    
-    # Send cancellation email
-    try:
-        from celery_tasks.imports import booking_cancellation
-        booking_cancellation.delay(appointment.id)
-    except Exception as e:
-        print(f"Failed to send cancellation email: {e}")
     
     return jsonify({'success': True, 'message': 'Appointment cancelled successfully', 'data': {}})
 
@@ -430,8 +416,8 @@ def export_patient_history():
         if not patient:
             return jsonify({'success': False, 'message': 'Patient profile not found', 'errors': ['Profile not found']}), 404
         
-        from celery_tasks.imports import patient_history_export
-        task = patient_history_export.delay(patient.id)
+        from celery_tasks import export_patient_history_csv
+        task = export_patient_history_csv.delay(patient.id)
         
         return jsonify({'success': True, 'message': 'CSV export started. You will be notified when ready.', 'data': {'task_id': task.id}})
         

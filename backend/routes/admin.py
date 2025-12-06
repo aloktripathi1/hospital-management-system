@@ -100,13 +100,6 @@ def add_doctor():
     db.session.add(doctor)
     db.session.commit()
     
-    # Send login details email
-    try:
-        from celery_tasks.imports import doctor_login
-        doctor_login.delay(doctor.id, password)
-    except Exception as e:
-        print(f"Failed to send doctor login details: {e}")
-    
     return jsonify({'success': True, 'message': 'Doctor account created successfully', 'data': {'doctor': doctor.to_dict(), 'credentials': {'username': username, 'password': password}}})
 
 
@@ -196,13 +189,6 @@ def update_appointment(appointment_id):
     
     if 'status' in data:
         appointment.status = data['status']
-        if data['status'] == 'cancelled':
-             try:
-                from celery_tasks.imports import booking_cancellation
-                booking_cancellation.delay(appointment.id)
-             except Exception as e:
-                print(f"Failed to send cancellation email: {e}")
-
     if 'notes' in data:
         appointment.notes = data['notes']
         
@@ -236,14 +222,6 @@ def update_appointment(appointment_id):
     appointment.updated_at = datetime.utcnow()
     
     db.session.commit()
-
-    # Check if it was a reschedule to send email
-    if 'appointment_date' in data and 'appointment_time' in data:
-         try:
-            from celery_tasks.imports import booking_confirmation
-            booking_confirmation.delay(appointment.id)
-         except Exception as e:
-            print(f"Failed to send rescheduling email: {e}")
     
     return jsonify({'success': True, 'message': 'Appointment updated successfully', 'data': {'appointment': appointment.to_dict()}})
 
