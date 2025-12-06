@@ -1,216 +1,203 @@
-# 🏥 Hospital Management System (HMS)
+# 🏥 Hospital Management System
 
-![License](https://img.shields.io/badge/license-MIT-blue.svg)
+A simple web app for managing hospital appointments, doctors, and patients.
+
 ![Python](https://img.shields.io/badge/python-3.8%2B-blue)
 ![Flask](https://img.shields.io/badge/flask-2.3-green)
 ![Vue.js](https://img.shields.io/badge/vue.js-3.x-success)
 
-## 📋 Project Overview
+## What is this project?
 
-The **Hospital Management System (HMS)** is a comprehensive web-based application designed to streamline the operational workflows of healthcare facilities. It provides a unified platform for **Administrators**, **Doctors**, and **Patients** to manage appointments, medical records, and hospital resources efficiently.
+This is a hospital management system I built for managing appointments between doctors and patients. It has three types of users:
+- **Admin** - Manages doctors and patients
+- **Doctors** - View appointments and update treatment records
+- **Patients** - Book appointments and view medical history
 
-This system replaces manual paperwork with a digital solution, ensuring data accuracy, faster retrieval of patient history, and seamless scheduling.
+## Why I made this
 
----
+Most hospitals still use paper registers or complicated software. I wanted to make something simple that:
+- Lets patients book appointments online
+- Helps doctors see their schedule easily
+- Gives admins control over everything
+- Keeps all medical records in one place
 
-## 🎯 Motivation
+## Features
 
-Healthcare facilities often struggle with appointment conflicts, lost patient records, and inefficient doctor scheduling. This project aims to solve these problems by providing:
-*   **Centralized Data:** A single source of truth for patient and doctor information.
-*   **Conflict-Free Scheduling:** Intelligent slot management to prevent double-booking.
-*   **Accessibility:** A patient portal for self-service booking and history viewing.
-*   **Efficiency:** Automated administrative tasks to reduce workload on staff.
+### For Patients
+- Register and login
+- Book appointments (choose doctor, date, time slot)
+- View appointment history
+- See treatment records (diagnosis, medicines prescribed)
+- Cancel appointments
 
----
+### For Doctors
+- View today's appointments
+- See assigned patients
+- Update treatment details (diagnosis, prescription, notes)
+- Mark appointments as completed
+- Set availability (morning/evening slots for next 7 days)
 
-## ✨ Key Features
+### For Admin
+- Add/edit/blacklist doctors
+- Edit/blacklist patients
+- View all appointments
+- Reschedule or cancel any appointment
+- See appointment history for any doctor or patient
+- Dashboard with statistics
 
-### 🔐 Authentication & Security
-*   **Role-Based Access Control (RBAC):** Distinct portals for Admins, Doctors, and Patients.
-*   **Secure Login:** JWT-based authentication and password hashing.
+## Tech Stack
 
-### 👨‍💼 Admin Portal
-*   **Dashboard Analytics:** Real-time stats on doctors, patients, and appointments.
-*   **User Management:** Add/Edit/Blacklist doctors and patients.
-*   **Appointment Oversight:** View, reschedule, or cancel any appointment.
-*   **History Tracking:** View comprehensive appointment history for any doctor or patient.
+**Frontend:**
+- HTML, CSS, JavaScript
+- Vue.js 3 (loaded from CDN)
+- Bootstrap 5 for styling
+- Professional dark theme (#0f172a)
 
-### 👨‍⚕️ Doctor Portal
-*   **Schedule Management:** View upcoming appointments and manage availability.
-*   **Patient Records:** Access patient medical history and past treatments.
-*   **Consultation:** Record diagnoses, prescriptions, and treatment notes.
+**Backend:**
+- Python Flask
+- SQLite database
+- SQLAlchemy (ORM)
+- JWT for authentication
 
-### 🏥 Patient Portal
-*   **Easy Booking:** Intuitive 4-step booking process (Department -> Doctor -> Date -> Time).
-*   **Smart Slots:** View real-time availability with 1-hour slot precision.
-*   **Medical History:** View past appointments, prescriptions, and diagnoses.
-*   **Doctor Profiles:** View detailed doctor information (experience, fees, qualifications) via interactive modals before booking.
+**Background Jobs:**
+- Celery (for sending emails)
+- Redis (message broker)
 
----
+## Project Structure
 
-## 🚀 Recent Updates
-*   **Enhanced UI/UX:** Implemented Bootstrap Modals for smoother interactions (Rescheduling, Canceling, Doctor Profiles).
-*   **Improved Scheduling:** Added 1-hour slot precision and past-time booking constraints.
-*   **Admin Controls:** Fixed rescheduling logic and added confirmation dialogs.
-
-## 🏗️ Architecture
-
-The project follows a **Client-Server Architecture** with a RESTful API backend and a reactive frontend.
-
-### Tech Stack
-*   **Backend:** Python (Flask)
-    *   **ORM:** SQLAlchemy (SQLite)
-    *   **Async Tasks:** Celery + Redis (for background jobs like emails)
-    *   **Auth:** Flask-JWT-Extended
-*   **Frontend:** HTML5, CSS3, JavaScript (Vue.js via CDN), Bootstrap 5
-*   **Database:** SQLite (Development).
-
-### System Design
-*   **Models:** `User`, `Doctor`, `Patient`, `Appointment`, `Treatment`, `DoctorAvailability`.
-*   **API:** REST endpoints serving JSON data.
-*   **Frontend:** Single-Page Application (SPA) feel using Vue.js components mounted on HTML templates.
-
----
-
-## 📂 Project Structure
-
-```bash
+```
 hospital-management-system/
-├── backend/                # Flask Application
-│   ├── models/             # Database Models (User, Doctor, Appointment, etc.)
-│   ├── routes/             # API Endpoints (Auth, Admin, Doctor, Patient)
-│   ├── app.py              # Application Entry Point
-│   ├── database.py         # DB Configuration
-│   ├── celery_tasks.py     # Background Tasks
-│   └── requirements.txt    # Python Dependencies
-├── frontend/               # Client-Side Application
-│   ├── js/                 # Vue.js Components (admin.js, patient.js, etc.)
-│   ├── css/                # Custom Styles
-│   └── index.html          # Main Entry HTML
-├── docs/                   # Documentation
-├── tests/                  # Unit & Integration Tests
-└── API_SHOWCASE.yaml       # API Specification
+├── backend/
+│   ├── models/              # Database tables
+│   ├── routes/              # API endpoints
+│   │   ├── auth.py         # Login/Register
+│   │   ├── admin.py        # Admin features
+│   │   ├── doctor.py       # Doctor features
+│   │   └── patient.py      # Patient features
+│   ├── celery_tasks/       # Email sending tasks
+│   ├── app.py              # Main Flask app
+│   ├── database.py         # Database setup
+│   └── seed_db.py          # Create sample data
+├── frontend/
+│   ├── js/
+│   │   ├── app.js          # Main Vue app
+│   │   ├── admin.js        # Admin dashboard
+│   │   ├── doctor.js       # Doctor dashboard
+│   │   ├── patient.js      # Patient dashboard
+│   │   └── api.js          # API calls
+│   ├── custom.css          # Styling
+│   └── index.html          # Main page
+└── docs/                    # Documentation
 ```
 
----
+## How to Run
 
-## 🚀 Installation Guide
+### Quick Start (Just 2 steps!)
 
-### Prerequisites
-*   Python 3.8+
-*   Redis (for Celery tasks)
-*   Git
-
-### Step 1: Clone the Repository
-```bash
-git clone https://github.com/yourusername/hospital-management-system.git
-cd hospital-management-system
-```
-
-### Step 2: Backend Setup
-Create a virtual environment and install dependencies.
+1. **Start Backend**
 ```bash
 cd backend
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
+python seed_db.py          # Creates database with sample data
+python app.py              # Starts server at http://localhost:5000
 ```
 
-### Step 3: Environment Configuration
-Create a `.env` file in the `backend/` directory:
-```env
-SECRET_KEY=your_secret_key
-SQLALCHEMY_DATABASE_URI=sqlite:///hospital.db
-JWT_SECRET_KEY=your_jwt_secret
-CELERY_BROKER_URL=redis://localhost:6379/0
-MAIL_SERVER=smtp.gmail.com
-# ... other mail settings
-```
-
-### Step 4: Initialize Database
+2. **Start Frontend**
 ```bash
-python init_db.py
+cd frontend
+python -m http.server 3000  # Opens at http://localhost:3000
 ```
 
-### Step 5: Run the Application
-Start the Flask server:
-```bash
-python app.py
-```
-*The API will run at `http://localhost:5000`*
+That's it! Open http://localhost:3000 in your browser.
 
-### Step 6: Start Frontend
-Since the frontend is static, you can serve it using Python's http server or open `frontend/index.html` directly (though running via the Flask static folder is recommended).
-*Access the app at `http://localhost:5000/` (Flask serves the frontend).*
+### Login Credentials
 
----
+After running `seed_db.py`, you can login as:
 
-## 📖 Usage Instructions
+**Admin:**
+- Username: `admin`
+- Password: `admin123`
 
-### 1. Admin Access
-*   **Login:** Use default credentials (if seeded) or create a superuser via script.
-*   **Actions:** Go to "Doctors" tab to onboard new medical staff. Go to "Appointments" to oversee hospital schedule.
+**Doctors:**
+- Username: `dr_sharma` / `dr_verma` / `dr_patel` / `dr_singh` / `dr_kumar`
+- Password: `doctor123`
 
-### 2. Patient Booking Flow
-1.  Register/Login as a Patient.
-2.  Click "Book Appointment".
-3.  Select Department (e.g., Cardiology).
-4.  Choose a Doctor (view profile for details).
-5.  Select Date.
-6.  Pick an available **1-hour slot** (e.g., 09:00 AM - 10:00 AM).
-7.  Confirm Booking.
+**Patients:**
+- Username: `patient1` / `patient2` / `patient3` ... (up to patient10)
+- Password: `patient123`
 
-### 3. Doctor Interaction
-1.  Login as Doctor.
-2.  Set Availability (Morning/Evening slots).
-3.  View "Today's Appointments".
-4.  Click "Treat" to add diagnosis and prescription.
+### Optional: Email Notifications
 
----
+If you want email features (appointment confirmations, reminders):
 
-## 🧪 Testing
+1. Install and start Redis
+2. Run Celery worker
+3. Run Celery beat (for scheduled tasks)
 
-Run the test suite to ensure system stability.
-```bash
-cd tests
-pytest
-```
+See `docs/setup.md` for detailed instructions.
 
----
+## Database Tables
 
-## 🗺️ Roadmap
+- **users** - Login credentials for all users
+- **doctors** - Doctor profiles (name, specialization, experience, fees)
+- **patients** - Patient info (name, age, gender, medical history)
+- **appointments** - Booking records (date, time, status)
+- **treatments** - Treatment records (diagnosis, prescription, notes)
+- **doctor_availability** - Doctor schedule slots (morning/evening)
 
-*   [x] Core Appointment Booking
-*   [x] Admin Dashboard & Analytics
-*   [x] Doctor History & Profiles
-*   [x] 1-Hour Slot System
-*   [ ] Email/SMS Notifications (Integration ready)
-*   [ ] Payment Gateway Integration
-*   [ ] Pharmacy Management Module
-*   [ ] Telemedicine Video Integration
+## Screenshots
 
----
+### Homepage
+Modern hero section with professional dark theme
 
-## 🤝 Contributing
+### Login/Register
+Clean branded login page with stats
 
-Contributions are welcome! Please follow these steps:
-1.  Fork the repository.
-2.  Create a feature branch (`git checkout -b feature/AmazingFeature`).
-3.  Commit your changes (`git commit -m 'Add some AmazingFeature'`).
-4.  Push to the branch (`git push origin feature/AmazingFeature`).
-5.  Open a Pull Request.
+### Admin Dashboard
+Manage doctors, patients, and appointments
 
----
+### Doctor Dashboard
+View appointments and update treatments
 
-## 📄 License
+### Patient Dashboard
+Book appointments and view history
 
-Distributed under the MIT License. See `LICENSE` for more information.
+## What I Learned
 
----
+- Building REST APIs with Flask
+- User authentication with JWT
+- Frontend development with Vue.js
+- Database design and relationships
+- Background job processing with Celery
+- UI/UX design principles
 
-## 🙏 Acknowledgements
+## Future Improvements
 
-*   **Flask** for the robust backend framework.
-*   **Vue.js** for the reactive user interface.
-*   **Bootstrap** for the responsive design.
-*   **FontAwesome / Bootstrap Icons** for the iconography.
+- [ ] Email/SMS notifications (code is ready, just need SMTP setup)
+- [ ] Payment integration for consultation fees
+- [ ] Video consultation feature
+- [ ] Prescription PDF download
+- [ ] Mobile app version
+
+## Documentation
+
+Check the `docs/` folder for more details:
+- `setup.md` - Detailed setup instructions
+- `architecture.md` - How everything works together
+- `bg_jobs.md` - Email system explanation
+
+## Contributing
+
+Feel free to fork this project and make improvements! Some ideas:
+- Add more specializations
+- Improve UI design
+- Add more features (lab reports, pharmacy, etc.)
+
+## Contact
+
+Made by [Your Name]
+- GitHub: [@aloktripathi1](https://github.com/aloktripathi1)
+
+## License
+
+MIT License - Feel free to use this for your college projects!
