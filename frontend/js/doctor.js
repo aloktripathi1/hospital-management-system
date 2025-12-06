@@ -124,11 +124,11 @@ const DoctorDashboardTemplate = `
                                                 <button class="btn btn-sm btn-outline-primary me-1" 
                                                         @click="openTreatmentPage(appointment)" 
                                                         title="Update Treatment">
-                                                    <i class="bi bi-pencil-square"></i> Update
+                                                    <i class="bi bi-pencil"></i> Update
                                                 </button>
                                                 <button v-if="appointment.status === 'booked'"
                                                         class="btn btn-sm btn-outline-warning" 
-                                                        @click="cancelDoctorAppointment(appointment.id)" 
+                                                        @click="cancelDoctorAppointment(appointment)" 
                                                         title="Cancel Appointment">
                                                     <i class="bi bi-x-circle"></i> Cancel
                                                 </button>
@@ -249,30 +249,75 @@ const DoctorDashboardTemplate = `
         </div>
     </div>
 
+    <!-- Cancel Appointment Modal -->
+    <div class="modal fade" id="cancelDoctorAppointmentModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Cancel Appointment</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to cancel this appointment?</p>
+                    <div v-if="appointmentToCancel" class="alert alert-info">
+                        <strong>Patient:</strong> {{ appointmentToCancel.patient?.name }}<br>
+                        <strong>Date:</strong> {{ appointmentToCancel.appointment_date }}<br>
+                        <strong>Time:</strong> {{ formatTimeSlot(appointmentToCancel.appointment_time) }}
+                    </div>
+                    <p class="text-danger"><small>This action cannot be undone.</small></p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">No, Keep it</button>
+                    <button type="button" class="btn btn-danger" @click="confirmCancelAppointment">Yes, Cancel Appointment</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Treatment Management Page -->
     <div v-if="view === 'treatment-management'" class="container mt-4">
         <div class="row justify-content-center">
             <div class="col-md-12">
-                <div class="card">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0">Manage Treatment - {{ selectedAppointmentForTreatment?.patient?.name }}</h5>
-                        <button class="btn btn-outline-secondary mb-2" @click="backToDoctorAppointments()">
-                            <i class="bi bi-arrow-left"></i> Back to Dashboard
-                        </button> 
+                <div class="card shadow-sm border-0">
+                    <div class="card-header bg-white border-bottom py-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center">
+                                <div class="bg-primary bg-opacity-10 p-2 rounded-3 me-3">
+                                    <i class="bi bi-clipboard2-pulse text-primary fs-5"></i>
+                                </div>
+                                <div>
+                                    <h5 class="mb-0 fw-bold">Manage Treatment</h5>
+                                    <small class="text-muted">{{ selectedAppointmentForTreatment?.patient?.name }}</small>
+                                </div>
+                            </div>
+                            <button class="btn btn-outline-secondary btn-sm rounded-pill px-3" @click="backToDoctorAppointments()">
+                                <i class="bi bi-arrow-left me-1"></i> Back to Dashboard
+                            </button>
+                        </div>
                     </div>
-                    <div class="card-body">
+                    <div class="card-body p-4">
                         <div v-if="selectedAppointmentForTreatment">
                             <!-- Appointment Info -->
-                            <div class="alert alert-light mb-4">
-                                <strong>Appointment:</strong> {{ selectedAppointmentForTreatment.appointment_date }} at {{ selectedAppointmentForTreatment.appointment_time }}
-                                <br><strong>Status:</strong> {{ selectedAppointmentForTreatment.status }}
+                            <div class="alert alert-light border mb-4">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <i class="bi bi-calendar-event text-primary me-2"></i><strong>Date:</strong> {{ selectedAppointmentForTreatment.appointment_date }}
+                                    </div>
+                                    <div class="col-md-6">
+                                        <i class="bi bi-clock text-info me-2"></i><strong>Time:</strong> {{ formatTimeSlot(selectedAppointmentForTreatment.appointment_time) }}
+                                    </div>
+                                </div>
+                                <div class="mt-2">
+                                    <i class="bi bi-info-circle text-success me-2"></i><strong>Status:</strong> 
+                                    <span class="badge" :class="getStatusClass(selectedAppointmentForTreatment.status)">{{ selectedAppointmentForTreatment.status }}</span>
+                                </div>
                             </div>
 
                             <!-- Treatment Form -->
                             <form @submit.prevent="submitTreatment">
                                 <div class="row mb-3">
                                     <div class="col-md-6">
-                                        <label class="form-label">Visit Type <span class="text-danger">*</span></label>
+                                        <label class="form-label fw-medium"><i class="bi bi-card-checklist me-2"></i>Visit Type <span class="text-danger">*</span></label>
                                         <select class="form-select" v-model="treatmentForm.visit_type" required>
                                             <option value="">Select Visit Type</option>
                                             <option value="consultation">Consultation</option>
@@ -283,30 +328,30 @@ const DoctorDashboardTemplate = `
                                 </div>
                                 
                                 <div class="mb-3">
-                                    <label class="form-label">Diagnosis <span class="text-danger">*</span></label>
+                                    <label class="form-label fw-medium"><i class="bi bi-heart-pulse me-2"></i>Diagnosis <span class="text-danger">*</span></label>
                                     <textarea class="form-control" rows="3" v-model="treatmentForm.diagnosis" 
                                             placeholder="Provide the diagnosis" required></textarea>
                                 </div>
                                 
                                 <div class="mb-3">
-                                    <label class="form-label">Prescribed Medicines <span class="text-danger">*</span></label>
+                                    <label class="form-label fw-medium"><i class="bi bi-prescription2 me-2"></i>Prescribed Medicines <span class="text-danger">*</span></label>
                                     <textarea class="form-control" rows="3" v-model="treatmentForm.prescription" 
                                             placeholder="List prescribed medications with dosage" required></textarea>
                                 </div>
                                 
-                                <div class="mb-3">
-                                    <label class="form-label">Treatment Notes <span class="text-danger">*</span></label>
+                                <div class="mb-4">
+                                    <label class="form-label fw-medium"><i class="bi bi-file-text me-2"></i>Treatment Notes <span class="text-danger">*</span></label>
                                     <textarea class="form-control" rows="4" v-model="treatmentForm.treatment_notes" 
                                             placeholder="Additional notes, recommendations, and follow-up instructions" required></textarea>
                                 </div>
                                 
-                                <div class="text-center">
-                                    <button type="submit" class="btn btn-primary me-2" :disabled="!isFormComplete()">
-                                        Update Treatment
+                                <div class="border-top pt-4">
+                                    <button type="submit" class="btn btn-primary px-4 me-2" :disabled="!isFormComplete()">
+                                        <i class="bi bi-save me-2"></i>Update Treatment
                                     </button>
-                                    <button type="button" class="btn btn-success" @click="markAsCompleted()" 
+                                    <button type="button" class="btn btn-success px-4" @click="markAsCompleted()" 
                                             :disabled="!isFormComplete() || selectedAppointmentForTreatment.status === 'completed'">
-                                        Mark as Completed
+                                        <i class="bi bi-check-circle me-2"></i>Mark as Completed
                                     </button>
                                 </div>
                             </form>
@@ -321,17 +366,28 @@ const DoctorDashboardTemplate = `
     <div v-if="view === 'patient-treatment-history'" class="container mt-4">
         <div class="row justify-content-center">
             <div class="col-md-12">
-                <div class="card">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0">Treatment History - {{ selectedPatientForHistory?.name }}</h5>
-                        <button class="btn btn-outline-secondary mb-2" @click="backToAssignedPatients()">
-                            <i class="bi bi-arrow-left"></i> Back to Patients
-                        </button> 
+                <div class="card shadow-sm border-0">
+                    <div class="card-header bg-white border-bottom py-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center">
+                                <div class="bg-info bg-opacity-10 p-2 rounded-3 me-3">
+                                    <i class="bi bi-clock-history text-info fs-5"></i>
+                                </div>
+                                <div>
+                                    <h5 class="mb-0 fw-bold">Treatment History</h5>
+                                    <small class="text-muted">{{ selectedPatientForHistory?.name }}</small>
+                                </div>
+                            </div>
+                            <button class="btn btn-outline-secondary btn-sm rounded-pill px-3" @click="backToAssignedPatients()">
+                                <i class="bi bi-arrow-left me-1"></i> Back to Patients
+                            </button>
+                        </div>
                     </div>
-                    <div class="card-body">
+                    <div class="card-body p-4">
                         <div v-if="selectedPatientForHistory">
                             <!-- Patient Info -->
-                            <div class="alert alert-light mb-4">
+                            <div class="alert alert-light border mb-4">
+                                <h6 class="mb-3"><i class="bi bi-person-vcard me-2"></i>Patient Information</h6>
                                 <div class="row">
                                     <div class="col-md-3">
                                         <strong>Name:</strong> {{ selectedPatientForHistory.name }}
@@ -381,9 +437,12 @@ const DoctorDashboardTemplate = `
                                     </tbody>
                                 </table>
                             </div>
-                            <div v-else class="text-center text-muted py-4">
-                                <i class="bi bi-calendar-x fs-1"></i>
-                                <p class="mt-3">No treatment history found for this patient.</p>
+                            <div v-else class="text-center text-muted py-5">
+                                <div class="mb-4">
+                                    <i class="bi bi-inbox" style="font-size: 4rem; opacity: 0.3;"></i>
+                                </div>
+                                <h6 class="text-muted">No Treatment History</h6>
+                                <p class="small text-muted mb-0">No treatment history found for this patient.</p>
                             </div>
                         </div>
                     </div>
@@ -413,6 +472,7 @@ const DoctorComponent = {
                 prescription: '',
                 treatment_notes: ''
             },
+            appointmentToCancel: null,
             loading: false,
             error: null,
             success: null
@@ -530,16 +590,29 @@ const DoctorComponent = {
             this.loading = false
         },
 
-        async cancelDoctorAppointment(appointmentId) {
-            if (confirm('Are you sure you want to cancel this appointment?')) {
-                const resp = await window.ApiService.updateAppointmentStatus(appointmentId, 'cancelled')
-                if (resp.success) {
-                    this.success = 'Appointment cancelled successfully'
-                    await this.loadAppointments()
-                } else {
-                    this.error = resp.message || 'Failed to cancel appointment'
-                }
+        async cancelDoctorAppointment(appointment) {
+            this.appointmentToCancel = appointment;
+            const modal = new bootstrap.Modal(document.getElementById('cancelDoctorAppointmentModal'));
+            modal.show();
+        },
+
+        async confirmCancelAppointment() {
+            if (!this.appointmentToCancel) return;
+            
+            const modalEl = document.getElementById('cancelDoctorAppointmentModal');
+            const modal = bootstrap.Modal.getInstance(modalEl);
+            if (modal) modal.hide();
+
+            this.loading = true;
+            const resp = await window.ApiService.updateAppointmentStatus(this.appointmentToCancel.id, 'cancelled');
+            if (resp.success) {
+                this.success = 'Appointment cancelled successfully';
+                await this.loadAppointments();
+            } else {
+                this.error = resp.message || 'Failed to cancel appointment';
             }
+            this.loading = false;
+            this.appointmentToCancel = null;
         },
 
         openTreatmentPage(appointment) {

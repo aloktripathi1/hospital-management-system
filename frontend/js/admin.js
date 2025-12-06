@@ -385,11 +385,19 @@ const AdminTemplate = `
                     </div>
 
                     <!-- Add Doctor Page -->
-                    <div v-if="adminView === 'add-doctor'" class="card">
-                        <div class="card-header">
-                            <h5 class="mb-0">Add New Doctor</h5>
+                    <div v-if="adminView === 'add-doctor'" class="card shadow-sm border-0">
+                        <div class="card-header bg-white border-bottom py-3">
+                            <div class="d-flex align-items-center">
+                                <div class="bg-primary bg-opacity-10 p-2 rounded-3 me-3">
+                                    <i class="bi bi-person-plus text-primary fs-5"></i>
+                                </div>
+                                <div>
+                                    <h5 class="mb-0 fw-bold">Add New Doctor</h5>
+                                    <small class="text-muted">Create a new doctor account</small>
+                                </div>
+                            </div>
                         </div>
-                        <div class="card-body">
+                        <div class="card-body p-4">
                             <form @submit.prevent="addDoctor">
                                 <div class="row">
                                     <div class="col-md-6">
@@ -445,20 +453,35 @@ const AdminTemplate = `
                                         </div>
                                     </div>
                                 </div>
-                                <button type="submit" class="btn btn-primary" :disabled="loading">
-                                    <span v-if="loading" class="spinner-border spinner-border-sm me-2"></span>
-                                    Add Doctor
-                                </button>
+                                <div class="border-top pt-4 mt-4">
+                                    <button type="submit" class="btn btn-primary px-4 py-2" :disabled="loading">
+                                        <i class="bi bi-check-circle me-2"></i>
+                                        <span v-if="loading" class="spinner-border spinner-border-sm me-2"></span>
+                                        <span v-if="!loading">Add Doctor</span>
+                                        <span v-else>Adding...</span>
+                                    </button>
+                                    <button type="button" class="btn btn-outline-secondary px-4 py-2 ms-2" @click="adminView = 'dashboard'">
+                                        <i class="bi bi-x-circle me-2"></i>Cancel
+                                    </button>
+                                </div>
                             </form>
                         </div>
                     </div>
 
                     <!-- edit doctor -->
-                    <div v-if="adminView === 'edit-doctor'" class="card">
-                        <div class="card-header">
-                            <h5 class="mb-0">Edit Doctor: {{ editingDoctor.name }}</h5>
+                    <div v-if="adminView === 'edit-doctor'" class="card shadow-sm border-0">
+                        <div class="card-header bg-white border-bottom py-3">
+                            <div class="d-flex align-items-center">
+                                <div class="bg-info bg-opacity-10 p-2 rounded-3 me-3">
+                                    <i class="bi bi-pencil text-info fs-5"></i>
+                                </div>
+                                <div>
+                                    <h5 class="mb-0 fw-bold">Edit Doctor</h5>
+                                    <small class="text-muted">{{ editingDoctor.name }}</small>
+                                </div>
+                            </div>
                         </div>
-                        <div class="card-body">
+                        <div class="card-body p-4">
                             <form @submit.prevent="updateDoctor">
                                 <div class="row">
                                     <div class="col-md-6">
@@ -521,20 +544,35 @@ const AdminTemplate = `
                                         </label>
                                     </div>
                                 </div>
-                                <button type="submit" class="btn btn-primary" :disabled="loading">
-                                    <span v-if="loading" class="spinner-border spinner-border-sm me-2"></span>
-                                    Update Doctor
-                                </button>
+                                <div class="border-top pt-4 mt-4">
+                                    <button type="submit" class="btn btn-primary px-4 py-2" :disabled="loading">
+                                        <i class="bi bi-save me-2"></i>
+                                        <span v-if="loading" class="spinner-border spinner-border-sm me-2"></span>
+                                        <span v-if="!loading">Update Doctor</span>
+                                        <span v-else>Updating...</span>
+                                    </button>
+                                    <button type="button" class="btn btn-outline-secondary px-4 py-2 ms-2" @click="adminView = 'dashboard'">
+                                        <i class="bi bi-x-circle me-2"></i>Cancel
+                                    </button>
+                                </div>
                             </form>
                         </div>
                     </div>
 
                     <!-- edit patient -->
-                    <div v-if="adminView === 'edit-patient'" class="card">
-                        <div class="card-header">
-                            <h5 class="mb-0">Edit Patient: {{ editingPatient.name }}</h5>
+                    <div v-if="adminView === 'edit-patient'" class="card shadow-sm border-0">
+                        <div class="card-header bg-white border-bottom py-3">
+                            <div class="d-flex align-items-center">
+                                <div class="bg-success bg-opacity-10 p-2 rounded-3 me-3">
+                                    <i class="bi bi-person-gear text-success fs-5"></i>
+                                </div>
+                                <div>
+                                    <h5 class="mb-0 fw-bold">Edit Patient</h5>
+                                    <small class="text-muted">{{ editingPatient.name }}</small>
+                                </div>
+                            </div>
                         </div>
-                        <div class="card-body">
+                        <div class="card-body p-4">
                             <form @submit.prevent="updatePatient">
                                 <div class="row">
                                     <div class="col-md-6">
@@ -591,29 +629,44 @@ const AdminTemplate = `
                                     <label for="edit_p_history" class="form-label">Medical History</label>
                                     <textarea class="form-control" id="edit_p_history" v-model="editingPatient.medical_history" rows="3"></textarea>
                                 </div>
-                                <button type="submit" class="btn btn-primary" :disabled="loading">
-                                    <span v-if="loading" class="spinner-border spinner-border-sm me-2"></span>
-                                    Update Patient
-                                </button>
+                                <div class="border-top pt-4 mt-4">
+                                    <button type="submit" class="btn btn-primary px-4 py-2" :disabled="loading">
+                                        <i class="bi bi-save me-2"></i>
+                                        <span v-if="loading" class="spinner-border spinner-border-sm me-2"></span>
+                                        <span v-if="!loading">Update Patient</span>
+                                        <span v-else>Updating...</span>
+                                    </button>
+                                    <button type="button" class="btn btn-outline-secondary px-4 py-2 ms-2" @click="adminView = 'dashboard'">
+                                        <i class="bi bi-x-circle me-2"></i>Cancel
+                                    </button>
+                                </div>
                             </form>
                         </div>
                     </div>
 
                     <!-- Patient History View -->
-                    <div v-if="adminView === 'patient-history'" class="card">
-                        <div class="card-header">
+                    <div v-if="adminView === 'patient-history'" class="card shadow-sm border-0">
+                        <div class="card-header bg-white border-bottom py-3">
                             <div class="d-flex justify-content-between align-items-center">
-                                <h5 class="mb-0">
-                                    <i class="bi bi-clock-history"></i> Patient History - {{ selectedPatient?.name }}
-                                </h5>
-                                <span class="badge bg-info">{{ patientHistory.length }} appointments</span>
+                                <div class="d-flex align-items-center">
+                                    <div class="bg-info bg-opacity-10 p-2 rounded-3 me-3">
+                                        <i class="bi bi-clock-history text-info fs-5"></i>
+                                    </div>
+                                    <div>
+                                        <h5 class="mb-0 fw-bold">Patient History</h5>
+                                        <small class="text-muted">{{ selectedPatient?.name }}</small>
+                                    </div>
+                                </div>
+                                <span class="badge bg-info rounded-pill px-3 py-2">{{ patientHistory.length }} appointments</span>
                             </div>
                         </div>
-                        <div class="card-body">
-                            <div v-if="patientHistory.length === 0" class="text-center text-muted py-4">
-                                <i class="bi bi-clock-history icon-3x mb-3"></i>
-                                <p>No booked appointments found for this patient.</p>
-                                <small class="text-muted">Only showing appointments that are booked, completed, or cancelled.</small>
+                        <div class="card-body p-4">
+                            <div v-if="patientHistory.length === 0" class="text-center text-muted py-5">
+                                <div class="mb-4">
+                                    <i class="bi bi-inbox" style="font-size: 4rem; opacity: 0.3;"></i>
+                                </div>
+                                <h6 class="text-muted">No Appointments Found</h6>
+                                <p class="small text-muted mb-0">This patient has no booked appointments yet.</p>
                             </div>
                             <div v-else class="table-responsive mb-3">
                                 <table class="table table-striped table-hover">
@@ -647,19 +700,28 @@ const AdminTemplate = `
                     </div>
 
                     <!-- Doctor History View -->
-                    <div v-if="adminView === 'doctor-history'" class="card">
-                        <div class="card-header">
+                    <div v-if="adminView === 'doctor-history'" class="card shadow-sm border-0">
+                        <div class="card-header bg-white border-bottom py-3">
                             <div class="d-flex justify-content-between align-items-center">
-                                <h5 class="mb-0">
-                                    <i class="bi bi-clock-history"></i> Doctor History - Dr. {{ selectedDoctor?.name }}
-                                </h5>
-                                <span class="badge bg-info">{{ doctorHistory.length }} appointments</span>
+                                <div class="d-flex align-items-center">
+                                    <div class="bg-primary bg-opacity-10 p-2 rounded-3 me-3">
+                                        <i class="bi bi-clock-history text-primary fs-5"></i>
+                                    </div>
+                                    <div>
+                                        <h5 class="mb-0 fw-bold">Doctor History</h5>
+                                        <small class="text-muted">Dr. {{ selectedDoctor?.name }}</small>
+                                    </div>
+                                </div>
+                                <span class="badge bg-primary rounded-pill px-3 py-2">{{ doctorHistory.length }} appointments</span>
                             </div>
                         </div>
-                        <div class="card-body">
-                            <div v-if="doctorHistory.length === 0" class="text-center text-muted py-4">
-                                <i class="bi bi-clock-history icon-3x mb-3"></i>
-                                <p>No appointments found for this doctor.</p>
+                        <div class="card-body p-4">
+                            <div v-if="doctorHistory.length === 0" class="text-center text-muted py-5">
+                                <div class="mb-4">
+                                    <i class="bi bi-inbox" style="font-size: 4rem; opacity: 0.3;"></i>
+                                </div>
+                                <h6 class="text-muted">No Appointments Found</h6>
+                                <p class="small text-muted mb-0">This doctor has no appointments yet.</p>
                             </div>
                             <div v-else class="table-responsive mb-3">
                                 <table class="table table-striped table-hover">

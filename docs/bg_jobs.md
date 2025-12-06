@@ -1,9 +1,81 @@
-# BACKEND JOBS IMPLEMENTATION STATUS
+# Background Jobs (Email System)
 
-## ✅ FULLY IMPLEMENTED
+This explains how the app sends emails automatically using Celery.
 
-### a. Scheduled Job - Daily Reminders
-**Location:** `backend/celery_tasks.py` (lines 26-48)
+## What is Celery?
+
+Celery is a tool that runs tasks in the background without slowing down the main app. Think of it like hiring someone to send emails while you focus on other work.
+
+## Why Do We Need It?
+
+Sending emails takes time. If we send them directly when a patient books an appointment, the patient would have to wait. With Celery, we:
+1. Save the appointment instantly
+2. Tell Celery "send this email when you can"
+3. Show success message to patient immediately
+4. Celery sends email in background
+
+## How It's Organized
+
+The Celery code is in `backend/celery_tasks/` folder:
+
+```
+celery_tasks/
+├── __init__.py          # Main Celery setup
+├── imports.py           # Import all task files
+├── email.py             # Appointment confirmation emails
+├── reminders.py         # Daily reminder emails
+└── reports.py           # Monthly reports for doctors
+```
+
+## Email Tasks
+
+### 1. Appointment Confirmation
+**File:** `celery_tasks/email.py`
+**When:** Right after patient books appointment
+**What:** Sends email to patient with appointment details
+
+### 2. Daily Reminders
+**File:** `celery_tasks/reminders.py`
+**When:** Every day at 8 AM
+**What:** Sends reminder to patients who have appointments today
+
+### 3. Monthly Reports
+**File:** `celery_tasks/reports.py`
+**When:** 1st day of every month
+**What:** Sends report to doctors with their monthly appointment summary
+
+## How to Test
+
+1. Book an appointment as a patient
+2. Check terminal where Celery worker is running
+3. You should see logs like:
+   ```
+   [2024-01-15 10:30:00,123: INFO/MainProcess] Task celery_tasks.email.send_appointment_confirmation[...] received
+   [2024-01-15 10:30:01,456: INFO/ForkPoolWorker-1] Task celery_tasks.email.send_appointment_confirmation[...] succeeded
+   ```
+
+## Email Configuration
+
+Emails are sent using Gmail SMTP. Configuration in `backend/app.py`:
+
+```python
+app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+app.config['MAIL_PORT'] = 587
+app.config['MAIL_USE_TLS'] = True
+app.config['MAIL_USERNAME'] = 'your-email@gmail.com'  # From .env file
+app.config['MAIL_PASSWORD'] = 'your-app-password'      # From .env file
+```
+
+**Note:** For Gmail, you need to use an "App Password" (not your regular password). Google this: "Gmail app password for less secure apps"
+
+## Testing Without Real Emails
+
+If you don't want to set up Gmail, Celery will still work but emails won't actually send. The app will function normally, you just won't receive email notifications.
+
+To test properly:
+- Use MailHog (fake email server)
+- Check Celery logs to see if tasks are running
+- Look for success/error messages in terminal
 
 **Implementation:**
 - ✅ **Checks for scheduled appointments**: Queries `Appointment.query.filter_by(appointment_date=today, status='booked')`

@@ -1,6 +1,8 @@
-# Hospital Management System - Architecture Overview
+# Project Architecture
 
-## 🏗️ System Architecture
+This document explains how different parts of the project work together.
+
+## How Everything Connects
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -54,87 +56,121 @@
                                  └─────────────────────┘
 ```
 
-## 📦 Component Details
+## Main Components
 
-### 1. Frontend (Port 3000)
-- **Technology:** Vue.js 3 (CDN), Bootstrap 5
-- **Purpose:** User interface
-- **Files:**
-  - `index.html` - Main application page
-  - `assets/js/app.js` - Main Vue.js application
-  - `assets/js/modules/` - Modular components (admin, doctor, patient)
-  - `assets/js/services/api.js` - API communication layer
+### 1. Frontend (What users see)
+- **Location:** `frontend/` folder
+- **What it does:** Shows the website to users
+- **Main files:**
+  - `index.html` - The main webpage
+  - `custom.css` - Styling (colors, fonts, layout)
+  - `js/app.js` - Main JavaScript file
+  - `js/admin.js` - Admin dashboard code
+  - `js/doctor.js` - Doctor dashboard code
+  - `js/patient.js` - Patient dashboard code
+  - `js/api.js` - Talks to backend
+- **Runs on:** http://localhost:3000
 
-### 2. Backend (Port 5000)
-- **Technology:** Flask (Python)
-- **Purpose:** REST API, Business Logic
-- **Components:**
-  - `app.py` - Main Flask application
-  - `routes/` - API endpoints (auth, admin, doctor, patient)
-  - `models/` - Database models (SQLAlchemy)
-  - `decorators.py` - Authentication & authorization
+### 2. Backend (Brain of the app)
+- **Location:** `backend/` folder
+- **What it does:** Handles all the logic and data
+- **Main files:**
+  - `app.py` - Main Flask server
+  - `routes/` - Different API endpoints
+    - `auth.py` - Login/Register
+    - `admin.py` - Admin features
+    - `doctor.py` - Doctor features
+    - `patient.py` - Patient features
+  - `models/` - Database table definitions
+  - `database.py` - Database connection
+- **Runs on:** http://localhost:5000
 
-### 3. Database (SQLite)
-- **File:** `instance/hospital.db`
-- **Tables:**
-  - `users` - Login credentials
-  - `patients` - Patient information
-  - `doctors` - Doctor profiles
-  - `appointments` - Appointment bookings
-  - `treatments` - Medical records
-  - `doctor_availability` - Doctor schedules
+### 3. Database (Where data is stored)
+- **Type:** SQLite (simple file-based database)
+- **Location:** `backend/instance/hospital.db`
+- **What's stored:**
+  - User accounts (admin, doctors, patients)
+  - Doctor information (name, specialization, experience)
+  - Patient information (name, age, medical history)
+  - Appointments (who, when, status)
+  - Treatment records (diagnosis, medicines, notes)
+  - Doctor availability (morning/evening slots)
 
-### 4. Redis (Port 6379)
-- **Purpose:** 
-  - Message broker for Celery
-  - Session storage
-  - Caching (dashboard stats)
-- **Start:** `redis-server`
-
-### 5. Celery Worker
-- **Purpose:** Background task processing
+### 4. Background Jobs (Celery)
+- **What it does:** Sends emails in background
 - **Tasks:**
-  - `send_appointment_confirmation` - Email confirmations
-  - `send_appointment_reminder` - 24hr reminders
-  - `send_monthly_report` - Doctor reports
-- **Start:** `celery -A celery_tasks.celery worker`
+  - Appointment confirmation emails
+  - Appointment reminder emails (24 hours before)
+  - Monthly reports for doctors
+- **Needs:** Redis to be running
 
-### 6. MailHog (Ports 1025, 8025)
-- **Purpose:** Email testing
-- **SMTP Port:** 1025 (receives emails)
-- **Web UI:** 8025 (view emails)
-- **Start:** `docker run -p 1025:1025 -p 8025:8025 mailhog/mailhog`
+### 5. Redis (Message Queue)
+- **What it does:** Helps Celery send background tasks
+- **Runs on:** Port 6379
+- **Not required** for basic app, only for emails
 
-## 🔄 Request Flow
+## How Things Work Together
 
-### Example: Patient Books Appointment
+### Example: Patient Books an Appointment
 
-```
-1. User clicks "Book Appointment" in browser
-   └─> Frontend (Vue.js)
-       
-2. Frontend sends POST to /api/patient/appointments
-   └─> Backend (Flask)
-       
-3. Backend validates and saves to database
-   └─> SQLite Database
-       
-4. Backend queues email task
-   └─> Redis Queue
-       
-5. Celery worker picks up task
-   └─> Celery Worker
-       
-6. Worker sends email via SMTP
-   └─> MailHog (catches email)
-       
-7. Backend returns success response
-   └─> Frontend updates UI
-       
-8. User sees confirmation message
-```
+1. Patient fills form and clicks "Book Appointment"
+2. Frontend (JavaScript) sends data to Backend
+3. Backend checks if slot is available
+4. Backend saves appointment in Database
+5. Backend sends confirmation email (via Celery)
+6. Frontend shows success message to patient
+7. Doctor can see the new appointment in their dashboard
 
-## 🌊 Data Flow
+### Example: Doctor Updates Treatment
+
+1. Doctor clicks on appointment
+2. Doctor fills diagnosis, medicines, notes
+3. Frontend sends data to Backend
+4. Backend saves treatment record in Database
+5. Backend marks appointment as "completed"
+6. Patient can see treatment history in their dashboard
+
+## UI Design
+
+The app uses a **dark professional theme** with:
+- **Primary Color:** Dark slate (#0f172a)
+- **Accent Color:** Gold gradient for highlights
+- **Modern Design:** Rounded corners, shadows, smooth animations
+- **Responsive:** Works on desktop and mobile
+
+### Key Features:
+- Professional hero section on homepage
+- Modern login/register pages with branding
+- Clean dashboards for admin, doctor, patient
+- Modal confirmations (instead of ugly alerts)
+- Icons from Bootstrap Icons
+- Smooth transitions and hover effects
+
+## User Roles
+
+### Admin
+- Manage doctors (add, edit, blacklist)
+- Manage patients (edit, blacklist, view history)
+- View all appointments
+- Reschedule/cancel appointments
+- See overall statistics
+
+### Doctor
+- View assigned patients
+- Manage appointments
+- Update treatment records (diagnosis, prescription, notes)
+- Mark appointments as completed
+- Set availability (morning/evening slots)
+- View patient treatment history
+
+### Patient
+- Book appointments with available doctors
+- View upcoming appointments
+- View treatment history
+- Update profile information
+- Cancel appointments
+
+## Data Flow
 
 ```
 ┌──────────┐
