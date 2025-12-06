@@ -76,52 +76,85 @@ const PatientTemplate = `
                         <div class="card-body">
                             <form @submit.prevent="bookAppointment">
                                 <!-- Step 1: Select Specialization -->
-                                <div class="mb-4">
-                                    <label class="form-label">Step 1: Select Specialization</label>
-                                    <select class="form-select" v-model="selectedDepartment" @change="selectDepartment(selectedDepartment)" required>
-                                        <option value="">Choose Specialization</option>
-                                        <option v-for="dept in departments" :key="dept.id" :value="dept">
-                                            {{ dept.name }} ({{ dept.doctor_count }} {{ dept.doctor_count === 1 ? 'doctor' : 'doctors' }})
-                                        </option>
-                                    </select>
-                                    <div v-if="selectedDepartment" class="mt-2">
-                                        <small class="text-muted">
-                                            <i class="bi bi-info-circle me-1"></i>{{ getSpecializationDescription(selectedDepartment.name) }}
-                                        </small>
+                                <div class="mb-4" v-if="!selectedDepartment">
+                                    <label class="form-label h5 mb-3">Step 1: Select Specialization</label>
+                                    <div class="row g-3">
+                                        <div v-for="dept in departments" :key="dept.id" class="col-6 col-md-4 col-lg-3">
+                                            <div class="card h-100 cursor-pointer hover-scale border-0 shadow-sm" 
+                                                 @click="selectDepartment(dept)"
+                                                 :class="{'ring-2 ring-primary': selectedDepartment?.id === dept.id}">
+                                                <div class="card-body text-center p-4">
+                                                    <div class="mb-3">
+                                                        <i class="bi display-4 text-primary" :class="getSpecializationIcon(dept.name)"></i>
+                                                    </div>
+                                                    <h6 class="card-title fw-bold mb-1">{{ dept.name }}</h6>
+                                                    <small class="text-muted">{{ dept.doctor_count }} Doctors</small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div v-else class="mb-4">
+                                    <div class="d-flex align-items-center justify-content-between bg-light p-3 rounded-3 mb-3">
+                                        <div class="d-flex align-items-center">
+                                            <div class="bg-white p-2 rounded-circle shadow-sm me-3">
+                                                <i class="bi text-primary fs-4" :class="getSpecializationIcon(selectedDepartment.name)"></i>
+                                            </div>
+                                            <div>
+                                                <h6 class="mb-0 fw-bold">{{ selectedDepartment.name }}</h6>
+                                                <small class="text-muted">Selected Specialization</small>
+                                            </div>
+                                        </div>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary" @click="selectedDepartment = null; selectedDoctor = null; bookingForm.appointment_date = ''; bookingForm.appointment_time = ''">
+                                            Change
+                                        </button>
                                     </div>
                                 </div>
 
                                 <!-- Step 2: Select Doctor -->
-                                <div v-if="selectedDepartment && selectedDepartment.doctors.length > 0" class="mb-4">
-                                    <label class="form-label">Step 2: Select Doctor</label>
-                                    <div class="row">
-                                        <div v-for="doctor in selectedDepartment.doctors" :key="doctor.id" class="col-md-6 mb-2">
-                                            <div class="d-flex gap-2">
-                                                <button type="button" 
-                                                        class="btn flex-grow-1 text-start py-2"
-                                                        :class="selectedDoctor?.id === doctor.id ? 'btn-primary' : 'btn-outline-primary'"
-                                                        @click="selectDoctor(doctor)">
-                                                    <div class="d-flex justify-content-between align-items-center">
-                                                        <div>
-                                                            <strong>Dr. {{ doctor.name }}</strong><br>
-                                                            <small>{{ doctor.qualification }} • {{ doctor.experience }} yrs</small>
-                                                        </div>
-                                                        <span v-if="selectedDoctor?.id === doctor.id" class="badge bg-light text-primary">
-                                                            <i class="bi bi-check-circle-fill"></i>
-                                                        </span>
+                                <div v-if="selectedDepartment && !selectedDoctor" class="mb-4">
+                                    <label class="form-label h5 mb-3">Step 2: Select Doctor</label>
+                                    <div class="row g-3">
+                                        <div v-for="doctor in selectedDepartment.doctors" :key="doctor.id" class="col-md-6">
+                                            <div class="card h-100 cursor-pointer hover-scale border-0 shadow-sm" @click="selectDoctor(doctor)">
+                                                <div class="card-body d-flex align-items-center p-3">
+                                                    <div class="bg-primary bg-opacity-10 p-3 rounded-circle me-3">
+                                                        <i class="bi bi-person-user text-primary fs-3"></i>
                                                     </div>
-                                                </button>
-                                                <button type="button" class="btn btn-outline-info d-flex align-items-center" @click="viewDoctorProfile(doctor)" title="View Profile">
-                                                    <i class="bi bi-info-circle"></i>
-                                                </button>
+                                                    <div class="flex-grow-1">
+                                                        <h6 class="fw-bold mb-1">Dr. {{ doctor.name }}</h6>
+                                                        <p class="text-muted small mb-1">{{ doctor.qualification }}</p>
+                                                        <div class="d-flex align-items-center">
+                                                            <span class="badge bg-light text-dark border me-2">
+                                                                <i class="bi bi-briefcase me-1"></i>{{ doctor.experience }} yrs
+                                                            </span>
+                                                            <button class="btn btn-link btn-sm p-0 text-decoration-none" @click.stop="viewDoctorProfile(doctor)">
+                                                                View Profile
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                    <div class="text-primary">
+                                                        <i class="bi bi-chevron-right"></i>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
-                                    <div v-if="selectedDoctor" class="mt-2">
-                                        <small class="text-muted">
-                                            <i class="bi bi-check-circle me-1"></i>
-                                            Dr. {{ selectedDoctor.name }} {{ selectedDoctor.specialization }}, {{ selectedDoctor.qualification }}, {{ selectedDoctor.experience }} years exp.
-                                        </small>
+                                </div>
+                                <div v-else-if="selectedDoctor" class="mb-4">
+                                    <div class="d-flex align-items-center justify-content-between bg-light p-3 rounded-3 mb-3">
+                                        <div class="d-flex align-items-center">
+                                            <div class="bg-white p-2 rounded-circle shadow-sm me-3">
+                                                <i class="bi bi-person-check text-primary fs-4"></i>
+                                            </div>
+                                            <div>
+                                                <h6 class="mb-0 fw-bold">Dr. {{ selectedDoctor.name }}</h6>
+                                                <small class="text-muted">{{ selectedDoctor.qualification }} • {{ selectedDoctor.experience }} yrs exp</small>
+                                            </div>
+                                        </div>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary" @click="selectedDoctor = null; bookingForm.appointment_date = ''; bookingForm.appointment_time = ''">
+                                            Change
+                                        </button>
                                     </div>
                                 </div>
 
@@ -617,7 +650,23 @@ const PatientComponent = {
             return status.charAt(0).toUpperCase() + status.slice(1);
         },
 
-        getSpecializationDescription(specialization) {
+        getSpecializationIcon(name) {
+            const map = {
+                'Cardiology': 'bi-heart-pulse',
+                'Neurology': 'bi-brain',
+                'Orthopedics': 'bi-person-arms-up',
+                'Pediatrics': 'bi-emoji-smile',
+                'Dermatology': 'bi-person',
+                'Psychiatry': 'bi-chat-square-heart',
+                'General Medicine': 'bi-prescription2',
+                'ENT': 'bi-ear',
+                'Ophthalmology': 'bi-eye',
+                'Dentist': 'bi-emoji-laughing'
+            };
+            return map[name] || 'bi-hospital';
+        },
+
+        getSpecializationDescription(name) {
             const descriptions = {
                 'Cardiology': 'Heart and cardiovascular system care',
                 'Dermatology': 'Skin, hair, and nail conditions',

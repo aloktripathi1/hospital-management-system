@@ -22,28 +22,43 @@ const DoctorDashboardTemplate = `
             <!-- Stats Cards -->
             <div class="row mb-4">
                 <div class="col-md-4">
-                    <div class="card bg-success text-white">
-                        <div class="card-body text-center">
-                            <h4>{{ stats.total_appointments || 0 }}</h4>
-                            <p class="mb-0">Total Appointments</p>
+                    <div class="card bg-success text-white h-100 shadow-sm">
+                        <div class="card-body d-flex align-items-center justify-content-between">
+                            <div>
+                                <h3 class="mb-0 fw-bold">{{ stats.total_appointments || 0 }}</h3>
+                                <p class="mb-0 opacity-75">Total Appointments</p>
+                            </div>
+                            <div class="bg-white bg-opacity-25 p-3 rounded-circle">
+                                <i class="bi bi-calendar-check fs-3"></i>
+                            </div>
                         </div>
                     </div>
                 </div>
 
                 <div class="col-md-4">
-                    <div class="card bg-info text-white">
-                        <div class="card-body text-center">
-                            <h4>{{ stats.total_patients || 0 }}</h4>
-                            <p class="mb-0">Total Patients</p>
+                    <div class="card bg-info text-white h-100 shadow-sm">
+                        <div class="card-body d-flex align-items-center justify-content-between">
+                            <div>
+                                <h3 class="mb-0 fw-bold">{{ stats.total_patients || 0 }}</h3>
+                                <p class="mb-0 opacity-75">Total Patients</p>
+                            </div>
+                            <div class="bg-white bg-opacity-25 p-3 rounded-circle">
+                                <i class="bi bi-people fs-3"></i>
+                            </div>
                         </div>
                     </div>
                 </div>
 
                 <div class="col-md-4">
-                    <div class="card bg-primary text-white">
-                        <div class="card-body text-center">
-                            <h4>{{ stats.today_appointments || 0 }}</h4>
-                            <p class="mb-0">Today's Appointments</p>
+                    <div class="card bg-primary text-white h-100 shadow-sm">
+                        <div class="card-body d-flex align-items-center justify-content-between">
+                            <div>
+                                <h3 class="mb-0 fw-bold">{{ stats.today_appointments || 0 }}</h3>
+                                <p class="mb-0 opacity-75">Today's Appointments</p>
+                            </div>
+                            <div class="bg-white bg-opacity-25 p-3 rounded-circle">
+                                <i class="bi bi-clock-history fs-3"></i>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -187,28 +202,30 @@ const DoctorDashboardTemplate = `
                                     </thead>
                                     <tbody>
                                         <tr v-for="day in availabilityDays" :key="day.date">
-                                            <td><strong>{{ day.day_name }}</strong></td>
-                                            <td class="text-center">
-                                                <div class="form-check d-inline-block">
+                                            <td class="align-middle"><strong>{{ day.day_name }}</strong><br><small class="text-muted">{{ day.date }}</small></td>
+                                            <td class="text-center align-middle">
+                                                <div class="form-check form-switch d-inline-block">
                                                     <input 
                                                         class="form-check-input" 
                                                         type="checkbox" 
+                                                        role="switch"
                                                         :id="'morning-' + day.date"
                                                         v-model="day.morning_available">
                                                     <label class="form-check-label" :for="'morning-' + day.date">
-                                                        Available
+                                                        {{ day.morning_available ? 'Available' : 'Unavailable' }}
                                                     </label>
                                                 </div>
                                             </td>
-                                            <td class="text-center">
-                                                <div class="form-check d-inline-block">
+                                            <td class="text-center align-middle">
+                                                <div class="form-check form-switch d-inline-block">
                                                     <input 
                                                         class="form-check-input" 
                                                         type="checkbox" 
+                                                        role="switch"
                                                         :id="'evening-' + day.date"
                                                         v-model="day.evening_available">
                                                     <label class="form-check-label" :for="'evening-' + day.date">
-                                                        Available
+                                                        {{ day.evening_available ? 'Available' : 'Unavailable' }}
                                                     </label>
                                                 </div>
                                             </td>

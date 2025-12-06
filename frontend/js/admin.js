@@ -23,26 +23,41 @@ const AdminTemplate = `
                     <!-- Stats Cards -->
                     <div class="row mb-4">
                         <div class="col-md-4">
-                            <div class="card bg-primary text-white">
-                                <div class="card-body text-center">
-                                    <h4>{{ stats.total_doctors || 0 }}</h4>
-                                    <p class="mb-0">Total Doctors</p>
+                            <div class="card bg-primary text-white h-100 shadow-sm">
+                                <div class="card-body d-flex align-items-center justify-content-between">
+                                    <div>
+                                        <h3 class="mb-0 fw-bold">{{ stats.total_doctors || 0 }}</h3>
+                                        <p class="mb-0 opacity-75">Total Doctors</p>
+                                    </div>
+                                    <div class="bg-white bg-opacity-25 p-3 rounded-circle">
+                                        <i class="bi bi-person-badge fs-3"></i>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                         <div class="col-md-4">
-                            <div class="card bg-success text-white">
-                                <div class="card-body text-center">
-                                    <h4>{{ stats.total_patients || 0 }}</h4>
-                                    <p class="mb-0">Total Patients</p>
+                            <div class="card bg-success text-white h-100 shadow-sm">
+                                <div class="card-body d-flex align-items-center justify-content-between">
+                                    <div>
+                                        <h3 class="mb-0 fw-bold">{{ stats.total_patients || 0 }}</h3>
+                                        <p class="mb-0 opacity-75">Total Patients</p>
+                                    </div>
+                                    <div class="bg-white bg-opacity-25 p-3 rounded-circle">
+                                        <i class="bi bi-people fs-3"></i>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                         <div class="col-md-4">
-                            <div class="card bg-info text-white">
-                                <div class="card-body text-center">
-                                    <h4>{{ stats.total_appointments || 0 }}</h4>
-                                    <p class="mb-0">Total Appointments</p>
+                            <div class="card bg-info text-white h-100 shadow-sm">
+                                <div class="card-body d-flex align-items-center justify-content-between">
+                                    <div>
+                                        <h3 class="mb-0 fw-bold">{{ stats.total_appointments || 0 }}</h3>
+                                        <p class="mb-0 opacity-75">Total Appointments</p>
+                                    </div>
+                                    <div class="bg-white bg-opacity-25 p-3 rounded-circle">
+                                        <i class="bi bi-calendar-check fs-3"></i>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -280,6 +295,30 @@ const AdminTemplate = `
                             </div>
                         </div>
                     </div>
+                    </div>
+
+                    <!-- Blacklist Confirmation Modal -->
+                    <div class="modal fade" id="blacklistModal" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">{{ blacklistAction === 'blacklist' ? 'Confirm Blacklist' : 'Confirm Activation' }}</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <p>Are you sure you want to <strong>{{ blacklistAction }}</strong> {{ blacklistType }} <strong>{{ blacklistTarget?.name }}</strong>?</p>
+                                    <p class="text-muted small" v-if="blacklistAction === 'blacklist'">
+                                        This will restrict their access to the system.
+                                    </p>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                    <button type="button" class="btn" :class="blacklistAction === 'blacklist' ? 'btn-danger' : 'btn-success'" @click="confirmBlacklistAction">
+                                        {{ blacklistAction === 'blacklist' ? 'Blacklist' : 'Activate' }}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Reschedule Modal -->
@@ -693,7 +732,10 @@ const AdminComponent = {
             loading: false,
             error: null,
             success: null,
-            appointmentToCancel: null
+            appointmentToCancel: null,
+            blacklistTarget: null,
+            blacklistType: '',
+            blacklistAction: ''
         }
     },
     methods: {
@@ -787,17 +829,38 @@ const AdminComponent = {
             this.searchDoctors(); // Re-run search with empty query but keep sort
         },
 
-        async toggleDoctorStatus(doctor) {
-            const action = doctor.is_active ? 'blacklist' : 'activate'
-            if (confirm(`Are you sure you want to ${action} Dr. ${doctor.name}?`)) {
-                const resp = await window.ApiService.updateDoctor(doctor.id, { is_active: !doctor.is_active })
-                if (resp.success) {
-                    this.success = `Doctor ${action}ed successfully`
-                    await this.loadAdminData()
-                } else {
-                    this.error = `Failed to ${action} doctor`
-                }
+        toggleDoctorStatus(doctor) {
+            this.blacklistTarget = doctor;
+            this.blacklistType = 'doctor';
+            this.blacklistAction = doctor.is_active ? 'blacklist' : 'activate';
+            const modal = new bootstrap.Modal(document.getElementById('blacklistModal'));
+            modal.show();
+        },
+
+        async confirmBlacklistAction() {
+            const modalEl = document.getElementById('blacklistModal');
+            const modal = bootstrap.Modal.getInstance(modalEl);
+            if (modal) modal.hide();
+
+            this.loading = true;
+            let resp;
+
+            if (this.blacklistType === 'doctor') {
+                const newStatus = this.blacklistAction === 'activate';
+                resp = await window.ApiService.updateDoctor(this.blacklistTarget.id, { is_active: newStatus });
+            } else {
+                // Patient
+                resp = await window.ApiService.togglePatientBlacklist(this.blacklistTarget.id);
             }
+
+            if (resp.success) {
+                this.success = `${this.blacklistType === 'doctor' ? 'Doctor' : 'Patient'} ${this.blacklistAction}ed successfully`;
+                await this.loadAdminData();
+            } else {
+                this.error = resp.message || `Failed to ${this.blacklistAction} ${this.blacklistType}`;
+            }
+            this.loading = false;
+            this.blacklistTarget = null;
         },
 
         showAddDoctorForm() {
@@ -900,17 +963,13 @@ const AdminComponent = {
             this.searchPatients();
         },
 
-        async togglePatientBlacklist(patient) {
-            const action = patient.is_blacklisted ? 'unblacklist' : 'blacklist'
-            if (confirm(`Are you sure you want to ${action} ${patient.name}?`)) {
-                const resp = await window.ApiService.togglePatientBlacklist(patient.id)
-                if (resp.success) {
-                    this.success = `Patient ${action}ed successfully`
-                    await this.loadAdminData()
-                } else {
-                    this.error = resp.message || `Failed to ${action} patient`
-                }
-            }
+        togglePatientBlacklist(patient) {
+            this.blacklistTarget = patient;
+            this.blacklistType = 'patient';
+            // If patient is blacklisted, action is to activate (unblacklist). If not, action is to blacklist.
+            this.blacklistAction = patient.is_blacklisted ? 'activate' : 'blacklist';
+            const modal = new bootstrap.Modal(document.getElementById('blacklistModal'));
+            modal.show();
         },
 
         openAdminPatientHistory(patient) {
