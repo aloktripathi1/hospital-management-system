@@ -1,4 +1,4 @@
-# 🏥 Hospital Management System
+# MediHub - Hospital Management System
 
 A simple web app for managing hospital appointments, doctors, and patients.
 
@@ -173,11 +173,9 @@ Book appointments and view history
 
 ## Future Improvements
 
-- [ ] Email/SMS notifications (code is ready, just need SMTP setup)
 - [ ] Payment integration for consultation fees
 - [ ] Video consultation feature
 - [ ] Prescription PDF download
-- [ ] Mobile app version
 
 ## Documentation
 
@@ -193,11 +191,6 @@ Feel free to fork this project and make improvements! Some ideas:
 - Improve UI design
 - Add more features (lab reports, pharmacy, etc.)
 
-## Contact
-
-Made by [Your Name]
-- GitHub: [@aloktripathi1](https://github.com/aloktripathi1)
-
 ## License
 
-MIT License - Feel free to use this for your college projects!
+MIT License
