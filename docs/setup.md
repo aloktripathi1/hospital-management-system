@@ -1,6 +1,6 @@
 # Setup Guide - Hospital Management System
 
-Hey! This is a simple guide to get the project running on your machine.
+This is a simple guide to get the project running on your machine.
 
 ## What You Need
 
@@ -26,10 +26,13 @@ python seed_db.py
 ```
 
 This will create:
-- 1 Admin account (username: admin, password: admin123)
-- 5 Doctors with different specializations
-- 10 Patients
-- Some sample appointments
+- **1 Admin account** (username: admin, password: admin)
+- **3 Doctors** with different specializations:
+  - Ajay Kumar (Cardiology) - 14 years exp, ₹1200 fee
+  - Rajesh Verma (Neurology) - 12 years exp, ₹1400 fee
+  - Aditya Tripathi (Orthopedics) - 8 years exp, ₹1000 fee
+- **3 Sample Patients**
+- **7-day availability** for all doctors (morning & evening slots)
 
 ## Step 3: Start the Backend Server
 
@@ -99,13 +102,28 @@ For full features (emails), you need:
 After running `seed_db.py`, you can login as:
 
 **Admin:**
-- Username: admin
-- Password: admin123
+- Username: `admin`
+- Password: `admin`
+- Email: admin@medihub.in
 
 **Doctors:**
-- Username: dr_sharma / dr_verma / dr_patel / dr_singh / dr_kumar
-- Password: doctor123
+- **Ajay Kumar** (Cardiology):
+  - Username: `ajay`
+  - Password: `ajay.kumar123`
+  - Email: ajay.kumar@medihub.in
+
+- **Rajesh Verma** (Neurology):
+  - Username: `rajesh`
+  - Password: `rajesh`
+  - Email: rajesh.verma@medihub.in
 
 **Patients:**
-- Username: patient1 / patient2 / patient3...
-- Password: patient123
+- **Arjun Patel**:
+  - Username: `arjun`
+  - Password: `arjun`
+  - Email: arjun.patel@gmail.com
+
+- **Vikram Singh**:
+  - Username: `vikram`
+  - Password: `vikram`
+  - Email: vikram.singh@gmail.com

@@ -20,11 +20,12 @@ The Celery code is in `backend/celery_tasks/` folder:
 
 ```
 celery_tasks/
-├── __init__.py          # Main Celery setup
-├── imports.py           # Import all task files
+├── __init__.py          # Main Celery setup (creates celery app)
+├── imports.py           # Imports all task files
 ├── email.py             # Appointment confirmation emails
-├── reminders.py         # Daily reminder emails
-└── reports.py           # Monthly reports for doctors
+├── reminders.py         # Daily reminder emails (for today's appointments)
+├── reports.py           # Monthly reports for doctors
+└── email_template.py    # HTML email template functions
 ```
 
 ## Email Tasks
@@ -56,14 +57,14 @@ celery_tasks/
 
 ## Email Configuration
 
-Emails are sent using Gmail SMTP. Configuration in `backend/app.py`:
+Emails are sent using Gmail SMTP. Configuration in `backend/celery_tasks/__init__.py`:
 
 ```python
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 587
 app.config['MAIL_USE_TLS'] = True
-app.config['MAIL_USERNAME'] = 'your-email@gmail.com'  # From .env file
-app.config['MAIL_PASSWORD'] = 'your-app-password'      # From .env file
+app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME')  # From environment
+app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')  # From environment
 ```
 
 **Note:** For Gmail, you need to use an "App Password" (not your regular password). Google this: "Gmail app password for less secure apps"
@@ -86,15 +87,21 @@ To test properly:
 
 **Configuration:**
 ```python
-@celery.on_after_configure.connect
+@celery_app.on_after_configure.connect
 def setup_periodic_tasks(sender, **kwargs):
-    sender.add_periodic_task(120.0, send_daily_reminders.s())  # 120s = 2 min demo
+    # Send reminders every 2 minutes (for demo)
+    sender.add_periodic_task(120.0, send_daily_reminders.s())
+    # Send monthly reports on 1st of every month at 9 AM
+    sender.add_periodic_task(
+        crontab(day_of_month='1', hour=9, minute=0),
+        send_monthly_reports.s()
+    )
 ```
 
-**Email Method:** Gmail SMTP (configured in `app.py`)
+**Email Method:** Gmail SMTP (configured in `celery_tasks/__init__.py`)
 - Mail server: smtp.gmail.com:587
 - Uses TLS encryption
-- Credentials from .env file
+- Credentials from environment variables (MAIL_USERNAME, MAIL_PASSWORD)
 
 ---
 

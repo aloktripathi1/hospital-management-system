@@ -13,8 +13,9 @@ servers:
     description: Production Server
 
 paths:
-  # ============ AUTH ROUTES ============
-  /auth/login:
+  # ------- Auth routes ------- 
+  # All auth routes are prefixed with /api/auth
+  /api/auth/login:
     post:
       tags: [Authentication]
       summary: login with username and password
@@ -50,7 +51,7 @@ paths:
                       token:
                         type: string
 
-  /auth/register:
+  /api/auth/register:
     post:
       tags: [Authentication]
       summary: register new patient account
@@ -78,7 +79,7 @@ paths:
         200:
           description: Registration successful
 
-  /auth/me:
+  /api/auth/me:
     get:
       tags: [Authentication]
       summary: get current logged in user details
@@ -88,7 +89,7 @@ paths:
         200:
           description: Current user information
 
-  /auth/logout:
+  /api/auth/logout:
     post:
       tags: [Authentication]
       summary: logout (client-side token deletion)
@@ -96,8 +97,9 @@ paths:
         200:
           description: Logout successful
 
-  # ============ ADMIN ROUTES ============
-  /admin/dashboard-stats:
+  # -------- Admin routes -------- 
+  # All admin routes are prefixed with /api/admin
+  /api/admin/dashboard-stats:
     get:
       tags: [Admin]
       summary: get admin dashboard stats with caching
@@ -121,7 +123,7 @@ paths:
                       total_appointments:
                         type: integer
 
-  /admin/doctors:
+  /api/admin/doctors:
     get:
       tags: [Admin]
       summary: get all doctors list
@@ -160,7 +162,7 @@ paths:
         200:
           description: Doctor created with auto-generated credentials
 
-  /admin/doctors/{doctor_id}:
+  /api/admin/doctors/{doctor_id}:
     put:
       tags: [Admin]
       summary: update doctor details
@@ -197,7 +199,7 @@ paths:
         200:
           description: Doctor deactivated
 
-  /admin/patients:
+  /api/admin/patients:
     get:
       tags: [Admin]
       summary: get all patients list
@@ -207,7 +209,7 @@ paths:
         200:
           description: List of all patients
 
-  /admin/appointments:
+  /api/admin/appointments:
     get:
       tags: [Admin]
       summary: get all appointments list
@@ -217,7 +219,7 @@ paths:
         200:
           description: List of all appointments
 
-  /admin/appointments/{appointment_id}:
+  /api/admin/appointments/{appointment_id}:
     put:
       tags: [Admin]
       summary: update appointment status or notes
@@ -244,7 +246,7 @@ paths:
         200:
           description: Appointment updated
 
-  /admin/search/doctors:
+  /api/admin/search/doctors:
     get:
       tags: [Admin]
       summary: search doctors by name or specialization
@@ -263,7 +265,7 @@ paths:
         200:
           description: Search results
 
-  /admin/search/patients:
+  /api/admin/search/patients:
     get:
       tags: [Admin]
       summary: search patients by name or email
@@ -279,7 +281,7 @@ paths:
         200:
           description: Search results
 
-  /admin/patients/{patient_id}/blacklist:
+  /api/admin/patients/{patient_id}/blacklist:
     put:
       tags: [Admin]
       summary: toggle patient blacklist status
@@ -295,7 +297,7 @@ paths:
         200:
           description: Patient blacklist status toggled
 
-  /admin/patients/{patient_id}/history:
+  /api/admin/patients/{patient_id}/history:
     get:
       tags: [Admin]
       summary: get patient appointment history
@@ -311,8 +313,9 @@ paths:
         200:
           description: Patient history retrieved
 
-  # ============ DOCTOR ROUTES ============
-  /doctor/dashboard:
+  # -------- Doctor routes -------- 
+  # All doctor routes are prefixed with /api/doctor
+  /api/doctor/dashboard:
     get:
       tags: [Doctor]
       summary: get doctor dashboard stats
@@ -322,7 +325,7 @@ paths:
         200:
           description: Doctor dashboard data
 
-  /doctor/patient-history/{patient_id}:
+  /api/doctor/patient-history/{patient_id}:
     get:
       tags: [Doctor]
       summary: get patient history with appointments and treatments
@@ -338,7 +341,7 @@ paths:
         200:
           description: Patient treatment history
 
-  /doctor/appointments:
+  /api/doctor/appointments:
     get:
       tags: [Doctor]
       summary: get doctor's appointments with filters
@@ -361,7 +364,7 @@ paths:
         200:
           description: Doctor appointments list
 
-  /doctor/patients:
+  /api/doctor/patients:
     get:
       tags: [Doctor]
       summary: get all assigned patients
@@ -371,7 +374,7 @@ paths:
         200:
           description: List of assigned patients
 
-  /doctor/appointments/{appointment_id}/status:
+  /api/doctor/appointments/{appointment_id}/status:
     put:
       tags: [Doctor]
       summary: update appointment status (complete, cancel, etc)
@@ -399,7 +402,7 @@ paths:
         200:
           description: Appointment status updated
 
-  /doctor/patient-history:
+  /api/doctor/patient-history:
     post:
       tags: [Doctor]
       summary: add treatment details for an appointment
@@ -427,7 +430,7 @@ paths:
         200:
           description: Treatment details added
 
-  /doctor/availability:
+  /api/doctor/availability:
     get:
       tags: [Doctor]
       summary: get doctor's 7-day availability schedule
@@ -437,7 +440,7 @@ paths:
         200:
           description: Doctor availability schedule
 
-  /doctor/set-slots:
+  /api/doctor/set-slots:
     post:
       tags: [Doctor]
       summary: set doctor availability for specific date/slot combinations
@@ -466,7 +469,7 @@ paths:
         200:
           description: Availability slots updated
 
-  /doctor/profile:
+  /api/doctor/profile:
     put:
       tags: [Doctor]
       summary: update doctor profile information
@@ -495,7 +498,7 @@ paths:
         200:
           description: Profile updated successfully
 
-  /doctor/available-slots:
+  /api/doctor/available-slots:
     get:
       tags: [Doctor]
       summary: get doctor's available appointment slots
@@ -505,8 +508,9 @@ paths:
         200:
           description: Available slots list
 
-  # ============ PATIENT ROUTES ============
-  /patient/dashboard:
+  # -------- patient routes --------
+  # All patient routes are prefixed with /api/patient
+  /api/patient/dashboard:
     get:
       tags: [Patient]
       summary: get patient dashboard stats
@@ -516,7 +520,7 @@ paths:
         200:
           description: Patient dashboard data
 
-  /patient/departments:
+  /api/patient/departments:
     get:
       tags: [Patient]
       summary: get all departments with active doctors
@@ -526,7 +530,7 @@ paths:
         200:
           description: List of departments with doctors
 
-  /patient/available-slots:
+  /api/patient/available-slots:
     get:
       tags: [Patient]
       summary: get available slots for doctor on specific date
@@ -547,7 +551,7 @@ paths:
         200:
           description: Available slots for specified date
 
-  /patient/doctors:
+  /api/patient/doctors:
     get:
       tags: [Patient]
       summary: get doctors list by department
@@ -562,7 +566,7 @@ paths:
         200:
           description: List of doctors
 
-  /patient/appointments:
+  /api/patient/appointments:
     get:
       tags: [Patient]
       summary: get patient's appointments
@@ -603,7 +607,7 @@ paths:
         200:
           description: Appointment booked successfully
 
-  /patient/appointments/{appointment_id}:
+  /api/patient/appointments/{appointment_id}:
     delete:
       tags: [Patient]
       summary: cancel appointment
@@ -619,7 +623,7 @@ paths:
         200:
           description: Appointment cancelled
 
-  /patient/history:
+  /api/patient/history:
     get:
       tags: [Patient]
       summary: get patient medical history with treatments

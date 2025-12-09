@@ -19,8 +19,8 @@ This document explains how different parts of the project work together.
 │  ┌─────────────────────────────────────────────────────────┐   │
 │  │  Static Files: HTML, CSS, JavaScript (Vue.js)           │   │
 │  │  - index.html                                            │   │
-│  │  - assets/js/app.js                                      │   │
-│  │  - assets/js/modules/*.js                                │   │
+│  │  - custom.css                                            │   │
+│  │  - js/*.js (app, admin, doctor, patient, api, utils)    │   │
 │  └─────────────────────────────────────────────────────────┘   │
 └──────────────────────────┬──────────────────────────────────────┘
                            │
@@ -60,48 +60,62 @@ This document explains how different parts of the project work together.
 
 ### 1. Frontend (What users see)
 - **Location:** `frontend/` folder
-- **What it does:** Shows the website to users
+- **Technology:** Vue.js 3 (CDN), Bootstrap 5, Bootstrap Icons
+- **What it does:** Single-page application (SPA) that shows different views based on user role
 - **Main files:**
-  - `index.html` - The main webpage
-  - `custom.css` - Styling (colors, fonts, layout)
-  - `js/app.js` - Main JavaScript file
-  - `js/admin.js` - Admin dashboard code
-  - `js/doctor.js` - Doctor dashboard code
-  - `js/patient.js` - Patient dashboard code
-  - `js/api.js` - Talks to backend
+  - `index.html` - Main HTML page with Vue app
+  - `custom.css` - Custom styling (dark theme #0f172a)
+  - `js/app.js` - Main Vue app, routing, authentication
+  - `js/admin.js` - Admin dashboard component (manage doctors/patients/appointments)
+  - `js/doctor.js` - Doctor dashboard component (appointments, treatments, availability)
+  - `js/patient.js` - Patient dashboard component (book appointments, view history)
+  - `js/api.js` - API service layer (all backend calls)
+  - `js/utils.js` - Utility functions (date formatting, status classes)
 - **Runs on:** http://localhost:3000
 
 ### 2. Backend (Brain of the app)
 - **Location:** `backend/` folder
-- **What it does:** Handles all the logic and data
+- **Technology:** Flask, SQLAlchemy, Flask-JWT-Extended, Flask-CORS
+- **What it does:** REST API for all operations, authentication, database management
 - **Main files:**
-  - `app.py` - Main Flask server
-  - `routes/` - Different API endpoints
-    - `auth.py` - Login/Register
-    - `admin.py` - Admin features
-    - `doctor.py` - Doctor features
-    - `patient.py` - Patient features
-  - `models/` - Database table definitions
-  - `database.py` - Database connection
+  - `app.py` - Main Flask application, CORS setup, routes registration
+  - `database.py` - Database connection and session management
+  - `decorators.py` - JWT authentication decorators (@token_required, @admin_required, etc.)
+  - `seed_db.py` - Database seeding script (creates sample data)
+  - `routes/` - API endpoints (all return JSON)
+    - `auth.py` - Login, Register, Get User Info
+    - `admin.py` - Manage doctors/patients, view all appointments, reschedule/cancel
+    - `doctor.py` - View appointments, update treatments, set availability, view assigned patients
+    - `patient.py` - Book appointments, view history, get available slots, view doctors
+  - `models/` - SQLAlchemy ORM models
+    - `user.py` - User model
+    - `doctor.py` - Doctor model
+    - `patient.py` - Patient model
+    - `appointment.py` - Appointment model
+    - `treatment.py` - Treatment model
+  - `celery_tasks/` - Background job processing
 - **Runs on:** http://localhost:5000
 
 ### 3. Database (Where data is stored)
 - **Type:** SQLite (simple file-based database)
 - **Location:** `backend/instance/hospital.db`
-- **What's stored:**
-  - User accounts (admin, doctors, patients)
-  - Doctor information (name, specialization, experience)
-  - Patient information (name, age, medical history)
-  - Appointments (who, when, status)
-  - Treatment records (diagnosis, medicines, notes)
-  - Doctor availability (morning/evening slots)
+- **Tables:**
+  - `users` - Login credentials (username, password, email, role)
+  - `doctors` - Doctor profiles (name, specialization, experience, qualification, consultation_fee, is_active)
+  - `patients` - Patient info (name, age, gender, phone, address, medical_history, is_blacklisted)
+  - `appointments` - Bookings (doctor_id, patient_id, appointment_date, appointment_time, status)
+  - `treatments` - Medical records (appointment_id, visit_type, diagnosis, prescription, notes)
+  - `doctor_availability` - Schedule slots (doctor_id, date, slot_type, is_available)
 
 ### 4. Background Jobs (Celery)
+- **Location:** `backend/celery_tasks/` folder
 - **What it does:** Sends emails in background
-- **Tasks:**
-  - Appointment confirmation emails
-  - Appointment reminder emails (24 hours before)
-  - Monthly reports for doctors
+- **Task files:**
+  - `email.py` - Appointment confirmation emails
+  - `reminders.py` - Daily reminder emails (for today's appointments)
+  - `reports.py` - Monthly reports for doctors
+  - `email_template.py` - HTML email templates
+  - `imports.py` - Imports all tasks
 - **Needs:** Redis to be running
 
 ### 5. Redis (Message Queue)
@@ -113,22 +127,37 @@ This document explains how different parts of the project work together.
 
 ### Example: Patient Books an Appointment
 
-1. Patient fills form and clicks "Book Appointment"
-2. Frontend (JavaScript) sends data to Backend
-3. Backend checks if slot is available
-4. Backend saves appointment in Database
-5. Backend sends confirmation email (via Celery)
-6. Frontend shows success message to patient
-7. Doctor can see the new appointment in their dashboard
+1. Patient selects department (e.g., Cardiology)
+2. Patient chooses a doctor from list
+3. Patient selects date (cannot select past dates - validated)
+4. Patient picks time slot (morning/evening - based on doctor availability)
+5. Frontend sends POST request to `/api/patient/appointments`
+6. Backend validates:
+   - Date is not in the past
+   - Slot is still available
+   - Doctor is active
+7. Backend creates appointment record (status: 'booked')
+8. Backend queues email task via Celery
+9. Celery worker sends confirmation email
+10. Backend returns success response
+11. Frontend shows success message and redirects to appointments list
 
 ### Example: Doctor Updates Treatment
 
-1. Doctor clicks on appointment
-2. Doctor fills diagnosis, medicines, notes
-3. Frontend sends data to Backend
-4. Backend saves treatment record in Database
-5. Backend marks appointment as "completed"
-6. Patient can see treatment history in their dashboard
+1. Doctor views appointment list in dashboard
+2. Doctor clicks "Update" button on an appointment
+3. Form opens with fields:
+   - Visit Type (consultation/follow_up/emergency)
+   - Diagnosis
+   - Prescribed Medicines
+   - Treatment Notes
+4. Doctor fills all required fields
+5. Doctor clicks "Update Treatment" (saves only)
+   OR "Mark as Completed" (saves and changes status)
+6. Frontend sends PUT request to `/api/doctor/patient-history`
+7. Backend creates/updates Treatment record linked to appointment
+8. If marked completed, appointment status changes to 'completed'
+9. Patient can view treatment details in their history
 
 ## UI Design
 
@@ -146,29 +175,72 @@ The app uses a **dark professional theme** with:
 - Icons from Bootstrap Icons
 - Smooth transitions and hover effects
 
-## User Roles
+## User Roles & Permissions
 
-### Admin
-- Manage doctors (add, edit, blacklist)
-- Manage patients (edit, blacklist, view history)
-- View all appointments
-- Reschedule/cancel appointments
-- See overall statistics
+### Admin (username: admin, password: admin123)
+**Dashboard Features:**
+- Stats cards: Total doctors, patients, appointments
+- Tabs: Doctors, Patients, Appointments
 
-### Doctor
-- View assigned patients
-- Manage appointments
-- Update treatment records (diagnosis, prescription, notes)
-- Mark appointments as completed
-- Set availability (morning/evening slots)
-- View patient treatment history
+**Doctor Management:**
+- Add new doctor (auto-generates username/password)
+- Edit doctor details (name, specialization, experience, fee)
+- Blacklist/Activate doctors
+- View doctor appointment history
+- Search and sort doctors
 
-### Patient
-- Book appointments with available doctors
-- View upcoming appointments
-- View treatment history
-- Update profile information
+**Patient Management:**
+- Edit patient details (name, age, gender, medical history)
+- Blacklist/Unblacklist patients (prevents booking)
+- View patient appointment history
+- Search and sort patients
+
+**Appointment Management:**
+- View all appointments across system
+- Reschedule appointments (select new date/time)
 - Cancel appointments
+- Filter by status
+
+### Doctor (username: dr_sharma, password: doctor123)
+**Dashboard Features:**
+- Stats: Total appointments, patients, today's appointments
+- Tabs: Appointments, Assigned Patients, Set Availability
+
+**Appointment Management:**
+- View all appointments (sorted by date)
+- Update treatment details
+- Mark appointments as completed
+- Cancel booked appointments
+
+**Patient Records:**
+- View assigned patients list
+- Access patient treatment history
+- See patient demographics
+
+**Availability Management:**
+- Set morning slots (9 AM - 1 PM) for next 7 days
+- Set evening slots (3 PM - 7 PM) for next 7 days
+- Toggle availability on/off
+
+### Patient (username: patient1, password: patient123)
+**Dashboard Features:**
+- View upcoming appointments
+- View past appointments with treatment details
+
+**Booking Process:**
+- Step 1: Select department
+- Step 2: Choose doctor (see profile: experience, fees, qualification)
+- Step 3: Select date (min: today, max: 30 days ahead)
+- Step 4: Pick time slot (based on doctor availability)
+- Confirm booking
+
+**Appointment Actions:**
+- Cancel upcoming appointments
+- View treatment records (diagnosis, prescription, notes)
+
+**Profile Management:**
+- Update personal information
+- View medical history
 
 ## Data Flow
 
