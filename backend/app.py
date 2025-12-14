@@ -15,8 +15,8 @@ load_dotenv()
 app = Flask(__name__, static_folder='../frontend', static_url_path='/static')
 
 # flask config
-app.config['SECRET_KEY'] = 'hospital-secret-key-123'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///hospital-management.db'
+app.config['SECRET_KEY'] = 'this-is-hms-web-app-123'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///medihub-database.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # jwt config
