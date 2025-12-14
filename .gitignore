@@ -33,8 +33,11 @@ backend/.env
 celerybeat-schedule*
 
 # Database
+*.db
 *.db-journal
 database_backup.db
+instance/
+backend/instance/
 
 # IDE
 .vscode/
@@ -59,6 +62,14 @@ Thumbs.db
 # Testing
 cookies.txt
 *.pyc
+test_api.py
+
+# Exports
+exports/
+backend/exports/
+
+# Keep directory structure but ignore contents
+!exports/.gitkeep
 
 # Node modules (if any)
 node_modules/

@@ -1,10 +1,12 @@
-# MediHub - Hospital Management System
+# 🏥 MediHub - Hospital Management System
 
-A simple web app for managing hospital appointments, doctors, and patients.
+A modern, professional web application for comprehensive hospital management with intelligent scheduling, secure medical records, and real-time notifications.
 
 ![Python](https://img.shields.io/badge/python-3.8%2B-blue)
 ![Flask](https://img.shields.io/badge/flask-2.3-green)
 ![Vue.js](https://img.shields.io/badge/vue.js-3.x-success)
+![Bootstrap](https://img.shields.io/badge/bootstrap-5.3-purple)
+![License](https://img.shields.io/badge/license-MIT-green)
 
 ## What is this project?
 
@@ -90,51 +92,30 @@ hospital-management-system/
 └── docs/                    # Documentation
 ```
 
-## How to Run
+## 🚀 Getting Started
 
-### Quick Start (Just 2 steps!)
+For detailed installation and setup instructions, please refer to [`docs/setup.md`](docs/setup.md).
 
-1. **Start Backend**
+**Quick Start:**
 ```bash
-cd backend
+# Clone and setup
+git clone https://github.com/aloktripathi1/hospital-management-system.git
+cd hospital-management-system/backend
+
+# Install and run
 pip install -r requirements.txt
-python seed_db.py          # Creates database with sample data
-python app.py              # Starts server at http://localhost:5000
+python seed_db.py
+python app.py
+
+# Visit http://localhost:5000
 ```
 
-2. **Start Frontend**
-```bash
-cd frontend
-python -m http.server 3000  # Opens at http://localhost:3000
-```
+**Default Login:**
+- Admin: `admin` / `admin`
+- Doctor: `ajay` / `ajay.kumar123`
+- Patient: `rahul` / `rahul123`
 
-That's it! Open http://localhost:3000 in your browser.
-
-### Login Credentials
-
-After running `seed_db.py`, you can login as:
-
-**Admin:**
-- Username: `admin`
-- Password: `admin`
-
-**Doctors:**
-- Username: `dr_sharma` / `dr_verma` / `dr_patel` / `dr_singh` / `dr_kumar`
-- Password: `doctor123`
-
-**Patients:**
-- Username: `patient1` / `patient2` / `patient3` ... (up to patient10)
-- Password: `patient123`
-
-### Optional: Email Notifications
-
-If you want email features (appointment confirmations, reminders):
-
-1. Install and start Redis
-2. Run Celery worker
-3. Run Celery beat (for scheduled tasks)
-
-See `docs/setup.md` for detailed instructions.
+For production deployment, see [`DEPLOYMENT.md`](DEPLOYMENT.md).
 
 ## Database Tables
 

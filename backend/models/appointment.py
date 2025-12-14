@@ -20,8 +20,6 @@ class Appointment(db.Model):
     
     # relationships
     treatments = db.relationship('Treatment', backref='appointment', lazy=True)
-    medical_records = db.relationship('MedicalRecord', backref='appointment', lazy=True)
-    prescription = db.relationship('Prescription', backref='appointment', uselist=False, lazy=True)
     
     def to_dict(self):
         data = {

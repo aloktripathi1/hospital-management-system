@@ -18,8 +18,6 @@ class Patient(db.Model):
     
     # relationships
     appointments = db.relationship('Appointment', backref='patient', lazy=True, cascade='all, delete-orphan')
-    medical_records = db.relationship('MedicalRecord', backref='patient', lazy=True, cascade='all, delete-orphan')
-    prescriptions = db.relationship('Prescription', backref='patient', lazy=True, cascade='all, delete-orphan')
     
     def to_dict(self):
         return {

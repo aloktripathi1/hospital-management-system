@@ -8,17 +8,19 @@ from decorators import admin_required
 
 admin_bp = Blueprint('admin', __name__)
 
+# Simple in-memory cache for dashboard stats
+_stats_cache = {}
+
 # get admin dashboard stats with caching
 @admin_bp.route('/dashboard-stats', methods=['GET'])
 @admin_required
 def dashboard_stats():
-    from app import cache
     from datetime import datetime, timedelta
 
     cache_key = 'admin_stats'
     # check cached data (5 min expiry)
-    if cache_key in cache:
-        cached_data, cached_time = cache[cache_key]
+    if cache_key in _stats_cache:
+        cached_data, cached_time = _stats_cache[cache_key]
         if (datetime.now() - cached_time).total_seconds() < 300:
             return jsonify({'success': True, 'message': 'Dashboard stats retrieved (from cache)', 'data': cached_data})
     
@@ -36,7 +38,7 @@ def dashboard_stats():
     }
     
     # save to cache
-    cache[cache_key] = (stats, datetime.now())
+    _stats_cache[cache_key] = (stats, datetime.now())
     
     return jsonify({'success': True, 'message': 'Dashboard stats retrieved (fresh)', 'data': stats})
 
