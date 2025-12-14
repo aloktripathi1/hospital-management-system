@@ -20,28 +20,31 @@ const PatientTemplate = `
             </div>
             
             <!-- Stats Cards -->
-            <div class="row mb-4">
+            <div class="row mb-4 g-4">
                 <div class="col-md-4">
-                    <div class="card bg-primary text-white">
-                        <div class="card-body text-center">
-                            <h4>{{ stats.upcoming_appointments || 0 }}</h4>
-                            <p class="mb-0">Upcoming Appointments</p>
+                    <div class="stat-card" style="background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);">
+                        <div class="position-relative">
+                            <h2 class="mb-1 fw-bold">{{ stats.upcoming_appointments || 0 }}</h2>
+                            <p class="mb-0 opacity-90">Upcoming Appointments</p>
+                            <i class="bi bi-calendar-event stat-icon"></i>
                         </div>
                     </div>
                 </div>
                 <div class="col-md-4">
-                    <div class="card bg-success text-white">
-                        <div class="card-body text-center">
-                            <h4>{{ stats.total_appointments || 0 }}</h4>
-                            <p class="mb-0">Total Appointments</p>
+                    <div class="stat-card" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+                        <div class="position-relative">
+                            <h2 class="mb-1 fw-bold">{{ stats.total_appointments || 0 }}</h2>
+                            <p class="mb-0 opacity-90">Total Appointments</p>
+                            <i class="bi bi-calendar-check stat-icon"></i>
                         </div>
                     </div>
                 </div>
                 <div class="col-md-4">
-                    <div class="card bg-info text-white">
-                        <div class="card-body text-center">
-                            <h4>{{ stats.doctors_visited || 0 }}</h4>
-                            <p class="mb-0">Doctors Visited</p>
+                    <div class="stat-card" style="background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);">
+                        <div class="position-relative">
+                            <h2 class="mb-1 fw-bold">{{ stats.doctors_visited || 0 }}</h2>
+                            <p class="mb-0 opacity-90">Doctors Visited</p>
+                            <i class="bi bi-heart-pulse stat-icon"></i>
                         </div>
                     </div>
                 </div>
@@ -60,6 +63,11 @@ const PatientTemplate = `
                     </button>
                 </li>
                 <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="medical-records-tab" data-bs-toggle="tab" data-bs-target="#medical-records" type="button" role="tab">
+                        <i class="bi bi-file-earmark-medical"></i> Medical Records
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
                     <button class="nav-link" id="history-tab" data-bs-toggle="tab" data-bs-target="#medical-history" type="button" role="tab">
                         <i class="bi bi-journal-medical"></i> Medical History
                     </button>
@@ -69,9 +77,48 @@ const PatientTemplate = `
             <div class="tab-content" id="patientTabsContent">
                 <!-- Book Appointment Tab -->
                 <div class="tab-pane fade show active" id="book" role="tabpanel">
-                    <div class="card mb-4">
-                        <div class="card-header">
-                            <h5 class="mb-0">Book New Appointment</h5>
+                    <!-- Booking Progress Indicator -->
+                    <div class="mb-4">
+                        <div class="d-flex justify-content-between align-items-center px-3">
+                            <div class="progress-step">
+                                <div class="step-circle" :class="{'active': !selectedDepartment, 'completed': selectedDepartment}">
+                                    <i v-if="selectedDepartment" class="bi bi-check"></i>
+                                    <span v-else>1</span>
+                                </div>
+                                <div class="step-line" :class="{'active': selectedDepartment}"></div>
+                            </div>
+                            <div class="progress-step">
+                                <div class="step-circle" :class="{'active': selectedDepartment && !selectedDoctor, 'completed': selectedDoctor}">
+                                    <i v-if="selectedDoctor" class="bi bi-check"></i>
+                                    <span v-else>2</span>
+                                </div>
+                                <div class="step-line" :class="{'active': selectedDoctor}"></div>
+                            </div>
+                            <div class="progress-step">
+                                <div class="step-circle" :class="{'active': selectedDoctor && !bookingForm.appointment_date, 'completed': bookingForm.appointment_date}">
+                                    <i v-if="bookingForm.appointment_date" class="bi bi-check"></i>
+                                    <span v-else>3</span>
+                                </div>
+                                <div class="step-line" :class="{'active': bookingForm.appointment_date}"></div>
+                            </div>
+                            <div class="progress-step">
+                                <div class="step-circle" :class="{'active': bookingForm.appointment_date && !bookingForm.appointment_time, 'completed': bookingForm.appointment_time}">
+                                    <i v-if="bookingForm.appointment_time" class="bi bi-check"></i>
+                                    <span v-else>4</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-between mt-2 px-3">
+                            <small class="text-muted">Specialization</small>
+                            <small class="text-muted">Doctor</small>
+                            <small class="text-muted">Date</small>
+                            <small class="text-muted">Time</small>
+                        </div>
+                    </div>
+                    
+                    <div class="card mb-4 shadow-soft">
+                        <div class="card-header bg-white">
+                            <h5 class="mb-0"><i class="bi bi-calendar-plus me-2"></i>Book New Appointment</h5>
                         </div>
                         <div class="card-body">
                             <form @submit.prevent="bookAppointment">
@@ -119,7 +166,7 @@ const PatientTemplate = `
                                             <div class="card h-100 cursor-pointer hover-scale border-0 shadow-sm" @click="selectDoctor(doctor)">
                                                 <div class="card-body d-flex align-items-center p-3">
                                                     <div class="bg-primary bg-opacity-10 p-3 rounded-circle me-3">
-                                                        <i class="bi bi-person-user text-primary fs-3"></i>
+                                                        <i class="bi bi-person-badge text-primary fs-3"></i>
                                                     </div>
                                                     <div class="flex-grow-1">
                                                         <h6 class="fw-bold mb-1">Dr. {{ doctor.name }}</h6>
@@ -145,7 +192,7 @@ const PatientTemplate = `
                                     <div class="d-flex align-items-center justify-content-between bg-light p-3 rounded-3 mb-3">
                                         <div class="d-flex align-items-center">
                                             <div class="bg-white p-2 rounded-circle shadow-sm me-3">
-                                                <i class="bi bi-person-check text-primary fs-4"></i>
+                                                <i class="bi bi-person-badge text-primary fs-4"></i>
                                             </div>
                                             <div>
                                                 <h6 class="mb-0 fw-bold">Dr. {{ selectedDoctor.name }}</h6>
@@ -206,9 +253,35 @@ const PatientTemplate = `
                                     </div>
                                 </div>
                                 
-                                <button type="submit" class="btn btn-primary" :disabled="loading">
-                                    <span v-if="loading" class="spinner-border spinner-border-sm me-2"></span>
-                                    Book Appointment
+                                <!-- Notes Section -->
+                                <div v-if="bookingForm.appointment_time" class="mb-4">
+                                    <label class="form-label">Additional Notes (Optional)</label>
+                                    <textarea class="form-control" v-model="bookingForm.notes" rows="3" placeholder="Any specific concerns or symptoms you'd like to mention..."></textarea>
+                                </div>
+                                
+                                <!-- Booking Summary -->
+                                <div v-if="selectedDoctor && bookingForm.appointment_date && bookingForm.appointment_time" class="alert alert-info mb-4">
+                                    <h6 class="alert-heading mb-3"><i class="bi bi-info-circle me-2"></i>Booking Summary</h6>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <p class="mb-2"><strong>Doctor:</strong> Dr. {{ selectedDoctor.name }}</p>
+                                            <p class="mb-2"><strong>Specialization:</strong> {{ selectedDepartment.name }}</p>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <p class="mb-2"><strong>Date:</strong> {{ formatDisplayDate(bookingForm.appointment_date) }}</p>
+                                            <p class="mb-2"><strong>Time:</strong> {{ availableSlots.find(s => s.appointment_time === bookingForm.appointment_time)?.display }}</p>
+                                        </div>
+                                    </div>
+                                    <p class="mb-0"><strong>Consultation Fee:</strong> ₹{{ selectedDoctor.consultation_fee || '0.00' }}</p>
+                                </div>
+                                
+                                <button type="submit" class="btn btn-gradient btn-lg w-100" :disabled="loading || !bookingForm.appointment_time">
+                                    <span v-if="!loading">
+                                        <i class="bi bi-check-circle me-2"></i>Confirm Booking
+                                    </span>
+                                    <span v-else>
+                                        <span class="spinner-border spinner-border-sm me-2"></span>Processing...
+                                    </span>
                                 </button>
                             </form>
                         </div>
@@ -217,50 +290,113 @@ const PatientTemplate = `
 
                 <!-- Unified Appointments Tab -->
                 <div class="tab-pane fade" id="patient-appointments" role="tabpanel">
-                    <div class="card mb-4">
-                        <div class="card-header d-flex justify-content-between align-items-center">
-                            <h5 class="mb-0">My Appointments</h5>
+                    <div class="card dashboard-card mb-4">
+                        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0"><i class="bi bi-calendar-check me-2"></i>My Appointments</h5>
+                            <span class="badge badge-soft-primary">{{ allPatientAppointments.length }} Total</span>
                         </div>
                         <div class="card-body">
-                            <div v-if="allPatientAppointments.length === 0" class="text-center py-4">
-                                <i class="bi bi-calendar-x icon-3x text-muted mb-3"></i>
-                                <p class="text-muted">No appointments found</p>
+                            <div v-if="allPatientAppointments.length === 0" class="empty-state">
+                                <i class="bi bi-calendar-x"></i>
+                                <p>No appointments found</p>
+                                <small>Book your first appointment to get started</small>
                             </div>
-                            <div v-else class="table-responsive mb-3">
-                                <table class="table table-striped table-hover">
-                                    <thead class="table-dark">
+                            <div v-else class="table-responsive">
+                                <table class="table modern-table">
+                                    <thead>
                                         <tr>
-                                            <th>Sr. No</th>
+                                            <th>#</th>
                                             <th>Doctor</th>
                                             <th>Department</th>
                                             <th>Date</th>
-                                            <th>Slot</th>
+                                            <th>Time Slot</th>
                                             <th>Status</th>
-                                            <th>Action</th>
+                                            <th>Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         <tr v-for="(appointment, index) in allPatientAppointments" :key="appointment.id">
-                                            <td>{{ index + 1 }}.</td>
-                                            <td>{{ appointment.doctor ? 'Dr. ' + appointment.doctor.name : 'N/A' }}</td>
-                                            <td>{{ appointment.department || (appointment.doctor ? appointment.doctor.specialization : 'N/A') }}</td>
-                                            <td>{{ appointment.appointment_date }}</td>
-                                            <td>{{ formatTimeSlot(appointment.appointment_time) }}</td>
+                                            <td><span class="row-number">{{ index + 1 }}</span></td>
                                             <td>
-                                                <span class="badge" :class="getStatusClass(appointment.status)">
+                                                <div class="d-flex align-items-center">
+                                                    <div class="avatar-sm bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-2">
+                                                        <i class="bi bi-person-badge text-primary"></i>
+                                                    </div>
+                                                    <span class="fw-medium">{{ appointment.doctor ? 'Dr. ' + appointment.doctor.name : 'N/A' }}</span>
+                                                </div>
+                                            </td>
+                                            <td><span class="badge badge-soft-info">{{ appointment.department || (appointment.doctor ? appointment.doctor.specialization : 'N/A') }}</span></td>
+                                            <td><i class="bi bi-calendar3 me-1 text-muted"></i>{{ appointment.appointment_date }}</td>
+                                            <td><i class="bi bi-clock me-1 text-muted"></i>{{ formatTimeSlot(appointment.appointment_time) }}</td>
+                                            <td>
+                                                <span class="status-badge" :class="getStatusClass(appointment.status)">
                                                     {{ capitalizeStatus(appointment.status) }}
                                                 </span>
                                             </td>
                                             <td>
-                                                <button v-if="appointment.status === 'booked'" 
-                                                        class="btn btn-sm btn-outline-warning" 
-                                                        @click="cancelPatientAppointment(appointment.id)">
-                                                    <i class="bi bi-x"></i>
+                                                <div class="btn-group btn-group-sm">
+                                                    <button v-if="appointment.status === 'booked'" 
+                                                            class="btn btn-outline-danger" 
+                                                            @click="cancelPatientAppointment(appointment.id)"
+                                                            title="Cancel Appointment">
+                                                        <i class="bi bi-x-circle"></i>
+                                                    </button>
+                                                    <button v-else-if="appointment.status === 'cancelled' || appointment.status === 'completed'" 
+                                                            class="btn btn-outline-primary" 
+                                                            @click="showAppointmentHistory(appointment)"
+                                                            title="View Details">
+                                                        <i class="bi bi-eye"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Medical Records Tab -->
+                <div class="tab-pane fade" id="medical-records" role="tabpanel">
+                    <div class="card mb-4">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0"><i class="bi bi-file-earmark-medical me-2"></i>Medical Records</h5>
+                            <button class="btn btn-primary btn-sm" @click="showUploadModal">
+                                <i class="bi bi-upload me-1"></i>Upload Record
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <div v-if="medicalRecords.length === 0" class="text-center py-4">
+                                <i class="bi bi-folder-x display-4 text-muted mb-3"></i>
+                                <p class="text-muted">No medical records found</p>
+                                <button class="btn btn-primary" @click="showUploadModal">
+                                    <i class="bi bi-upload me-1"></i>Upload Your First Record
+                                </button>
+                            </div>
+                            <div v-else class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead class="table-dark">
+                                        <tr>
+                                            <th>Title</th>
+                                            <th>Type</th>
+                                            <th>Date</th>
+                                            <th>File</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr v-for="record in medicalRecords" :key="record.id">
+                                            <td>{{ record.title }}</td>
+                                            <td><span class="badge bg-info">{{ record.record_type }}</span></td>
+                                            <td>{{ formatDate(record.record_date) }}</td>
+                                            <td>{{ record.file_name }}</td>
+                                            <td>
+                                                <button class="btn btn-sm btn-outline-primary me-1" @click="downloadRecord(record.id)">
+                                                    <i class="bi bi-download"></i>
                                                 </button>
-                                                <button v-else-if="appointment.status === 'cancelled' || appointment.status === 'completed'" 
-                                                        class="btn btn-sm btn-outline-primary" 
-                                                        @click="showAppointmentHistory(appointment)">
-                                                    <i class="bi bi-eye"></i>
+                                                <button class="btn btn-sm btn-outline-danger" @click="deleteRecord(record.id)">
+                                                    <i class="bi bi-trash"></i>
                                                 </button>
                                             </td>
                                         </tr>
@@ -439,6 +575,52 @@ const PatientTemplate = `
             </div>
         </div>
     </div>
+
+    <!-- Upload Medical Record Modal -->
+    <div class="modal fade" id="uploadRecordModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Upload Medical Record</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form @submit.prevent="uploadRecord">
+                        <div class="mb-3">
+                            <label class="form-label">Record Type</label>
+                            <select class="form-select" v-model="uploadForm.record_type" required>
+                                <option value="prescription">Prescription</option>
+                                <option value="lab_report">Lab Report</option>
+                                <option value="scan">Scan/X-Ray</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Title</label>
+                            <input type="text" class="form-control" v-model="uploadForm.title" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Description (Optional)</label>
+                            <textarea class="form-control" v-model="uploadForm.description" rows="2"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Record Date</label>
+                            <input type="date" class="form-control" v-model="uploadForm.record_date">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">File (Max 10MB)</label>
+                            <input type="file" class="form-control" @change="handleFileSelect" accept=".pdf,.png,.jpg,.jpeg,.doc,.docx" required>
+                            <small class="text-muted">Allowed: PDF, PNG, JPG, DOC, DOCX</small>
+                        </div>
+                        <button type="submit" class="btn btn-primary" :disabled="uploading">
+                            <span v-if="uploading" class="spinner-border spinner-border-sm me-2"></span>
+                            {{ uploading ? 'Uploading...' : 'Upload' }}
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 `;
 
@@ -452,6 +634,8 @@ const PatientComponent = {
             departments: [],
             allPatientAppointments: [],
             treatments: [],
+            prescriptions: [],
+            medicalRecords: [],
             selectedDepartment: null,
             selectedDoctor: null,
             viewingDoctor: null,
@@ -463,6 +647,15 @@ const PatientComponent = {
                 appointment_time: '',
                 notes: ''
             },
+            uploadForm: {
+                record_type: 'prescription',
+                title: '',
+                description: '',
+                record_date: '',
+                file: null
+            },
+            selectedFile: null,
+            uploading: false,
             loading: false,
             error: null,
             success: null,
@@ -487,6 +680,16 @@ const PatientComponent = {
             const history = await window.ApiService.getPatientHistoryForPatient()
             if (history.success) {
                 this.treatments = history.data.treatments
+            }
+
+            const prescriptions = await window.ApiService.getPatientPrescriptions()
+            if (prescriptions.success) {
+                this.prescriptions = prescriptions.data.prescriptions
+            }
+
+            const records = await window.ApiService.getMedicalRecords()
+            if (records.success) {
+                this.medicalRecords = records.data.records
             }
         },
 
@@ -620,6 +823,78 @@ const PatientComponent = {
             this.closeDoctorProfile();
         },
 
+        showUploadModal() {
+            const modal = new bootstrap.Modal(document.getElementById('uploadRecordModal'));
+            modal.show();
+        },
+
+        handleFileSelect(event) {
+            this.selectedFile = event.target.files[0];
+        },
+
+        async uploadRecord() {
+            if (!this.selectedFile) {
+                this.error = 'Please select a file';
+                return;
+            }
+
+            this.uploading = true;
+            this.error = null;
+
+            const formData = new FormData();
+            formData.append('file', this.selectedFile);
+            formData.append('record_type', this.uploadForm.record_type);
+            formData.append('title', this.uploadForm.title);
+            formData.append('description', this.uploadForm.description);
+            if (this.uploadForm.record_date) {
+                formData.append('record_date', this.uploadForm.record_date);
+            }
+
+            const resp = await window.ApiService.uploadMedicalRecord(formData);
+            
+            if (resp.success) {
+                this.success = 'Medical record uploaded successfully';
+                this.uploadForm = { record_type: 'prescription', title: '', description: '', record_date: '' };
+                this.selectedFile = null;
+                const modalEl = document.getElementById('uploadRecordModal');
+                const modal = bootstrap.Modal.getInstance(modalEl);
+                if (modal) modal.hide();
+                await this.loadPatientData();
+            } else {
+                this.error = resp.message || 'Failed to upload record';
+            }
+
+            this.uploading = false;
+        },
+
+        downloadRecord(recordId) {
+            window.ApiService.downloadMedicalRecord(recordId);
+        },
+
+        async deleteRecord(recordId) {
+            if (!confirm('Are you sure you want to delete this record?')) return;
+
+            const resp = await window.ApiService.deleteMedicalRecord(recordId);
+            if (resp.success) {
+                this.success = 'Record deleted successfully';
+                await this.loadPatientData();
+            } else {
+                this.error = resp.message || 'Failed to delete record';
+            }
+        },
+
+        formatDate(dateString) {
+            if (!dateString) return 'N/A';
+            return new Date(dateString).toLocaleDateString();
+        },
+
+        formatDisplayDate(dateString) {
+            if (!dateString) return '';
+            const date = new Date(dateString);
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            return date.toLocaleDateString('en-US', options);
+        },
+
         // Helpers
         formatTimeSlot(time) {
             if (!time) return '';
@@ -653,10 +928,10 @@ const PatientComponent = {
         getSpecializationIcon(name) {
             const map = {
                 'Cardiology': 'bi-heart-pulse',
-                'Neurology': 'bi-brain',
+                'Neurology': 'bi-lightning-charge',
                 'Orthopedics': 'bi-person-arms-up',
                 'Pediatrics': 'bi-emoji-smile',
-                'Dermatology': 'bi-person',
+                'Dermatology': 'bi-person-fill',
                 'Psychiatry': 'bi-chat-square-heart',
                 'General Medicine': 'bi-prescription2',
                 'ENT': 'bi-ear',

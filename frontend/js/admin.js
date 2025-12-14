@@ -21,43 +21,40 @@ const AdminTemplate = `
                     <div v-if="adminView === 'dashboard'">
                     
                     <!-- Stats Cards -->
-                    <div class="row mb-4">
-                        <div class="col-md-4">
-                            <div class="card bg-primary text-white h-100 shadow-sm">
-                                <div class="card-body d-flex align-items-center justify-content-between">
-                                    <div>
-                                        <h3 class="mb-0 fw-bold">{{ stats.total_doctors || 0 }}</h3>
-                                        <p class="mb-0 opacity-75">Total Doctors</p>
-                                    </div>
-                                    <div class="bg-white bg-opacity-25 p-3 rounded-circle">
-                                        <i class="bi bi-person-badge fs-3"></i>
-                                    </div>
+                    <div class="row mb-4 g-4">
+                        <div class="col-md-3">
+                            <div class="stat-card" style="background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);">
+                                <div class="position-relative">
+                                    <h2 class="mb-1 fw-bold">{{ stats.total_doctors || 0 }}</h2>
+                                    <p class="mb-0 opacity-90">Total Doctors</p>
+                                    <i class="bi bi-person-badge stat-icon"></i>
                                 </div>
                             </div>
                         </div>
-                        <div class="col-md-4">
-                            <div class="card bg-success text-white h-100 shadow-sm">
-                                <div class="card-body d-flex align-items-center justify-content-between">
-                                    <div>
-                                        <h3 class="mb-0 fw-bold">{{ stats.total_patients || 0 }}</h3>
-                                        <p class="mb-0 opacity-75">Total Patients</p>
-                                    </div>
-                                    <div class="bg-white bg-opacity-25 p-3 rounded-circle">
-                                        <i class="bi bi-people fs-3"></i>
-                                    </div>
+                        <div class="col-md-3">
+                            <div class="stat-card" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+                                <div class="position-relative">
+                                    <h2 class="mb-1 fw-bold">{{ stats.total_patients || 0 }}</h2>
+                                    <p class="mb-0 opacity-90">Total Patients</p>
+                                    <i class="bi bi-people stat-icon"></i>
                                 </div>
                             </div>
                         </div>
-                        <div class="col-md-4">
-                            <div class="card bg-info text-white h-100 shadow-sm">
-                                <div class="card-body d-flex align-items-center justify-content-between">
-                                    <div>
-                                        <h3 class="mb-0 fw-bold">{{ stats.total_appointments || 0 }}</h3>
-                                        <p class="mb-0 opacity-75">Total Appointments</p>
-                                    </div>
-                                    <div class="bg-white bg-opacity-25 p-3 rounded-circle">
-                                        <i class="bi bi-calendar-check fs-3"></i>
-                                    </div>
+                        <div class="col-md-3">
+                            <div class="stat-card" style="background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);">
+                                <div class="position-relative">
+                                    <h2 class="mb-1 fw-bold">{{ stats.total_appointments || 0 }}</h2>
+                                    <p class="mb-0 opacity-90">Total Appointments</p>
+                                    <i class="bi bi-calendar-check stat-icon"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="stat-card" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);">
+                                <div class="position-relative">
+                                    <h2 class="mb-1 fw-bold">{{ stats.active_doctors || 0 }}</h2>
+                                    <p class="mb-0 opacity-90">Active Doctors</p>
+                                    <i class="bi bi-check-circle stat-icon"></i>
                                 </div>
                             </div>
                         </div>
@@ -86,21 +83,22 @@ const AdminTemplate = `
                     <div class="tab-content" id="adminTabsContent">
                         <!-- Doctors Tab -->
                         <div class="tab-pane fade show active" id="doctors" role="tabpanel">
-                            <div class="card mb-4">
-                                <div class="card-header d-flex justify-content-between align-items-center">
-                                    <h5 class="mb-0">Manage Doctors</h5>
-                                    <button class="btn btn-outline-primary" @click="showAddDoctorForm">
-                                        <i class="bi bi-plus"></i> Add Doctor
-                                    </button>
-                                    <!-- <button class="btn btn-primary btn-sm" @click="showAddDoctorForm()">
-                                        <i class="bi bi-plus-circle me-1"></i>Add Doctor
-                                    </button> -->
+                            <div class="card dashboard-card mb-4">
+                                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                                    <h5 class="mb-0"><i class="bi bi-person-badge me-2"></i>Manage Doctors</h5>
+                                    <div>
+                                        <small class="text-muted me-3">Total: {{ doctors.length }} | Filtered: {{ filteredDoctors.length }}</small>
+                                        <button class="btn btn-primary" @click="showAddDoctorForm">
+                                            <i class="bi bi-plus-circle me-1"></i> Add Doctor
+                                        </button>
+                                    </div>
                                 </div>
                                 <div class="card-body">
                                     <!-- Search and Sort Controls -->
-                                    <div class="row mb-3">
+                                    <div class="row mb-3 g-2">
                                         <div class="col-md-7">
                                             <div class="input-group">
+                                                <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
                                                 <input type="text" class="form-control" placeholder="Search doctors by name or specialization..." v-model="doctorSearchQuery" @input="searchDoctors">
                                                 <button class="btn btn-outline-secondary" type="button" @click="searchDoctors">
                                                     <i class="bi bi-x"></i>
@@ -109,7 +107,7 @@ const AdminTemplate = `
                                         </div>
                                         <div class="col-md-5">
                                             <div class="input-group">
-                                                <span class="input-group-text"><i class="bi bi-sort-alpha-down"></i></span>
+                                                <span class="input-group-text bg-white"><i class="bi bi-sort-alpha-down"></i></span>
                                                 <select class="form-select" v-model="sortOption" @change="applySort">
                                                     <option value="name">Name (A-Z)</option>
                                                     <option value="specialization">Specialization</option>
@@ -118,12 +116,12 @@ const AdminTemplate = `
                                             </div>
                                         </div>
                                     </div>
-                                    <div class="table-responsive mb-3">
-                                        <table class="table table-striped table-hover">
-                                            <thead class="table-dark">
+                                    <div class="table-responsive">
+                                        <table class="table modern-table">
+                                            <thead>
                                                 <tr>
-                                                    <th>Sr. No.</th>
-                                                    <th>Name</th>
+                                                    <th>#</th>
+                                                    <th>Doctor</th>
                                                     <th>Specialization</th>
                                                     <th>Experience</th>
                                                     <th>Status</th>
@@ -132,25 +130,37 @@ const AdminTemplate = `
                                             </thead>
                                             <tbody>
                                                 <tr v-for="(doctor, index) in filteredDoctors" :key="doctor.id">
-                                                    <td>{{ index + 1 }}.</td>
-                                                    <td>Dr. {{ doctor.name }}</td>
-                                                    <td>{{ doctor.specialization }}</td>
-                                                    <td>{{ doctor.experience }} years</td>
+                                                    <td><span class="row-number">{{ index + 1 }}</span></td>
                                                     <td>
-                                                        <span class="badge" :class="doctor.is_active ? 'bg-success' : 'bg-danger'">
+                                                        <div class="d-flex align-items-center">
+                                                            <div class="avatar-sm bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-2" style="min-width: 40px; height: 40px;">
+                                                                <i class="bi bi-person-badge text-primary" style="font-size: 1.25rem;"></i>
+                                                            </div>
+                                                            <span class="fw-medium">Dr. {{ doctor.name || 'N/A' }}</span>
+                                                        </div>
+                                                    </td>
+                                                    <td>
+                                                        <span class="badge badge-soft-info">{{ doctor.specialization || 'N/A' }}</span>
+                                                        <small v-if="!doctor.specialization" class="text-danger d-block">Missing data</small>
+                                                    </td>
+                                                    <td><i class="bi bi-briefcase me-1 text-muted"></i>{{ doctor.experience }} years</td>
+                                                    <td>
+                                                        <span class="status-badge" :class="doctor.is_active ? 'status-badge-success' : 'status-badge-danger'">
                                                             {{ doctor.is_active ? 'Active' : 'Inactive' }}
                                                         </span>
                                                     </td>
                                                     <td>
-                                                        <button class="btn btn-sm btn-outline-info me-1" @click="editDoctor(doctor)" title="Edit Doctor">
-                                                            <i class="bi bi-pencil"></i>
-                                                        </button>
-                                                        <button class="btn btn-sm btn-outline-primary me-1" @click="openDoctorHistory(doctor)" title="View Doctor History">
-                                                            <i class="bi bi-clock-history"></i>
-                                                        </button>
-                                                        <button class="btn btn-sm" :class="doctor.is_active ? 'btn-outline-warning' : 'btn-outline-success'" @click="toggleDoctorStatus(doctor)" :title="doctor.is_active ? 'Blacklist Doctor' : 'Activate Doctor'">
-                                                            <i class="bi" :class="doctor.is_active ? 'bi-ban' : 'bi-check-circle'"></i>
-                                                        </button>
+                                                        <div class="btn-group btn-group-sm">
+                                                            <button class="btn btn-outline-primary" @click="editDoctor(doctor)" title="Edit Doctor">
+                                                                <i class="bi bi-pencil"></i>
+                                                            </button>
+                                                            <button class="btn btn-outline-info" @click="openDoctorHistory(doctor)" title="View History">
+                                                                <i class="bi bi-clock-history"></i>
+                                                            </button>
+                                                            <button class="btn" :class="doctor.is_active ? 'btn-outline-warning' : 'btn-outline-success'" @click="toggleDoctorStatus(doctor)" :title="doctor.is_active ? 'Deactivate' : 'Activate'">
+                                                                <i class="bi" :class="doctor.is_active ? 'bi-ban' : 'bi-check-circle'"></i>
+                                                            </button>
+                                                        </div>
                                                     </td>
                                                 </tr>
                                             </tbody>
@@ -162,25 +172,26 @@ const AdminTemplate = `
 
                         <!-- Patients Tab -->
                         <div class="tab-pane fade" id="patients" role="tabpanel">
-                            <div class="card mb-4">
-                                <div class="card-header d-flex justify-content-between align-items-center">
-                                    <h5 class="mb-0">Manage Patients</h5>
+                            <div class="card dashboard-card mb-4">
+                                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                                    <h5 class="mb-0"><i class="bi bi-people me-2"></i>Manage Patients</h5>
+                                    <span class="badge badge-soft-primary">{{ filteredPatients.length }} Total</span>
                                 </div>
                                 <div class="card-body">
                                     <!-- Search Form -->
-                                    <div class="row mb-3">
+                                    <div class="row mb-3 g-2">
                                         <div class="col-md-7">
                                             <div class="input-group">
+                                                <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
                                                 <input type="text" class="form-control" placeholder="Search patients by name..." v-model="patientSearchQuery" @input="searchPatients">
                                                 <button class="btn btn-outline-secondary" type="button" @click="clearPatientSearch">
                                                     <i class="bi bi-x"></i>
                                                 </button>
                                             </div>
-
                                         </div>
                                         <div class="col-md-5">
                                             <div class="input-group">
-                                                <span class="input-group-text"><i class="bi bi-sort-alpha-down"></i></span>
+                                                <span class="input-group-text bg-white"><i class="bi bi-sort-alpha-down"></i></span>
                                                 <select class="form-select" v-model="patientSortOption" @change="applyPatientSort">
                                                     <option value="name">Name (A-Z)</option>
                                                     <option value="age">Age (Low-High)</option>
@@ -190,44 +201,54 @@ const AdminTemplate = `
                                         </div>
                                     </div>
                                     
-                                    <div v-if="filteredPatients.length === 0" class="alert alert-info">
-                                        No patients found.
+                                    <div v-if="filteredPatients.length === 0" class="empty-state">
+                                        <i class="bi bi-person-x"></i>
+                                        <p>No patients found</p>
                                     </div>
                                     
-                                    <div class="table-responsive mb-3" v-if="filteredPatients.length > 0">
-                                        <table class="table table-striped table-hover">
-                                            <thead class="table-dark">
+                                    <div class="table-responsive" v-if="filteredPatients.length > 0">
+                                        <table class="table modern-table">
+                                            <thead>
                                                 <tr>
-                                                    <th>Sr. No</th>
-                                                    <th>Name</th>
+                                                    <th>#</th>
+                                                    <th>Patient</th>
                                                     <th>Email</th>
-                                                    <th>Phone</th>
+                                                    <th>Contact</th>
                                                     <th>Age</th>
                                                     <th>Gender</th>
                                                     <th>Actions</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                <tr v-for="(patient, index) in filteredPatients" :key="patient.id" :class="{ 'table-danger': patient.is_blacklisted }">
-                                                    <td>{{ index + 1 }}.</td>
+                                                <tr v-for="(patient, index) in filteredPatients" :key="patient.id">
+                                                    <td><span class="row-number">{{ index + 1 }}</span></td>
                                                     <td>
-                                                        {{ getPatientPrefix() }}{{ patient.name }}
-                                                        <span v-if="patient.is_blacklisted" class="badge bg-danger ms-2">Blacklisted</span>
+                                                        <div class="d-flex align-items-center">
+                                                            <div class="avatar-sm bg-success bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-2">
+                                                                <i class="bi bi-person text-success"></i>
+                                                            </div>
+                                                            <div>
+                                                                <span class="fw-medium">{{ getPatientPrefix() }}{{ patient.name }}</span>
+                                                                <span v-if="patient.is_blacklisted" class="badge badge-soft-danger ms-2">Blacklisted</span>
+                                                            </div>
+                                                        </div>
                                                     </td>
-                                                    <td>{{ patient.user ? patient.user.email : 'N/A' }}</td>
-                                                    <td>{{ patient.phone }}</td>
-                                                    <td>{{ patient.age }}</td>
-                                                    <td>{{ patient.gender }}</td>
+                                                    <td><i class="bi bi-envelope me-1 text-muted"></i>{{ patient.user ? patient.user.email : 'N/A' }}</td>
+                                                    <td><i class="bi bi-telephone me-1 text-muted"></i>{{ patient.phone || 'N/A' }}</td>
+                                                    <td>{{ patient.age || 'N/A' }}</td>
+                                                    <td><span class="badge badge-soft-info">{{ patient.gender || 'N/A' }}</span></td>
                                                     <td>
-                                                        <button class="btn btn-sm btn-outline-info me-1" @click="editPatient(patient)" title="Edit Patient">
-                                                            <i class="bi bi-pencil"></i>
-                                                        </button>
-                                                        <button class="btn btn-sm me-1" :class="patient.is_blacklisted ? 'btn-outline-success' : 'btn-outline-warning'" @click="togglePatientBlacklist(patient)" title="Blacklist/Unblacklist Patient">
-                                                            <i class="bi" :class="patient.is_blacklisted ? 'bi-check-circle' : 'bi-ban'"></i>
-                                                        </button>
-                                                        <button class="btn btn-sm btn-outline-primary" @click="openAdminPatientHistory(patient)" title="View Patient History">
-                                                            <i class="bi bi-eye"></i>
-                                                        </button>
+                                                        <div class="btn-group btn-group-sm">
+                                                            <button class="btn btn-outline-primary" @click="editPatient(patient)" title="Edit Patient">
+                                                                <i class="bi bi-pencil"></i>
+                                                            </button>
+                                                            <button class="btn" :class="patient.is_blacklisted ? 'btn-outline-success' : 'btn-outline-warning'" @click="togglePatientBlacklist(patient)" :title="patient.is_blacklisted ? 'Unblacklist' : 'Blacklist'">
+                                                                <i class="bi" :class="patient.is_blacklisted ? 'bi-check-circle' : 'bi-ban'"></i>
+                                                            </button>
+                                                            <button class="btn btn-outline-info" @click="openAdminPatientHistory(patient)" title="View History">
+                                                                <i class="bi bi-eye"></i>
+                                                            </button>
+                                                        </div>
                                                     </td>
                                                 </tr>
                                             </tbody>
@@ -239,53 +260,70 @@ const AdminTemplate = `
 
                         <!-- Appointments Tab -->
                         <div class="tab-pane fade" id="appointments" role="tabpanel">
-                            <div class="card mb-4">
-                                <div class="card-header">
-                                    <h5 class="mb-0">All Appointments</h5>
+                            <div class="card dashboard-card mb-4">
+                                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                                    <h5 class="mb-0"><i class="bi bi-calendar-check me-2"></i>All Appointments</h5>
+                                    <span class="badge badge-soft-primary">{{ filteredAppointments.length }} / {{ appointments.length }}</span>
                                 </div>
                                 <div class="card-body">
-                                    <div class="mb-3">
-                                        <small class="text-muted">Total appointments: {{ appointments.length }} | Filtered: {{ filteredAppointments.length }}</small>
+                                    <div v-if="filteredAppointments.length === 0" class="empty-state">
+                                        <i class="bi bi-calendar-x"></i>
+                                        <p>No appointments found</p>
                                     </div>
                                     
-                                    <div v-if="filteredAppointments.length === 0" class="alert alert-info">
-                                        No appointments found.
-                                    </div>
-                                    
-                                    <div class="table-responsive mb-3" v-if="filteredAppointments.length > 0">
-                                        <table class="table table-striped table-hover">
-                                            <thead class="table-dark">
+                                    <div class="table-responsive" v-if="filteredAppointments.length > 0">
+                                        <table class="table modern-table">
+                                            <thead>
                                                 <tr>
-                                                    <th>Sr. No</th>
+                                                    <th>#</th>
                                                     <th>Patient</th>
                                                     <th>Doctor</th>
                                                     <th>Department</th>
                                                     <th>Date</th>
-                                                    <th>Slot</th>
+                                                    <th>Time Slot</th>
                                                     <th>Status</th>
                                                     <th>Actions</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
                                                 <tr v-for="(appointment, index) in filteredAppointments" :key="appointment.id">
-                                                    <td>{{ index + 1 }}.</td>
-                                                    <td>{{ getPatientPrefix() }}{{ appointment.patient ? appointment.patient.name : 'N/A' }}</td>
-                                                    <td>Dr. {{ appointment.doctor ? appointment.doctor.name : 'N/A' }}</td>
-                                                    <td>{{ appointment.doctor ? appointment.doctor.department : 'N/A' }}</td>
-                                                    <td>{{ appointment.appointment_date }}</td>
-                                                    <td>{{ formatTimeSlot(appointment.appointment_time) }}</td>
+                                                    <td><span class="row-number">{{ index + 1 }}</span></td>
                                                     <td>
-                                                        <span class="badge" :class="getStatusClass(appointment.status)">
+                                                        <div class="d-flex align-items-center">
+                                                            <div class="avatar-sm bg-success bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-2" style="min-width: 40px; height: 40px;">
+                                                                <i class="bi bi-person text-success" style="font-size: 1.25rem;"></i>
+                                                            </div>
+                                                            <span class="fw-medium">{{ getPatientPrefix() }}{{ appointment.patient ? appointment.patient.name : 'N/A' }}</span>
+                                                        </div>
+                                                    </td>
+                                                    <td>
+                                                        <div class="d-flex align-items-center">
+                                                            <div class="avatar-sm bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-2" style="min-width: 40px; height: 40px;">
+                                                                <i class="bi bi-person-badge text-primary" style="font-size: 1.25rem;"></i>
+                                                            </div>
+                                                            <span class="fw-medium">Dr. {{ appointment.doctor ? appointment.doctor.name : 'N/A' }}</span>
+                                                        </div>
+                                                    </td>
+                                                    <td>
+                                                        <span class="badge badge-soft-info">{{ appointment.doctor ? (appointment.doctor.department || appointment.doctor.specialization || 'N/A') : 'N/A' }}</span>
+                                                        <small v-if="appointment.doctor && !appointment.doctor.department && !appointment.doctor.specialization" class="text-danger d-block">Missing data</small>
+                                                    </td>
+                                                    <td><i class="bi bi-calendar3 me-1 text-muted"></i>{{ appointment.appointment_date }}</td>
+                                                    <td><i class="bi bi-clock me-1 text-muted"></i>{{ formatTimeSlot(appointment.appointment_time) }}</td>
+                                                    <td>
+                                                        <span class="status-badge" :class="getStatusClass(appointment.status)">
                                                             {{ appointment.status }}
                                                         </span>
                                                     </td>
                                                     <td>
-                                                        <button class="btn btn-sm btn-outline-primary me-1" @click="openReschedule(appointment)" title="Reschedule" :disabled="appointment.status === 'cancelled' || appointment.status === 'completed'">
-                                                            <i class="bi bi-calendar-event"></i>
-                                                        </button>
-                                                        <button class="btn btn-sm btn-outline-danger" @click="cancelAppointment(appointment)" title="Cancel" :disabled="appointment.status === 'cancelled' || appointment.status === 'completed'">
-                                                            <i class="bi bi-x-circle"></i>
-                                                        </button>
+                                                        <div class="btn-group btn-group-sm">
+                                                            <button class="btn btn-outline-primary" @click="openReschedule(appointment)" title="Reschedule" :disabled="appointment.status === 'cancelled' || appointment.status === 'completed'">
+                                                                <i class="bi bi-calendar-event"></i>
+                                                            </button>
+                                                            <button class="btn btn-outline-danger" @click="cancelAppointment(appointment)" title="Cancel" :disabled="appointment.status === 'cancelled' || appointment.status === 'completed'">
+                                                                <i class="bi bi-x-circle"></i>
+                                                            </button>
+                                                        </div>
                                                     </td>
                                                 </tr>
                                             </tbody>
@@ -816,6 +854,7 @@ const AdminComponent = {
                 if (doctors.success) {
                     this.doctors = doctors.data.doctors || []
                     console.log('Loaded doctors:', this.doctors.length)
+                    console.log('Doctor data sample:', this.doctors.length > 0 ? this.doctors[0] : 'No doctors')
                     this.applySort(); // Apply initial sort
                 }
             } catch (e) {
@@ -843,6 +882,7 @@ const AdminComponent = {
                     this.appointments = appointments.data.appointments || []
                     this.filteredAppointments = [...this.appointments]
                     console.log('Loaded appointments:', this.appointments.length)
+                    console.log('Appointment sample:', this.appointments.length > 0 ? this.appointments[0] : 'No appointments')
                 } else {
                     console.error('Failed to load appointments:', appointments)
                 }

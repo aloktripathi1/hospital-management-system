@@ -78,6 +78,9 @@ app.register_blueprint(auth_bp, url_prefix='/api/auth')
 app.register_blueprint(admin_bp, url_prefix='/api/admin')
 app.register_blueprint(doctor_bp, url_prefix='/api/doctor')
 app.register_blueprint(patient_bp, url_prefix='/api/patient')
+app.register_blueprint(medical_bp, url_prefix='/api/medical')
+app.register_blueprint(prescription_bp, url_prefix='/api/prescription')
+app.register_blueprint(payment_bp, url_prefix='/api/payment')
 
 # routes
 @app.route('/download/<filename>')  

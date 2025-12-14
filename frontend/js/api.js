@@ -233,6 +233,79 @@ async function updatePatient(patientId, patientData) {
   return await callAPI("/admin/patients/" + patientId, "PUT", patientData)
 }
 
+// Medical Records functions
+async function uploadMedicalRecord(formData) {
+  try {
+    const options = {
+      method: 'POST',
+      headers: {}
+    }
+    
+    const token = getToken()
+    if (token) {
+      options.headers['Authorization'] = 'Bearer ' + token
+    }
+    
+    options.body = formData
+    
+    const response = await fetch(API_URL + "/medical/records", options)
+    return await response.json()
+  } catch (error) {
+    return { success: false, message: error.message }
+  }
+}
+
+async function getMedicalRecords() {
+  return await callAPI("/medical/records", "GET")
+}
+
+async function getMedicalRecord(recordId) {
+  return await callAPI("/medical/records/" + recordId, "GET")
+}
+
+async function deleteMedicalRecord(recordId) {
+  return await callAPI("/medical/records/" + recordId, "DELETE")
+}
+
+async function downloadMedicalRecord(recordId) {
+  const token = getToken()
+  window.open(API_URL + "/medical/records/" + recordId + "/download?token=" + token, '_blank')
+}
+
+// Prescription functions
+async function createPrescription(prescriptionData) {
+  return await callAPI("/prescription/prescriptions", "POST", prescriptionData)
+}
+
+async function updatePrescription(prescriptionId, prescriptionData) {
+  return await callAPI("/prescription/prescriptions/" + prescriptionId, "PUT", prescriptionData)
+}
+
+async function getPatientPrescriptions() {
+  return await callAPI("/prescription/prescriptions", "GET")
+}
+
+async function getPrescription(prescriptionId) {
+  return await callAPI("/prescription/prescriptions/" + prescriptionId, "GET")
+}
+
+async function getDoctorPatientPrescriptions(patientId) {
+  return await callAPI("/prescription/patient/" + patientId + "/prescriptions", "GET")
+}
+
+// Payment functions
+async function createPaymentOrder(appointmentId) {
+  return await callAPI("/payment/create-order", "POST", { appointment_id: appointmentId })
+}
+
+async function verifyPayment(paymentData) {
+  return await callAPI("/payment/verify", "POST", paymentData)
+}
+
+async function getPaymentDetails(paymentId) {
+  return await callAPI("/payment/payment/" + paymentId, "GET")
+}
+
 
 // Keep the same interface for the app
 window.ApiService = {
@@ -276,6 +349,19 @@ window.ApiService = {
   togglePatientBlacklist: togglePatientBlacklist,
   getAdminPatientHistory: getAdminPatientHistory,
   getAdminDoctorHistory: getAdminDoctorHistory,
-  updatePatient: updatePatient
+  updatePatient: updatePatient,
+  uploadMedicalRecord: uploadMedicalRecord,
+  getMedicalRecords: getMedicalRecords,
+  getMedicalRecord: getMedicalRecord,
+  deleteMedicalRecord: deleteMedicalRecord,
+  downloadMedicalRecord: downloadMedicalRecord,
+  createPrescription: createPrescription,
+  updatePrescription: updatePrescription,
+  getPatientPrescriptions: getPatientPrescriptions,
+  getPrescription: getPrescription,
+  getDoctorPatientPrescriptions: getDoctorPatientPrescriptions,
+  createPaymentOrder: createPaymentOrder,
+  verifyPayment: verifyPayment,
+  getPaymentDetails: getPaymentDetails
 }
 

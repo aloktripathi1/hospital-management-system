@@ -16,49 +16,47 @@ const DoctorDashboardTemplate = `
             <!-- Welcome Message -->
             <div class="mb-4">
                 <h3 class="text-primary mb-2">Welcome, Dr. {{ currentUser.name || currentUser.username }}!</h3>
-                <p class="text-muted fs-5">Here are your appointments for today.</p>
+                <p class="text-muted fs-5">Here's your practice overview for today.</p>
             </div>
             
             <!-- Stats Cards -->
-            <div class="row mb-4">
-                <div class="col-md-4">
-                    <div class="card bg-success text-white h-100 shadow-sm">
-                        <div class="card-body d-flex align-items-center justify-content-between">
-                            <div>
-                                <h3 class="mb-0 fw-bold">{{ stats.total_appointments || 0 }}</h3>
-                                <p class="mb-0 opacity-75">Total Appointments</p>
-                            </div>
-                            <div class="bg-white bg-opacity-25 p-3 rounded-circle">
-                                <i class="bi bi-calendar-check fs-3"></i>
-                            </div>
+            <div class="row mb-4 g-4">
+                <div class="col-md-3">
+                    <div class="stat-card" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+                        <div class="position-relative">
+                            <h2 class="mb-1 fw-bold">{{ stats.total_appointments || 0 }}</h2>
+                            <p class="mb-0 opacity-90">Total Appointments</p>
+                            <i class="bi bi-calendar-check stat-icon"></i>
                         </div>
                     </div>
                 </div>
 
-                <div class="col-md-4">
-                    <div class="card bg-info text-white h-100 shadow-sm">
-                        <div class="card-body d-flex align-items-center justify-content-between">
-                            <div>
-                                <h3 class="mb-0 fw-bold">{{ stats.total_patients || 0 }}</h3>
-                                <p class="mb-0 opacity-75">Total Patients</p>
-                            </div>
-                            <div class="bg-white bg-opacity-25 p-3 rounded-circle">
-                                <i class="bi bi-people fs-3"></i>
-                            </div>
+                <div class="col-md-3">
+                    <div class="stat-card" style="background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);">
+                        <div class="position-relative">
+                            <h2 class="mb-1 fw-bold">{{ stats.today_appointments || 0 }}</h2>
+                            <p class="mb-0 opacity-90">Today's Schedule</p>
+                            <i class="bi bi-clock-history stat-icon"></i>
                         </div>
                     </div>
                 </div>
 
-                <div class="col-md-4">
-                    <div class="card bg-primary text-white h-100 shadow-sm">
-                        <div class="card-body d-flex align-items-center justify-content-between">
-                            <div>
-                                <h3 class="mb-0 fw-bold">{{ stats.today_appointments || 0 }}</h3>
-                                <p class="mb-0 opacity-75">Today's Appointments</p>
-                            </div>
-                            <div class="bg-white bg-opacity-25 p-3 rounded-circle">
-                                <i class="bi bi-clock-history fs-3"></i>
-                            </div>
+                <div class="col-md-3">
+                    <div class="stat-card" style="background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);">
+                        <div class="position-relative">
+                            <h2 class="mb-1 fw-bold">{{ stats.total_patients || 0 }}</h2>
+                            <p class="mb-0 opacity-90">Total Patients</p>
+                            <i class="bi bi-people stat-icon"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-3">
+                    <div class="stat-card" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);">
+                        <div class="position-relative">
+                            <h2 class="mb-1 fw-bold">{{ stats.completed_today || 0 }}</h2>
+                            <p class="mb-0 opacity-90">Completed Today</p>
+                            <i class="bi bi-check-circle stat-icon"></i>
                         </div>
                     </div>
                 </div>
@@ -86,52 +84,82 @@ const DoctorDashboardTemplate = `
             <div class="tab-content" id="doctorTabsContent">
                 <!-- Appointments Tab -->
                 <div class="tab-pane fade show active" id="doctor-appointments" role="tabpanel">
-                    <div class="card mb-4">
-                        <div class="card-header d-flex justify-content-between align-items-center">
-                            <h5 class="mb-0">Appointments</h5>
+                    <div class="card dashboard-card mb-4">
+                        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0"><i class="bi bi-calendar-check me-2"></i>My Appointments</h5>
+                            <span class="badge badge-soft-primary">{{ doctorAppointments.length }} Total</span>
                         </div>
                         <div class="card-body">
-                            <div v-if="doctorAppointments.length === 0" class="text-center py-4">
-                                <i class="bi bi-calendar-x display-1 text-muted mb-3"></i>
-                                <p class="text-muted">No appointments found</p>
+                            <div v-if="loading" class="text-center py-5">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <p class="text-muted mt-2">Loading appointments...</p>
+                            </div>
+                            <div v-else-if="doctorAppointments.length === 0" class="empty-state">
+                                <i class="bi bi-calendar-x"></i>
+                                <h4>No Appointments</h4>
+                                <p>You don't have any appointments scheduled yet.</p>
                             </div>
                             <div v-else class="table-responsive mb-3">
-                                <table class="table table-striped table-hover">
-                                    <thead class="table-dark">
+                                <table class="table modern-table align-middle">
+                                    <thead>
                                         <tr>
-                                            <th>Sr. No</th>
+                                            <th>#</th>
                                             <th>Patient</th>
-                                            <th>Date</th>
-                                            <th>Slot</th>
+                                            <th>Date & Time</th>
                                             <th>Age / Gender</th>
+                                            <th>Contact</th>
                                             <th>Status</th>
-                                            <th>Actions</th>
+                                            <th class="text-center">Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         <tr v-for="appointment in doctorAppointments" :key="appointment.id">
-                                            <td>{{ appointment.sr_no }}.</td>
-                                            <td>{{ getPatientPrefix() }}{{ appointment.patient ? appointment.patient.name : 'N/A' }}</td>
-                                            <td>{{ appointment.appointment_date }}</td>
-                                            <td>{{ formatTimeSlot(appointment.appointment_time) }}</td>
-                                            <td>{{ appointment.patient ? appointment.patient.age : 'N/A' }} / {{ appointment.patient ? appointment.patient.gender : 'N/A' }}</td>
+                                            <td class="fw-bold text-muted">{{ appointment.sr_no }}</td>
                                             <td>
-                                                <span class="badge" :class="getStatusClass(appointment.status)">
-                                                    {{ appointment.status }}
-                                                </span>
+                                                <div class="d-flex align-items-center">
+                                                    <div class="bg-primary bg-opacity-10 rounded-circle p-2 me-2">
+                                                        <i class="bi bi-person text-primary"></i>
+                                                    </div>
+                                                    <div>
+                                                        <div class="fw-semibold">{{ appointment.patient ? appointment.patient.name : 'N/A' }}</div>
+                                                        <small class="text-muted">{{ appointment.patient ? appointment.patient.phone : '' }}</small>
+                                                    </div>
+                                                </div>
                                             </td>
                                             <td>
-                                                <button class="btn btn-sm btn-outline-primary me-1" 
-                                                        @click="openTreatmentPage(appointment)" 
-                                                        title="Update Treatment">
-                                                    <i class="bi bi-pencil"></i> Update
-                                                </button>
-                                                <button v-if="appointment.status === 'booked'"
-                                                        class="btn btn-sm btn-outline-warning" 
-                                                        @click="cancelDoctorAppointment(appointment)" 
-                                                        title="Cancel Appointment">
-                                                    <i class="bi bi-x-circle"></i> Cancel
-                                                </button>
+                                                <div>
+                                                    <div class="fw-semibold">{{ formatDisplayDate(appointment.appointment_date) }}</div>
+                                                    <small class="text-muted">
+                                                        <i class="bi bi-clock me-1"></i>{{ formatTimeSlot(appointment.appointment_time) }}
+                                                    </small>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <span class="badge badge-soft-primary">{{ appointment.patient ? appointment.patient.age : 'N/A' }} yrs</span>
+                                                <span class="badge badge-soft-primary ms-1">{{ appointment.patient ? appointment.patient.gender : 'N/A' }}</span>
+                                            </td>
+                                            <td>{{ appointment.patient ? appointment.patient.phone : 'N/A' }}</td>
+                                            <td>
+                                                <span class="badge rounded-pill" :class="getStatusBadgeClass(appointment.status)">
+                                                    <i :class="getStatusIcon(appointment.status)" class="me-1"></i>{{ capitalizeStatus(appointment.status) }}
+                                                </span>
+                                            </td>
+                                            <td class="text-center">
+                                                <div class="btn-group" role="group">
+                                                    <button class="btn btn-sm btn-outline-primary" 
+                                                            @click="openTreatmentPage(appointment)" 
+                                                            title="Update Treatment">
+                                                        <i class="bi bi-clipboard-plus"></i>
+                                                    </button>
+                                                    <button v-if="appointment.status === 'booked'"
+                                                            class="btn btn-sm btn-outline-danger" 
+                                                            @click="cancelDoctorAppointment(appointment)" 
+                                                            title="Cancel">
+                                                        <i class="bi bi-x-lg"></i>
+                                                    </button>
+                                                </div>
                                             </td>
                                         </tr>
                                     </tbody>
@@ -143,18 +171,24 @@ const DoctorDashboardTemplate = `
 
                 <!-- Assigned Patients Tab -->
                 <div class="tab-pane fade" id="doctor-patients" role="tabpanel">
-                    <div class="card mb-4">
-                        <div class="card-header">
-                            <h5 class="mb-0">Assigned Patients</h5>
+                    <div class="card dashboard-card mb-4">
+                        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0"><i class="bi bi-people me-2"></i>Assigned Patients</h5>
+                            <span class="badge badge-soft-primary">{{ doctorPatients.length }} Total</span>
                         </div>
                         <div class="card-body">
-                            <div class="table-responsive mb-3">
-                                <table class="table table-striped table-hover">
-                                    <thead class="table-dark">
+                            <div v-if="doctorPatients.length === 0" class="empty-state">
+                                <i class="bi bi-person-x"></i>
+                                <h4>No Patients</h4>
+                                <p>You don't have any assigned patients yet.</p>
+                            </div>
+                            <div v-else class="table-responsive mb-3">
+                                <table class="table modern-table align-middle">
+                                    <thead>
                                         <tr>
-                                            <th>Sr. No</th>
-                                            <th>Name</th>
-                                            <th>Phone</th>
+                                            <th>#</th>
+                                            <th>Patient</th>
+                                            <th>Contact</th>
                                             <th>Age</th>
                                             <th>Gender</th>
                                             <th>Actions</th>
@@ -162,16 +196,23 @@ const DoctorDashboardTemplate = `
                                     </thead>
                                     <tbody>
                                         <tr v-for="patient in doctorPatients" :key="patient.id">
-                                            <td>{{ patient.sr_no }}.</td>
-                                            <td>{{ patient.name }}</td>
-                                            <td>{{ patient.phone }}</td>
-                                            <td>{{ patient.age }}</td>
-                                            <td>{{ patient.gender }}</td>
+                                            <td><span class="row-number">{{ patient.sr_no }}</span></td>
+                                            <td>
+                                                <div class="d-flex align-items-center">
+                                                    <div class="avatar-sm bg-success bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-2" style="min-width: 40px; height: 40px;">
+                                                        <i class="bi bi-person text-success" style="font-size: 1.25rem;"></i>
+                                                    </div>
+                                                    <span class="fw-medium">{{ patient.name }}</span>
+                                                </div>
+                                            </td>
+                                            <td><i class="bi bi-telephone me-1 text-muted"></i>{{ patient.phone }}</td>
+                                            <td><span class="badge badge-soft-primary">{{ patient.age }} yrs</span></td>
+                                            <td><span class="badge badge-soft-info">{{ patient.gender }}</span></td>
                                             <td>
                                                 <button class="btn btn-sm btn-outline-primary" 
                                                         @click="viewPatientTreatmentHistory(patient)" 
                                                         title="View Treatment History">
-                                                    <i class="bi bi-eye"></i> View History
+                                                    <i class="bi bi-eye"></i>
                                                 </button>
                                             </td>
                                         </tr>
@@ -184,25 +225,59 @@ const DoctorDashboardTemplate = `
 
                 <!-- Availability Tab -->
                 <div class="tab-pane fade" id="availability" role="tabpanel">
-                    <div class="card mb-4">
-                        <div class="card-header">
-                            <h5 class="mb-0">Set Availability (Next 7 Days)</h5>
+                    <div class="card dashboard-card mb-4">
+                        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                            <div>
+                                <h5 class="mb-0"><i class="bi bi-calendar-check me-2"></i>Set Availability</h5>
+                                <small class="text-muted">Next 7 Days</small>
+                            </div>
+                            <button @click="saveAvailability" class="btn btn-primary" :disabled="loading">
+                                <span v-if="loading" class="spinner-border spinner-border-sm me-2"></span>
+                                <i class="bi bi-save me-1"></i> Save Changes
+                            </button>
                         </div>
                         <div class="card-body">
-                            <p class="text-muted mb-4">Check the boxes for slots when you're available. Morning: 9 AM - 1 PM, Evening: 3 PM - 7 PM</p>
+                            <div class="alert alert-light border mb-4">
+                                <div class="d-flex align-items-center">
+                                    <i class="bi bi-info-circle text-primary me-2 fs-5"></i>
+                                    <div>
+                                        <strong>Instructions:</strong> Check the boxes for slots when you're available.
+                                        <div class="mt-1">
+                                            <span class="badge bg-light text-dark border me-2"><i class="bi bi-sunrise me-1"></i>Morning: 9 AM - 1 PM</span>
+                                            <span class="badge bg-light text-dark border"><i class="bi bi-sunset me-1"></i>Evening: 3 PM - 7 PM</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                             
                             <div class="table-responsive">
-                                <table class="table table-bordered">
-                                    <thead class="table-light">
+                                <table class="table modern-table align-middle">
+                                    <thead>
                                         <tr>
                                             <th style="width: 40%">Date</th>
-                                            <th style="width: 30%">Morning (9 AM - 1 PM)</th>
-                                            <th style="width: 30%">Evening (3 PM - 7 PM)</th>
+                                            <th style="width: 30%" class="text-center">
+                                                <i class="bi bi-sunrise me-1"></i>Morning
+                                                <br><small class="fw-normal text-muted">9 AM - 1 PM</small>
+                                            </th>
+                                            <th style="width: 30%" class="text-center">
+                                                <i class="bi bi-sunset me-1"></i>Evening
+                                                <br><small class="fw-normal text-muted">3 PM - 7 PM</small>
+                                            </th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         <tr v-for="day in availabilityDays" :key="day.date">
-                                            <td class="align-middle"><strong>{{ day.day_name }}</strong><br><small class="text-muted">{{ day.date }}</small></td>
+                                            <td class="align-middle">
+                                                <div class="d-flex align-items-center">
+                                                    <div class="bg-primary bg-opacity-10 rounded-circle p-2 me-2" style="min-width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;">
+                                                        <i class="bi bi-calendar-day text-primary"></i>
+                                                    </div>
+                                                    <div>
+                                                        <strong class="d-block">{{ day.day_name }}</strong>
+                                                        <small class="text-muted">{{ day.date }}</small>
+                                                    </div>
+                                                </div>
+                                            </td>
                                             <td class="text-center align-middle">
                                                 <div class="form-check form-switch d-inline-block">
                                                     <input 
@@ -210,9 +285,15 @@ const DoctorDashboardTemplate = `
                                                         type="checkbox" 
                                                         role="switch"
                                                         :id="'morning-' + day.date"
-                                                        v-model="day.morning_available">
-                                                    <label class="form-check-label" :for="'morning-' + day.date">
-                                                        {{ day.morning_available ? 'Available' : 'Unavailable' }}
+                                                        v-model="day.morning_available"
+                                                        style="cursor: pointer;">
+                                                    <label class="form-check-label ms-2" :for="'morning-' + day.date" style="cursor: pointer;">
+                                                        <span v-if="day.morning_available" class="badge bg-success">
+                                                            <i class="bi bi-check-circle me-1"></i>Available
+                                                        </span>
+                                                        <span v-else class="badge bg-secondary">
+                                                            <i class="bi bi-x-circle me-1"></i>Unavailable
+                                                        </span>
                                                     </label>
                                                 </div>
                                             </td>
@@ -223,9 +304,15 @@ const DoctorDashboardTemplate = `
                                                         type="checkbox" 
                                                         role="switch"
                                                         :id="'evening-' + day.date"
-                                                        v-model="day.evening_available">
-                                                    <label class="form-check-label" :for="'evening-' + day.date">
-                                                        {{ day.evening_available ? 'Available' : 'Unavailable' }}
+                                                        v-model="day.evening_available"
+                                                        style="cursor: pointer;">
+                                                    <label class="form-check-label ms-2" :for="'evening-' + day.date" style="cursor: pointer;">
+                                                        <span v-if="day.evening_available" class="badge bg-success">
+                                                            <i class="bi bi-check-circle me-1"></i>Available
+                                                        </span>
+                                                        <span v-else class="badge bg-secondary">
+                                                            <i class="bi bi-x-circle me-1"></i>Unavailable
+                                                        </span>
                                                     </label>
                                                 </div>
                                             </td>
@@ -233,15 +320,6 @@ const DoctorDashboardTemplate = `
                                     </tbody>
                                 </table>
                             </div>
-                            
-                            <div class="alert alert-info mt-3">
-                                <i class="bi bi-info-circle"></i> <strong>Note:</strong> Patients will be able to book appointments for the slots you mark as available.
-                            </div>
-                            
-                            <button @click="saveAvailability" class="btn btn-primary" :disabled="loading">
-                                <span v-if="loading" class="spinner-border spinner-border-sm me-2"></span>
-                                <i class="bi bi-calendar-check"></i> Save Availability
-                            </button>
                         </div>
                     </div>
                 </div>
@@ -733,6 +811,38 @@ const DoctorComponent = {
 
         getStatusClass(status) {
             return window.UtilsModule.getStatusClass(status);
+        },
+
+        getStatusBadgeClass(status) {
+            const classes = {
+                'booked': 'bg-primary',
+                'completed': 'bg-success',
+                'cancelled': 'bg-danger',
+                'available': 'bg-secondary'
+            };
+            return classes[status] || 'bg-secondary';
+        },
+
+        getStatusIcon(status) {
+            const icons = {
+                'booked': 'bi-calendar-check',
+                'completed': 'bi-check-circle',
+                'cancelled': 'bi-x-circle',
+                'available': 'bi-clock'
+            };
+            return icons[status] || 'bi-circle';
+        },
+
+        capitalizeStatus(status) {
+            if (!status) return '';
+            return status.charAt(0).toUpperCase() + status.slice(1);
+        },
+
+        formatDisplayDate(dateString) {
+            if (!dateString) return '';
+            const date = new Date(dateString);
+            const options = { month: 'short', day: 'numeric', year: 'numeric' };
+            return date.toLocaleDateString('en-US', options);
         },
 
         getPatientPrefix() {
