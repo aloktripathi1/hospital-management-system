@@ -74,17 +74,13 @@ sudo service redis-server start
 
 These are needed for sending emails and reminders:
 
-**Terminal 1 - Celery Worker:**
+**Terminal - Celery Worker with Beat:**
 ```bash
 cd backend
-celery -A celery_tasks worker --loglevel=info
+celery -A celery_tasks.imports:celery_app worker --beat --loglevel=info
 ```
 
-**Terminal 2 - Celery Beat (Scheduler):**
-```bash
-cd backend
-celery -A celery_tasks beat --loglevel=info
-```
+This single command runs both the worker (for processing tasks) and beat (for scheduling) together.
 
 ## Quick Summary
 

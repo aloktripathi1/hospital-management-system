@@ -723,4 +723,4 @@ tags:
   - name: Doctor
     description: Doctor dashboard and patient management
   - name: Patient
-    description: Patient appointments and medical records
+    description: Patient appointments and treatment history

@@ -87,7 +87,7 @@ This document explains how different parts of the project work together.
     - `admin.py` - Manage doctors/patients, view all appointments, reschedule/cancel
     - `doctor.py` - View appointments, update treatments, set availability, view assigned patients
     - `patient.py` - Book appointments, view history, get available slots, view doctors
-  - `models/` - SQLAlchemy ORM models
+  - `models/` - SQLAlchemy ORM models (6 tables)
     - `user.py` - User model
     - `doctor.py` - Doctor model
     - `patient.py` - Patient model
@@ -99,24 +99,25 @@ This document explains how different parts of the project work together.
 ### 3. Database (Where data is stored)
 - **Type:** SQLite (simple file-based database)
 - **Location:** `backend/instance/hospital.db`
-- **Tables:**
+- **Tables (6 total):**
   - `users` - Login credentials (username, password, email, role)
   - `doctors` - Doctor profiles (name, specialization, experience, qualification, consultation_fee, is_active)
   - `patients` - Patient info (name, age, gender, phone, address, medical_history, is_blacklisted)
   - `appointments` - Bookings (doctor_id, patient_id, appointment_date, appointment_time, status)
-  - `treatments` - Medical records (appointment_id, visit_type, diagnosis, prescription, notes)
+  - `treatments` - Treatment records (appointment_id, visit_type, diagnosis, prescription, notes)
   - `doctor_availability` - Schedule slots (doctor_id, date, slot_type, is_available)
 
 ### 4. Background Jobs (Celery)
 - **Location:** `backend/celery_tasks/` folder
-- **What it does:** Sends emails in background
+- **What it does:** Sends appointment confirmation emails and periodic reminders
 - **Task files:**
+  - `__init__.py` - Celery app configuration
   - `email.py` - Appointment confirmation emails
   - `reminders.py` - Daily reminder emails (for today's appointments)
   - `reports.py` - Monthly reports for doctors
   - `email_template.py` - HTML email templates
-  - `imports.py` - Imports all tasks
-- **Needs:** Redis to be running
+  - `imports.py` - Imports all tasks for worker discovery
+- **Needs:** Redis to be running (message broker)
 
 ### 5. Redis (Message Queue)
 - **What it does:** Helps Celery send background tasks
@@ -299,29 +300,29 @@ The app uses a **dark professional theme** with:
 
 ## 🚀 Startup Sequence
 
-### Using tmux:
+### Manual Startup:
 
 ```
-1. start_tmux.sh executed
-   │
-   ├─> Window 0: redis-server starts
-   │   └─> Port 6379 open
-   │
-   ├─> Window 1: docker run mailhog
-   │   └─> Ports 1025, 8025 open
-   │
-   ├─> Window 2: python3 app.py
-   │   └─> Port 5000 open
-   │   └─> Connects to Redis
-   │   └─> Creates database tables
-   │
-   ├─> Window 3: celery worker
-   │   └─> Connects to Redis
-   │   └─> Ready for tasks
-   │
-   └─> Window 4: http.server
+1. Start Redis
+   └─> redis-server
+       └─> Port 6379 open
+
+2. Start Backend API
+   └─> python3 app.py
+       └─> Port 5000 open
+       └─> Connects to Redis
+       └─> Creates database tables
+
+3. Start Celery Worker & Beat (Optional - for emails)
+   └─> celery -A celery_tasks.imports:celery_app worker --beat
+       └─> Connects to Redis
+       └─> Ready for tasks
+       └─> Scheduler running
+
+4. Start Frontend Server
+   └─> python3 -m http.server 3000
        └─> Port 3000 open
-       └─> Serves frontend files
+       └─> Serves static files
 
 All services ready! ✅
 ```
@@ -332,9 +333,7 @@ All services ready! ✅
 |---------|------|----------|---------|
 | Frontend | 3000 | HTTP | Serve static files |
 | Backend | 5000 | HTTP | REST API |
-| Redis | 6379 | TCP | Message broker & cache |
-| MailHog SMTP | 1025 | SMTP | Receive emails |
-| MailHog Web | 8025 | HTTP | View emails |
+| Redis | 6379 | TCP | Message broker for Celery |
 
 ## 🔧 Technology Stack
 
@@ -345,15 +344,16 @@ All services ready! ✅
 - **Vanilla JS** - No build tools needed
 
 ### Backend
-- **Flask** - Web framework
-- **SQLAlchemy** - ORM
-- **Flask-CORS** - Cross-origin requests
+- **Flask 2.3.3** - Web framework
+- **SQLAlchemy 3.0.5** - ORM
+- **Flask-CORS 4.0.0** - Cross-origin requests
 - **Werkzeug** - Password hashing
+- **Flask-JWT-Extended 4.5.3** - JWT authentication
 
 ### Background Tasks
-- **Celery** - Task queue
-- **Redis** - Message broker
-- **MailHog** - Email testing
+- **Celery 5.3.4** - Task queue
+- **Redis 5.0.1** - Message broker
+- **Flask-Mail 0.9.1** - Email sending via SMTP
 
 ### Database
 - **SQLite** - File-based database
@@ -361,10 +361,11 @@ All services ready! ✅
 ## 📝 Notes
 
 - All services run on localhost
-- No internet connection required after initial setup
-- All emails are caught by MailHog (not sent externally)
-- Redis is used for both Celery and session storage
-- Frontend is pure HTML/CSS/JS (no build process)
+- No internet connection required after initial setup (except for email sending)
+- Emails are sent via Gmail SMTP (configure in .env file)
+- Redis is used as Celery message broker
+- Frontend is pure HTML/CSS/JS with Vue.js 3 CDN (no build process)
+- Simple caching implemented for admin dashboard stats (5-minute expiry)
 
 ---
 
