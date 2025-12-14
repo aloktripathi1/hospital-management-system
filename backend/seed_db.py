@@ -16,7 +16,7 @@ def create_admin_user():
         )
         db.session.add(admin_user)
         db.session.commit()
-        print("✓ admin user created")
+        print("✓ Admin user created")
 
 # create sample doctors account
 def create_sample_doctors():
@@ -44,17 +44,6 @@ def create_sample_doctors():
                 'qualification': 'MBBS, MD (Neurology)',
                 'phone': '+91-9876543212',
                 'consultation_fee': 1400
-            },
-            {
-                'username': 'aditytripathee',
-                'email': 'aditytripathee@gmail.com',
-                'password': 'aditytripathee123',
-                'name': 'Aditya Tripathi',
-                'specialization': 'Orthopedics',
-                'experience': 8,
-                'qualification': 'MS Orthopedics',
-                'phone': '+91-9876543213',
-                'consultation_fee': 1000
             }
         ]
 
@@ -115,7 +104,7 @@ def create_sample_availability():
             db.session.add(evening)
 
     db.session.commit()
-    print("✓ 7-day availability created (2 slots/day)")
+    print("✓ 7-day availability created (8 slots/day)")
 
 # create sample patients
 def create_sample_patients():
@@ -143,17 +132,6 @@ def create_sample_patients():
                 'age': 29,
                 'gender': 'Male',
                 'medical_history': 'Asthma'
-            },
-            {
-                'username': 'alok1',
-                'email': '23f3003225@ds.study.iitm.ac.in',
-                'password': 'alok123',
-                'name': 'Alok Tripathi',
-                'phone': '+91-7705976390',
-                'address': 'House No. 7, Gorakhpur, Uttar Pradesh',
-                'age': 21,
-                'gender': 'Male',
-                'medical_history': 'Common Cold'
             }
         ]
 
