@@ -115,8 +115,6 @@ python app.py
 - Doctor: `ajay` / `ajay.kumar123`
 - Patient: `rahul` / `rahul123`
 
-For production deployment, see [`DEPLOYMENT.md`](DEPLOYMENT.md).
-
 ## Database Tables
 
 - **users** - Login credentials for all users
