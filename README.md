@@ -129,17 +129,28 @@ python app.py
 ### Homepage
 Modern hero section with professional dark theme
 
+![Homepage](screenshots/homepage.png)
+
 ### Login/Register
 Clean branded login page with stats
+
+![Login](screenshots/login.png)
+![Register](screenshots/register.png)
 
 ### Admin Dashboard
 Manage doctors, patients, and appointments
 
+![Admin Dashboard](screenshots/admin_dashboard.png)
+
 ### Doctor Dashboard
 View appointments and update treatments
 
+![Doctor Dashboard](screenshots/doctor_dashboard.png)
+
 ### Patient Dashboard
 Book appointments and view history
+
+![Patient Dashboard](screenshots/patient_dashboard.png)
 
 ## What I Learned
 
