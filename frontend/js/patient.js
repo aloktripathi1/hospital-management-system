@@ -318,12 +318,7 @@ const PatientTemplate = `
                                         <tr v-for="(appointment, index) in allPatientAppointments" :key="appointment.id">
                                             <td><span class="row-number">{{ index + 1 }}</span></td>
                                             <td>
-                                                <div class="d-flex align-items-center">
-                                                    <div class="avatar-sm bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-2">
-                                                        <i class="bi bi-person-badge text-primary"></i>
-                                                    </div>
-                                                    <span class="fw-medium">{{ appointment.doctor ? 'Dr. ' + appointment.doctor.name : 'N/A' }}</span>
-                                                </div>
+                                                <span class="fw-medium">{{ appointment.doctor ? 'Dr. ' + appointment.doctor.name : 'N/A' }}</span>
                                             </td>
                                             <td><span class="badge badge-soft-info">{{ appointment.department || (appointment.doctor ? appointment.doctor.specialization : 'N/A') }}</span></td>
                                             <td><i class="bi bi-calendar3 me-1 text-muted"></i>{{ appointment.appointment_date }}</td>

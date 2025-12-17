@@ -132,12 +132,7 @@ const AdminTemplate = `
                                                 <tr v-for="(doctor, index) in filteredDoctors" :key="doctor.id">
                                                     <td><span class="row-number">{{ index + 1 }}</span></td>
                                                     <td>
-                                                        <div class="d-flex align-items-center">
-                                                            <div class="avatar-sm bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-2" style="min-width: 40px; height: 40px;">
-                                                                <i class="bi bi-person-badge text-primary" style="font-size: 1.25rem;"></i>
-                                                            </div>
-                                                            <span class="fw-medium">Dr. {{ doctor.name || 'N/A' }}</span>
-                                                        </div>
+                                                        <span class="fw-medium">Dr. {{ doctor.name || 'N/A' }}</span>
                                                     </td>
                                                     <td>
                                                         <span class="badge badge-soft-info">{{ doctor.specialization || 'N/A' }}</span>
@@ -223,14 +218,9 @@ const AdminTemplate = `
                                                 <tr v-for="(patient, index) in filteredPatients" :key="patient.id">
                                                     <td><span class="row-number">{{ index + 1 }}</span></td>
                                                     <td>
-                                                        <div class="d-flex align-items-center">
-                                                            <div class="avatar-sm bg-success bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-2">
-                                                                <i class="bi bi-person text-success"></i>
-                                                            </div>
-                                                            <div>
-                                                                <span class="fw-medium">{{ getPatientPrefix() }}{{ patient.name }}</span>
-                                                                <span v-if="patient.is_blacklisted" class="badge badge-soft-danger ms-2">Blacklisted</span>
-                                                            </div>
+                                                        <div>
+                                                            <span class="fw-medium">{{ getPatientPrefix() }}{{ patient.name }}</span>
+                                                            <span v-if="patient.is_blacklisted" class="badge badge-soft-danger ms-2">Blacklisted</span>
                                                         </div>
                                                     </td>
                                                     <td><i class="bi bi-envelope me-1 text-muted"></i>{{ patient.user ? patient.user.email : 'N/A' }}</td>
@@ -289,20 +279,10 @@ const AdminTemplate = `
                                                 <tr v-for="(appointment, index) in filteredAppointments" :key="appointment.id">
                                                     <td><span class="row-number">{{ index + 1 }}</span></td>
                                                     <td>
-                                                        <div class="d-flex align-items-center">
-                                                            <div class="avatar-sm bg-success bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-2" style="min-width: 40px; height: 40px;">
-                                                                <i class="bi bi-person text-success" style="font-size: 1.25rem;"></i>
-                                                            </div>
-                                                            <span class="fw-medium">{{ getPatientPrefix() }}{{ appointment.patient ? appointment.patient.name : 'N/A' }}</span>
-                                                        </div>
+                                                        <span class="fw-medium">{{ getPatientPrefix() }}{{ appointment.patient ? appointment.patient.name : 'N/A' }}</span>
                                                     </td>
                                                     <td>
-                                                        <div class="d-flex align-items-center">
-                                                            <div class="avatar-sm bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-2" style="min-width: 40px; height: 40px;">
-                                                                <i class="bi bi-person-badge text-primary" style="font-size: 1.25rem;"></i>
-                                                            </div>
-                                                            <span class="fw-medium">Dr. {{ appointment.doctor ? appointment.doctor.name : 'N/A' }}</span>
-                                                        </div>
+                                                        <span class="fw-medium">Dr. {{ appointment.doctor ? appointment.doctor.name : 'N/A' }}</span>
                                                     </td>
                                                     <td>
                                                         <span class="badge badge-soft-info">{{ appointment.doctor ? (appointment.doctor.department || appointment.doctor.specialization || 'N/A') : 'N/A' }}</span>

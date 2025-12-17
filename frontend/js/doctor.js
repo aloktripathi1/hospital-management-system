@@ -198,12 +198,7 @@ const DoctorDashboardTemplate = `
                                         <tr v-for="patient in doctorPatients" :key="patient.id">
                                             <td><span class="row-number">{{ patient.sr_no }}</span></td>
                                             <td>
-                                                <div class="d-flex align-items-center">
-                                                    <div class="avatar-sm bg-success bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-2" style="min-width: 40px; height: 40px;">
-                                                        <i class="bi bi-person text-success" style="font-size: 1.25rem;"></i>
-                                                    </div>
-                                                    <span class="fw-medium">{{ patient.name }}</span>
-                                                </div>
+                                                <span class="fw-medium">{{ patient.name }}</span>
                                             </td>
                                             <td><i class="bi bi-telephone me-1 text-muted"></i>{{ patient.phone }}</td>
                                             <td><span class="badge badge-soft-primary">{{ patient.age }} yrs</span></td>
